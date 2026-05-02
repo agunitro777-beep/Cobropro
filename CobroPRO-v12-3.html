@@ -1,0 +1,2344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CobroPRO">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%230a0a0f'/%3E%3Ccircle cx='96' cy='96' r='72' fill='none' stroke='%236c63ff' stroke-width='6' opacity='0.6'/%3E%3Ctext x='96' y='118' font-family='Arial' font-weight='900' font-size='90' fill='%236c63ff' text-anchor='middle'%3E%24%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%230a0a0f'/%3E%3Ccircle cx='96' cy='96' r='72' fill='none' stroke='%236c63ff' stroke-width='6' opacity='0.6'/%3E%3Ctext x='96' y='118' font-family='Arial' font-weight='900' font-size='90' fill='%236c63ff' text-anchor='middle'%3E%24%3C/text%3E%3C/svg%3E">
+<title>CobroPRO</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{--bg:#0a0a0f;--bg2:#12121a;--bg3:#1a1a26;--card:#16161f;--card2:#1e1e2e;--border:#2a2a3e;--ac:#6c63ff;--ac2:#a78bfa;--gr:#22c55e;--rd:#ef4444;--yw:#f59e0b;--cy:#06b6d4;--tx:#e8e8f0;--tx2:#8888aa;--ra:16px;--rs:10px}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}
+#authScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.auth-logo{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px;text-align:center}
+.auth-sub{font-size:13px;color:var(--tx2);margin-bottom:32px;text-align:center}
+.auth-card{background:var(--card);border:1px solid var(--border);border-radius:var(--ra);padding:22px;width:100%;max-width:360px}
+.auth-tabs{display:flex;gap:0;margin-bottom:18px;background:var(--bg3);border-radius:var(--rs);padding:3px}
+.auth-tab{flex:1;padding:8px;text-align:center;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;transition:.2s;color:var(--tx2)}
+.auth-tab.active{background:var(--ac);color:#fff}
+.auth-msg{border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;display:none}
+.auth-msg.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--rd)}
+.auth-msg.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--gr)}
+#appScreen{display:none;padding-bottom:84px}
+.hdr{background:rgba(10,10,15,.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 14px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between}
+.brand{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hdr-r{display:flex;align-items:center;gap:6px}
+.ibtn{width:34px;height:34px;border-radius:50%;background:var(--card2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:.2s;color:var(--tx2);position:relative;flex-shrink:0}
+.ibtn:active{transform:scale(.88)}
+.bdg{background:var(--rd);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:20px;min-width:15px;text-align:center;position:absolute;top:-3px;right:-3px}
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(18,18,26,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:7px 0 15px;z-index:100}
+.ni{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px 6px;border-radius:9px;transition:.2s;color:var(--tx2);font-size:8px;font-weight:500}
+.ni .ic{font-size:17px;transition:transform .2s}
+.ni.active{color:var(--ac2)}.ni.active .ic{transform:scale(1.1)}
+.pg{display:none;padding:12px 12px 0;animation:fi .22s ease}.pg.active{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--ra);padding:14px;margin-bottom:10px}
+.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.ct{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:var(--ra);padding:12px;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;right:0;width:42px;height:42px;border-radius:0 0 0 42px;opacity:.12}
+.sc.bl::before{background:var(--ac)}.sc.gr::before{background:var(--gr)}.sc.rd::before{background:var(--rd)}.sc.yw::before{background:var(--yw)}.sc.cy::before{background:var(--cy)}
+.sl{font-size:10px;color:var(--tx2);font-weight:500;margin-bottom:3px}
+.sv{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;line-height:1}
+.sv.bl{color:var(--ac2)}.sv.gr{color:var(--gr)}.sv.rd{color:var(--rd)}.sv.yw{color:var(--yw)}.sv.cy{color:var(--cy)}
+.ss{font-size:9px;color:var(--tx2);margin-top:3px}
+.cajaH{background:linear-gradient(135deg,rgba(108,99,255,.15),rgba(167,139,250,.07));border:1px solid rgba(108,99,255,.3);border-radius:var(--ra);padding:15px;margin-bottom:10px}
+.cajaTot{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;color:var(--gr)}
+.mg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}
+.mc{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--rs);padding:8px}
+.ml{font-size:9px;color:var(--tx2)}.mv{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.ai{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;margin-bottom:5px;border:1px solid}
+.ai.danger{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3)}.ai.warning{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3)}.ai.info{background:rgba(108,99,255,.1);border-color:rgba(108,99,255,.3)}.ai.success{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3)}
+.ad{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ad.danger{background:var(--rd)}.ad.warning{background:var(--yw)}.ad.info{background:var(--ac)}.ad.success{background:var(--gr)}
+.at{flex:1;font-size:11px}.asub{font-size:9px;color:var(--tx2);margin-top:1px}
+.cli{display:flex;align-items:center;gap:9px;padding:11px;background:var(--card);border:1px solid var(--border);border-radius:var(--ra);margin-bottom:7px;cursor:pointer;transition:.2s}
+.cli:active{transform:scale(.98);border-color:var(--ac)}
+.av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;flex-shrink:0;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.ci{flex:1;min-width:0}.cn{font-family:'Syne',sans-serif;font-size:13px;font-weight:700}.cm{font-size:10px;color:var(--tx2);margin-top:1px}.cr{text-align:right;flex-shrink:0}
+.cmonto{font-family:'Syne',sans-serif;font-size:13px;font-weight:700}
+.sb{display:inline-block;padding:2px 5px;border-radius:20px;font-size:8px;font-weight:600;text-transform:uppercase}
+.sb.ok{background:rgba(34,197,94,.15);color:var(--gr)}.sb.late{background:rgba(239,68,68,.15);color:var(--rd)}.sb.due{background:rgba(245,158,11,.15);color:var(--yw)}.sb.done{background:rgba(34,197,94,.1);color:var(--gr)}
+.rank-oro{color:#f59e0b}.rank-plata{color:#94a3b8}.rank-bronce{color:#cd7f32}.rank-nuevo{color:var(--tx2)}.rank-moroso{color:var(--rd)}
+.pt{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:3px}
+.pf{height:100%;border-radius:2px;transition:width .5s;background:linear-gradient(90deg,var(--ac),var(--ac2))}
+.tabs{display:flex;gap:4px;margin-bottom:11px;overflow-x:auto;padding-bottom:1px}.tabs::-webkit-scrollbar{display:none}
+.tab{padding:6px 12px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;transition:.2s;white-space:nowrap;background:var(--card2);border:1px solid var(--border);color:var(--tx2)}
+.tab.active{background:var(--ac);border-color:var(--ac);color:#fff}
+.ig{margin-bottom:10px}.il{font-size:10px;color:var(--tx2);font-weight:500;margin-bottom:3px;display:block}
+.inp{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:10px 11px;color:var(--tx);font-size:13px;font-family:'DM Sans',sans-serif;transition:border-color .2s;outline:none;-webkit-appearance:none}
+.inp:focus{border-color:var(--ac)}
+.sel{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238888aa' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
+.btn{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:11px;border-radius:var(--rs);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:.2s;border:none;outline:none}
+.btn:active{transform:scale(.97)}.btn:disabled{opacity:.5;pointer-events:none}
+.bp{background:linear-gradient(135deg,var(--ac),#8b5cf6);color:#fff}.bs{background:var(--card2);border:1px solid var(--border);color:var(--tx)}
+.bgr{background:linear-gradient(135deg,#16a34a,var(--gr));color:#fff}.brd{background:linear-gradient(135deg,#b91c1c,var(--rd));color:#fff}.byw{background:linear-gradient(135deg,#b45309,var(--yw));color:#fff}
+.bsm{padding:5px 10px;font-size:11px;width:auto;border-radius:7px}
+.fab{position:fixed;bottom:70px;right:13px;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--ac),#8b5cf6);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;box-shadow:0 4px 18px rgba(108,99,255,.5);z-index:99;transition:.3s cubic-bezier(.34,1.56,.64,1)}
+.fab:active{transform:scale(.88)}.fab.open{transform:rotate(45deg)}
+.fabm{position:fixed;bottom:130px;right:13px;display:flex;flex-direction:column;gap:6px;z-index:98;pointer-events:none;opacity:0;transition:.3s}.fabm.open{pointer-events:auto;opacity:1}
+.fa{display:flex;align-items:center;gap:7px;justify-content:flex-end}
+.fab2{width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.fab2:active{transform:scale(.88)}
+.fal{background:rgba(0,0,0,.8);color:#fff;padding:3px 8px;border-radius:5px;font-size:11px;backdrop-filter:blur(10px)}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-end}
+.mo.open{display:flex}
+.modal{background:var(--bg2);border-radius:20px 20px 0 0;padding:16px 15px 30px;width:100%;max-height:92vh;overflow-y:auto;animation:su .28s cubic-bezier(.34,1.56,.64,1);border-top:1px solid var(--border)}
+@keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mh{width:34px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
+.mt{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;margin-bottom:14px}
+.sw{position:relative;margin-bottom:10px}.si{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--tx2)}.si+.inp{padding-left:34px}
+.pi{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}.pi:last-child{border-bottom:none}
+.pm{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--gr)}.pd{font-size:9px;color:var(--tx2)}
+.mt2{padding:2px 5px;border-radius:4px;font-size:9px;font-weight:600}
+.mt2.efectivo{background:rgba(34,197,94,.15);color:var(--gr)}.mt2.transferencia{background:rgba(6,182,212,.15);color:var(--cy)}
+.toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-15px);background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:9px 15px;font-size:12px;z-index:999;white-space:nowrap;opacity:0;transition:.3s;box-shadow:0 8px 32px rgba(0,0,0,.6);max-width:88vw;overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.toast.success{border-color:var(--gr);color:var(--gr)}.toast.error{border-color:var(--rd);color:var(--rd)}.toast.warn{border-color:var(--yw);color:var(--yw)}
+.iatag{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:5px;font-size:9px;font-weight:600;background:linear-gradient(135deg,rgba(108,99,255,.2),rgba(167,139,250,.15));border:1px solid rgba(108,99,255,.3);color:var(--ac2)}
+#do{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:97}#do.open{display:block}
+.gi{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}.gi:last-child{border-bottom:none}
+.gic{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--bg3);flex-shrink:0}
+.gin{flex:1}.gn{font-size:11px;font-weight:500}.gd{font-size:9px;color:var(--tx2)}.ga{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--rd)}
+.fpc{background:var(--card2);border:1px solid var(--border);border-radius:var(--ra);padding:13px;margin-bottom:8px}
+.fpl{font-size:10px;color:var(--tx2);margin-bottom:2px}.fpv{font-family:'Syne',sans-serif;font-size:22px;font-weight:800}
+.stit{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:9px;color:var(--tx2)}
+.ring{width:70px;height:70px;position:relative}.ring svg{transform:rotate(-90deg)}
+.rbg{fill:none;stroke:var(--bg3);stroke-width:8}.rfil{fill:none;stroke:var(--rd);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1s}
+.rl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Syne',sans-serif}
+.rp{font-size:15px;font-weight:800;color:var(--rd)}.rs2{font-size:8px;color:var(--tx2)}
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rc{background:var(--card);border:1px solid var(--border);border-radius:var(--ra);padding:12px}
+.rcl{font-size:9px;color:var(--tx2);margin-bottom:3px}.rcv{font-family:'Syne',sans-serif;font-size:16px;font-weight:800}
+.foto-wrap{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.foto-prev{width:56px;height:56px;border-radius:50%;background:var(--bg3);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;overflow:hidden;flex-shrink:0}
+.foto-prev img{width:100%;height:100%;object-fit:cover}
+.op-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-bottom:8px}
+.op-card.pc{border-left:3px solid var(--ac)}.op-card.vc{border-left:3px solid var(--cy)}
+.op-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.op-tag.p{color:var(--ac2)}.op-tag.v{color:var(--cy)}
+.op-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:3px}.op-meta{font-size:10px;color:var(--tx2)}
+.op-saldo{font-family:'Syne',sans-serif;font-size:16px;font-weight:800}
+.op-pt{height:3px;background:var(--bg2);border-radius:2px;overflow:hidden;margin-top:5px}.op-pf{height:100%;border-radius:2px}
+.pb{background:rgba(245,158,11,.15);color:var(--yw);border:1px solid rgba(245,158,11,.3);border-radius:4px;font-size:8px;padding:1px 4px;font-weight:600}
+.oculto{filter:blur(5px);user-select:none}.oculton{filter:blur(3px)}
+.proy-bar{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:4px}
+.proy-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--ac),var(--ac2))}
+.ev-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}.ev-item:last-child{border-bottom:none}
+.ev-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ev-info{flex:1}.ev-name{font-size:12px;font-weight:600}.ev-date{font-size:9px;color:var(--tx2)}
+.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:7px}
+.chd{text-align:center;font-size:8px;color:var(--tx2);font-weight:600;padding:3px 0}
+.cd{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:5px;font-size:10px;cursor:pointer;position:relative;background:var(--bg3)}
+.cd.today{border:1px solid var(--ac);color:var(--ac2);font-weight:700}.cd.hc{background:rgba(108,99,255,.2)}.cd.hv{background:rgba(239,68,68,.2)}.cd.hb{background:rgba(34,197,94,.15)}.cd.he{background:rgba(245,158,11,.15)}.cd.emp{background:transparent;pointer-events:none}
+.dot{width:3px;height:3px;border-radius:50%;position:absolute;bottom:2px}.dot.c{background:var(--ac)}.dot.v{background:var(--rd)}.dot.b{background:var(--gr)}.dot.e{background:var(--yw)}
+.cn2{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.cnb{background:var(--card2);border:1px solid var(--border);color:var(--tx);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px}
+.cmt{font-family:'Syne',sans-serif;font-size:13px;font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:18px">
+    <div style="width:90px;height:90px;border-radius:22px;background:#0d0d18;border:2px solid #6c63ff55;display:flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 0 32px rgba(108,99,255,.25)">
+      <span style="font-size:42px;color:#6c63ff;font-family:'Syne',sans-serif;font-weight:800;filter:drop-shadow(0 0 8px #6c63ff88)">$</span>
+    </div>
+    <div class="auth-logo" style="font-size:30px;letter-spacing:-1px">CobroPRO</div>
+    <div class="auth-sub">Gestión profesional de créditos y ventas en la nube</div>
+  </div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Iniciar sesión</div>
+      <div class="auth-tab" id="tabReg" onclick="switchTab('reg')">Registrarse</div>
+    </div>
+    <div id="authMsg" class="auth-msg"></div>
+    <div class="ig"><label class="il">Email</label><input class="inp" id="authEmail" type="email" placeholder="tu@email.com" onkeydown="if(event.key==='Enter')handleAuth()"></div>
+    <div class="ig"><label class="il">Contraseña</label><input class="inp" id="authPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleAuth()"></div>
+    <div class="ig" id="confWrap" style="display:none"><label class="il">Confirmar contraseña</label><input class="inp" id="authConf" type="password" placeholder="••••••••"></div>
+    <div class="ig" id="negocioWrap" style="display:none"><label class="il">Nombre de tu negocio *</label><input class="inp" id="authNegocio" placeholder="Ej: Préstamos García"></div>
+    <div class="ig" id="telWrap" style="display:none">
+      <label class="il">Tu WhatsApp <span style="color:var(--ac2);font-weight:600">(opcional)</span></label>
+      <input class="inp" id="authTel" type="tel" placeholder="Ej: 1145678901">
+      <div style="font-size:10px;color:var(--tx2);margin-top:4px;line-height:1.5">📱 No es obligatorio. Solo se usará si necesitás soporte directo o quieras recibir avisos importantes.</div>
+    </div>
+    <div id="termWrap" style="display:none;margin-bottom:12px">
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:11px;color:var(--tx2);line-height:1.5">
+        <input type="checkbox" id="termCheck" style="margin-top:2px;accent-color:var(--ac)">
+        <span>Acepto los <span style="color:var(--ac2);cursor:pointer;text-decoration:underline" onclick="showModal('mTerminos')">Términos y condiciones</span> y la Política de privacidad</span>
+      </label>
+    </div>
+    <div id="hcaptcha-wrap" style="margin-bottom:10px;display:flex;justify-content:center">
+      <div class="h-captcha" data-sitekey="ff7af95c-dc7e-4ef4-a51a-a8064ad842cc" data-theme="dark"></div>
+    </div>
+    <button class="btn bp" id="authBtn" onclick="handleAuth()">Iniciar sesión</button>
+    <div id="forgotWrap" style="text-align:center;margin-top:12px"><span style="font-size:12px;color:var(--ac2);cursor:pointer" onclick="handleForgot()">¿Olvidaste tu contraseña?</span></div>
+  </div>
+  <div style="margin-top:20px;font-size:11px;color:var(--tx2);text-align:center;line-height:1.7">
+    ¿Necesitás ayuda? <a href="mailto:supportno2@gmail.com" style="color:var(--ac2);text-decoration:none">supportno2@gmail.com</a>
+  </div>
+</div>
+
+<!-- LOADING SCREEN -->
+<div id="loadingScreen" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)">
+  <div style="width:70px;height:70px;border-radius:18px;background:#0d0d18;border:2px solid #6c63ff55;display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 0 32px rgba(108,99,255,.25)">
+    <span style="font-size:32px;color:#6c63ff;font-family:'Syne',sans-serif;font-weight:800">$</span>
+  </div>
+  <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;background:linear-gradient(135deg,#6c63ff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px">CobroPRO</div>
+  <div style="font-size:12px;color:var(--tx2);margin-bottom:24px">Restaurando sesión...</div>
+  <div style="width:40px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden">
+    <div style="height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2));border-radius:2px;animation:loadbar 1.2s ease-in-out infinite"></div>
+  </div>
+</div>
+<style>@keyframes loadbar{0%{width:0%}50%{width:80%}100%{width:100%}}</style>
+
+<!-- RESET PASSWORD SCREEN -->
+<div id="resetScreen" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px">
+  <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:18px">
+    <div style="width:90px;height:90px;border-radius:22px;background:#0d0d18;border:2px solid #6c63ff55;display:flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 0 32px rgba(108,99,255,.25)">
+      <span style="font-size:42px;color:#6c63ff;font-family:Syne,sans-serif;font-weight:800">$</span>
+    </div>
+    <div class="auth-logo" style="font-size:30px;letter-spacing:-1px">CobroPRO</div>
+    <div class="auth-sub">Crear nueva contrasena</div>
+  </div>
+  <div class="auth-card">
+    <div id="resetMsg" class="auth-msg"></div>
+    <div class="ig"><label class="il">Nueva contrasena</label><input class="inp" id="newPass" type="password" placeholder="Minimo 6 caracteres"></div>
+    <div class="ig"><label class="il">Confirmar contrasena</label><input class="inp" id="newPassConf" type="password" placeholder="Repeti la contrasena"></div>
+    <button class="btn bp" id="resetBtn" onclick="handleResetPass()">Guardar nueva contrasena</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen">
+<div class="hdr">
+  <span class="brand">💸 CobrosPRO</span>
+  <div class="hdr-r">
+    <div class="ibtn" onclick="toggleOcul()" id="eyeBtn">👁️</div>
+    <div class="ibtn" onclick="goPage('notif')" style="position:relative">🔔<span id="nb" class="bdg" style="display:none">0</span></div>
+    <div class="ibtn" onclick="showModal('mPerfil')">👤</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div id="do" onclick="closeFab()"></div>
+<div class="fabm" id="fabm">
+  <div class="fa"><span class="fal">Nuevo cliente</span><button class="fab2" style="background:#6c63ff" onclick="closeFab();abrirCli()">👤</button></div>
+  <div class="fa"><span class="fal">Agregar crédito/producto</span><button class="fab2" style="background:#a78bfa" onclick="closeFab();abrirOp()">➕</button></div>
+  <div class="fa"><span class="fal">Registrar pago</span><button class="fab2" style="background:#22c55e" onclick="closeFab();abrirPago()">💵</button></div>
+  <div class="fa"><span class="fal">Nuevo gasto</span><button class="fab2" style="background:#f59e0b" onclick="closeFab();abrirGasto()">🧾</button></div>
+  <div class="fa"><span class="fal">Evento</span><button class="fab2" style="background:#06b6d4" onclick="closeFab();abrirEvento()">📅</button></div>
+</div>
+<button class="fab" id="fab" onclick="toggleFab()">+</button>
+
+<!-- INICIO -->
+<div class="pg active" id="page-inicio">
+  <div class="cajaH">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+      <div style="font-size:10px;color:var(--tx2)">📅 Esta semana</div>
+      <div id="semLabel" style="font-size:9px;color:var(--tx2)"></div>
+    </div>
+    <div class="cajaTot" id="cajSemTot">$0</div>
+    <div style="font-size:9px;color:var(--tx2);margin-top:2px" id="cajSemSub">0 pagos</div>
+    <div class="mg">
+      <div class="mc"><div class="ml">💵 Efectivo</div><div class="mv" id="cajSemEf">$0</div></div>
+      <div class="mc"><div class="ml">📲 Transf.</div><div class="mv" id="cajSemTr">$0</div></div>
+    </div>
+  </div>
+  <div id="alertasSection"></div>
+  <div class="sg">
+    <div class="sc bl"><div class="sl">Capital prestado</div><div class="sv bl" id="stCap">$0</div><div class="ss" id="stAct">—</div></div>
+    <div class="sc cy"><div class="sl">Total por cobrar</div><div class="sv cy" id="stPorCob">$0</div></div>
+    <div class="sc gr"><div class="sl">Cobrado (mes)</div><div class="sv gr" id="stCob">$0</div><div class="ss" id="stPag">—</div></div>
+    <div class="sc rd"><div class="sl">Mora pendiente</div><div class="sv rd" id="stPend">$0</div><div class="ss" id="stVen">—</div></div>
+    <div class="sc yw"><div class="sl">Intereses (mes)</div><div class="sv yw" id="stInt">$0</div></div>
+    <div class="sc gr"><div class="sl">Gan. ventas</div><div class="sv gr" id="stGanV">$0</div></div>
+  </div>
+  <div class="card" id="vCard" style="display:none"><div class="ch"><span class="ct">⚡ Vencen hoy / mañana</span><span class="iatag">Urgente</span></div><div id="vList"></div></div>
+  <div class="card" id="cumpleCard" style="display:none"><div class="ch"><span class="ct">🎂 Cumpleaños hoy</span></div><div id="cumpleList"></div></div>
+</div>
+
+<!-- CLIENTES -->
+<div class="pg" id="page-clientes">
+  <div class="sw"><span class="si">🔍</span><input class="inp" id="srch" placeholder="Buscar cliente..." oninput="debSearch()" type="search"></div>
+  <div class="tabs" id="cliTabs">
+    <div class="tab active" onclick="setF('todos',this)">Todos</div>
+    <div class="tab" onclick="setF('activos',this)">Con activos</div>
+    <div class="tab" onclick="setF('atrasado',this)">Atrasados</div>
+    <div class="tab" onclick="setF('completo',this)">Completos</div>
+  </div>
+  <div id="cliList"></div>
+</div>
+
+<!-- CAJA -->
+<div class="pg" id="page-caja">
+  <div class="tabs" id="cajaTabs">
+    <div class="tab" onclick="setCajaP('hoy',this)">Hoy</div>
+    <div class="tab" onclick="setCajaP('semana',this)">Semana</div>
+    <div class="tab" onclick="setCajaP('mes',this)">Mes</div>
+    <div class="tab active" onclick="setCajaP('todo',this)">Todo</div>
+  </div>
+  <div class="sg" id="cajaStats"></div>
+  <div class="card"><div class="ch"><span class="ct">🧾 Pagos</span></div><div id="pagosList"></div></div>
+  <div class="card"><div class="ch"><span class="ct">💳 Créditos y ventas del período</span></div><div id="opsList"></div></div>
+  <div class="card"><div class="ch"><span class="ct">💸 Gastos</span><button class="btn bs bsm" onclick="abrirGasto()">+ Agregar</button></div><div id="gastosList"></div></div>
+</div>
+
+<!-- ADMIN -->
+<div class="pg" id="page-admin">
+  <div class="stit">🛡️ Panel de administración</div>
+  <div class="card" style="margin-bottom:10px;background:linear-gradient(135deg,rgba(108,99,255,.12),rgba(167,139,250,.06));border-color:rgba(108,99,255,.3)">
+    <div class="ch"><span class="ct">👑 Tu cuenta admin</span></div>
+    <div style="font-size:11px;font-weight:600;color:var(--ac2)" id="adminEmail">—</div>
+    <div style="font-size:10px;color:var(--tx2);margin-top:4px">Acceso total. Los usuarios no pueden ver este panel.</div>
+  </div>
+
+  <!-- Stats rápidas -->
+  <div class="sg" id="adminStats" style="margin-bottom:10px"></div>
+
+  <!-- Filtro de búsqueda -->
+  <div class="card" style="margin-bottom:10px">
+    <div class="sw" style="margin-bottom:8px"><span class="si">🔍</span><input class="inp" id="adminSearch" placeholder="Buscar usuario por email o negocio..." oninput="filtrarAdmin()" style="padding-left:34px"></div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap">
+      <button class="btn bs bsm" onclick="filtrarAdminPlan('todos')" id="af-todos" style="border-color:var(--ac)">Todos</button>
+      <button class="btn bs bsm" onclick="filtrarAdminPlan('trial')" id="af-trial">Trial</button>
+      <button class="btn bs bsm" onclick="filtrarAdminPlan('pro')" id="af-pro">PRO</button>
+      <button class="btn bs bsm" onclick="filtrarAdminPlan('premium')" id="af-premium">Premium</button>
+      <button class="btn bs bsm" onclick="filtrarAdminPlan('vencido')" id="af-vencido">Vencidos</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="ct">👥 Usuarios registrados</span><button class="btn bs bsm" onclick="rAdmin()">🔄 Actualizar</button></div>
+    <div style="margin-bottom:10px">
+      <button class="btn bs bsm" style="width:100%;text-align:left;padding:10px;border-color:rgba(108,99,255,.4)" onclick="toggleSQLPanel()">
+        🛠️ Ver SQL necesario para Supabase (RLS + bloqueo)
+      </button>
+      <div id="sqlPanel" style="display:none;margin-top:8px;background:#0d0d18;border:1px solid rgba(108,99,255,.3);border-radius:8px;padding:12px">
+        <div style="font-size:10px;color:var(--tx2);margin-bottom:8px;line-height:1.6">
+          Copiá este SQL y ejecutalo en <strong style="color:var(--ac2)">Supabase → SQL Editor</strong> para que el bloqueo de usuarios funcione:
+        </div>
+        <textarea id="sqlText" readonly style="width:100%;background:#06060d;border:1px solid var(--border);border-radius:6px;padding:10px;font-size:9px;color:#a78bfa;font-family:monospace;resize:none;min-height:220px;line-height:1.5"></textarea>
+        <button class="btn bp bsm" style="margin-top:8px;width:100%" onclick="copiarSQL()">📋 Copiar SQL</button>
+      </div>
+    </div>
+    <div id="adminUserList"><div style="font-size:10px;color:var(--tx2)">Cargando...</div></div>
+  </div>
+</div>
+
+<!-- CALENDARIO -->
+<div class="pg" id="page-cal">
+  <div class="cn2"><button class="cnb" onclick="calPrev()">‹</button><span class="cmt" id="calTitle"></span><button class="cnb" onclick="calNext()">›</button></div>
+  <div class="card"><div class="cg" id="calGrid"></div></div>
+  <div class="card" id="calDet" style="display:none"><div class="ch"><span class="ct" id="calDetT">Día</span><button class="btn bs bsm" onclick="abrirEvento(calDia)">+ Evento</button></div><div id="calDetList"></div></div>
+  <div class="card"><div class="ch"><span class="ct">📋 Próximos 14 días</span></div><div id="proxCob"></div></div>
+  <div class="card"><div class="ch"><span class="ct">📌 Eventos</span><button class="btn bs bsm" onclick="abrirEvento()">+ Agregar</button></div><div id="eventosList"></div></div>
+</div>
+
+<!-- FINANZAS -->
+<div class="pg" id="page-fin">
+  <div class="tabs" id="finTabs">
+    <div class="tab active" onclick="setFinP('semana',this)">Semana</div>
+    <div class="tab" onclick="setFinP('mes',this)">Mes</div>
+    <div class="tab" onclick="setFinP('año',this)">Año</div>
+    <div class="tab" onclick="setFinP('proyeccion',this)">Proyección 12M</div>
+  </div>
+  <div id="finContent"></div>
+  <div class="card"><div class="ch"><span class="ct">📊 Historial mensual</span></div><div id="finHist"></div></div>
+</div>
+
+<!-- NOTIF -->
+<div class="pg" id="page-notif">
+  <div class="stit">🔔 Alertas</div>
+  <div id="notifContent"></div>
+  <div class="card" style="margin-top:4px"><div class="ch"><span class="ct">📲 Vencen mañana</span></div><div id="recList"></div></div>
+  <div class="card" style="margin-top:4px"><div class="ch"><span class="ct">🔴 Morosos — mensaje directo</span></div><div id="morososList"></div></div>
+</div>
+
+<!-- REPORTES -->
+<div class="pg" id="page-rep">
+  <div class="stit">📈 Resumen financiero</div>
+  <div class="rg" id="repGrid"></div>
+  <div class="card" style="margin-top:10px"><div class="ch"><span class="ct">🎯 Morosidad</span><span class="iatag">🧠 IA</span></div><div style="display:flex;align-items:center;gap:14px"><div class="ring"><svg width="70" height="70" viewBox="0 0 70 70"><circle class="rbg" cx="35" cy="35" r="27"/><circle class="rfil" id="mRing" cx="35" cy="35" r="27" stroke-dasharray="170" stroke-dashoffset="170"/></svg><div class="rl"><span class="rp" id="mPct">0%</span><span class="rs2">mora</span></div></div><div style="flex:1;font-size:10px;color:var(--tx2);line-height:1.6" id="mAnal">—</div></div></div>
+  <div class="card"><div class="ch"><span class="ct">🏆 Más rentables</span></div><div id="topClis"></div></div>
+  <div class="card"><div class="ch"><span class="ct">🧠 Análisis IA</span><span class="iatag">✨</span></div><div id="iaAnal" style="font-size:10px;color:var(--tx2);line-height:1.7">—</div></div>
+</div>
+
+<nav class="nav">
+  <div class="ni active" id="nav-inicio" onclick="goPage('inicio')"><span class="ic">🏠</span><span>Inicio</span></div>
+  <div class="ni" id="nav-clientes" onclick="goPage('clientes')"><span class="ic">👥</span><span>Clientes</span></div>
+  <div class="ni" id="nav-caja" onclick="goPage('caja')"><span class="ic">💰</span><span>Caja</span></div>
+  <div class="ni" id="nav-cal" onclick="goPage('cal')"><span class="ic">📅</span><span>Agenda</span></div>
+  <div class="ni" id="nav-fin" onclick="goPage('fin')"><span class="ic">💹</span><span>Finanzas</span></div>
+  <div class="ni" id="nav-rep" onclick="goPage('rep')"><span class="ic">📊</span><span>Reportes</span></div>
+  <div class="ni" id="nav-admin" onclick="goPage('admin')" style="display:none"><span class="ic">🛡️</span><span>Admin</span></div>
+</nav>
+</div>
+
+<!-- MODALS -->
+<div class="mo" id="mSupaCfg">
+  <div class="modal">
+    <div class="mh"></div><div class="mt">⚙️ Configurar Supabase</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:14px;line-height:1.6">Creá un proyecto en <strong style="color:var(--tx)">supabase.com</strong>, luego copiá tu URL y clave anon/public desde Settings → API.</div>
+    <div class="ig"><label class="il">Project URL</label><input class="inp" id="supaUrl" placeholder="https://xxxx.supabase.co"></div>
+    <div class="ig"><label class="il">Anon / Public Key</label><textarea class="inp" id="supaKey" rows="3" placeholder="eyJhbGci..."></textarea></div>
+    <div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:12px;font-size:10px;color:var(--tx2);line-height:1.7">
+      📋 <strong style="color:var(--tx)">SQL a ejecutar en Supabase (SQL Editor):</strong><br>
+      Copiá el contenido del archivo <strong>SETUP.md</strong> que viene junto con este archivo.
+    </div>
+    <button class="btn bp" onclick="guardarSupaCfg()">💾 Guardar y conectar</button>
+    <button class="btn bs" style="margin-top:7px" onclick="closeModal('mSupaCfg')">Cancelar</button>
+  </div>
+</div>
+
+<div class="mo" id="mPerfil">
+  <div class="modal">
+    <div class="mh"></div><div class="mt">👤 Mi cuenta</div>
+    <div style="background:var(--bg3);border-radius:var(--rs);padding:12px;margin-bottom:14px">
+      <div style="font-size:10px;color:var(--tx2);margin-bottom:3px">Sesión activa</div>
+      <div style="font-size:13px;font-weight:600" id="perfilEmail">—</div>
+    </div>
+    <div class="ig"><label class="il">Nombre del negocio</label><input class="inp" id="cfg_n" placeholder="Mi negocio"></div>
+    <div class="ig"><label class="il">Moneda</label><select class="inp sel" id="cfg_m"><option value="$">$ (Peso)</option><option value="U$S">U$S</option><option value="R$">R$</option></select></div>
+    <div class="ig"><label class="il">Días de alerta anticipada</label><input class="inp" id="cfg_d" type="number" min="1" max="30"></div>
+    <div class="ig"><label class="il">Mensaje recordatorio WhatsApp</label><textarea class="inp" id="cfg_w" rows="3"></textarea><div style="font-size:9px;color:var(--tx2);margin-top:2px">Variables: {nombre} {cuota} {fecha}</div></div>
+    <div class="ig"><label class="il">Mensaje morosos</label><textarea class="inp" id="cfg_mm" rows="3"></textarea><div style="font-size:9px;color:var(--tx2);margin-top:2px">Variables: {nombre} {dias} {deuda}</div></div>
+    <button class="btn bp" onclick="guardarCfg()" style="margin-bottom:8px">💾 Guardar configuración</button>
+    <div style="margin:14px 0 8px;font-family:Syne,sans-serif;font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">📤 Exportar mis datos <span style="font-size:9px;font-weight:600;color:var(--ac2);background:rgba(108,99,255,.15);padding:2px 6px;border-radius:10px;text-transform:none;letter-spacing:0">⭐ PRO / 👑 Premium</span></div>
+    <button class="btn bgr" onclick="exportarExcel()" style="margin-bottom:8px">📊 Exportar Excel</button>
+    <button class="btn bs" onclick="exportarPDF()" style="margin-bottom:8px;border:1px solid var(--ac2);color:var(--ac2)">📄 Exportar PDF</button>
+    <div style="margin:14px 0 8px;font-family:Syne,sans-serif;font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">📥 Importar clientes <span style="font-size:9px;font-weight:600;color:var(--ac2);background:rgba(108,99,255,.15);padding:2px 6px;border-radius:10px;text-transform:none;letter-spacing:0">⭐ PRO / 👑 Premium</span></div>
+    <div style="font-size:10px;color:var(--tx2);margin-bottom:8px;line-height:1.5">Usá el Excel exportado desde CobroPRO. Solo se importan clientes nuevos (por nombre).</div>
+    <input type="file" id="xlsxImport" accept=".xlsx" style="display:none" onchange="importarClientes(this)">
+    <button class="btn bs" style="margin-bottom:8px;border:1px dashed var(--border)" onclick="if(requierePro('Importar clientes'))document.getElementById('xlsxImport').click()">📂 Seleccionar archivo XLSX</button>
+    <button class="btn brd" onclick="doLogout()">🚪 Cerrar sesión</button>
+    <button class="btn bs" style="margin-top:7px" onclick="closeModal('mPerfil')">Cerrar</button>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);text-align:center">
+      <div style="font-size:10px;color:var(--tx2);margin-bottom:4px">Soporte y sugerencias</div>
+      <a href="mailto:supportno2@gmail.com" style="font-size:12px;color:var(--ac2);text-decoration:none">✉️ supportno2@gmail.com</a>
+    </div>
+  </div>
+</div>
+
+<div class="mo" id="mcli">
+  <div class="modal">
+    <div class="mh"></div><div class="mt" id="cliMT">👤 Nuevo cliente</div>
+    <input type="hidden" id="c_id">
+    <div class="ig"><label class="il">Nombre completo *</label><input class="inp" id="c_nom" placeholder="Nombre completo"></div>
+    <div class="ig"><label class="il">Teléfono</label><input class="inp" id="c_tel" type="tel" placeholder="Ej: 1145678901"></div>
+    <div class="ig"><label class="il">Fecha de nacimiento</label><input class="inp" id="c_cumple" type="date"></div>
+    <div class="ig"><label class="il">Notas</label><textarea class="inp" id="c_not" rows="3" placeholder="Observaciones, recordatorios..."></textarea></div>
+    <button class="btn bp" id="cliSaveBtn" onclick="guardarCli()">💾 Guardar cliente</button>
+    <button class="btn bs" style="margin-top:7px" onclick="closeModal('mcli')">Cancelar</button>
+  </div>
+</div>
+
+<div class="mo" id="mop">
+  <div class="modal">
+    <div class="mh"></div><div class="mt" id="opMT">➕ Nueva operación</div>
+    <input type="hidden" id="op_id"><input type="hidden" id="op_cidFijo">
+    <div class="ig" id="op_cliGrp"><label class="il">Cliente *</label><select class="inp sel" id="op_cli"></select></div>
+    <div class="ig"><label class="il">Tipo</label><select class="inp sel" id="op_tipo" onchange="toggleOpTipo()"><option value="prestamo">💳 Crédito / Préstamo</option><option value="venta">🛒 Venta de producto</option></select></div>
+    <div class="ig"><label class="il">Moneda</label><select class="inp sel" id="op_moneda"><option value="$">$ (Peso)</option><option value="U$S">U$S (Dólar)</option><option value="R$">R$ (Real)</option><option value="€">€ (Euro)</option></select></div>
+    <div id="opCamposP">
+      <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc" placeholder="Ej: Crédito personal..."></div>
+      <div class="ig"><label class="il">Monto *</label><input class="inp" id="op_mon" type="number" placeholder="0.00"></div>
+      <div class="ig"><label class="il">Tipo interés</label><select class="inp sel" id="op_tip"><option value="simple">Simple</option><option value="compuesto">Compuesto</option><option value="cuota">Por cuota fija</option></select></div>
+      <div class="ig">
+        <label class="il">Interés (%)</label>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+          <button type="button" id="intModoMens" onclick="setIntModo('mensual')" style="flex:1;padding:6px 4px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--ac);background:var(--ac);color:#fff;transition:.2s">% por cuota</button>
+          <button type="button" id="intModoTotal" onclick="setIntModo('total')" style="flex:1;padding:6px 4px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card2);color:var(--tx2);transition:.2s">% total</button>
+        </div>
+        <input class="inp" id="op_int" type="number" placeholder="Ej: 10" oninput="syncInteresOp()">
+        <div id="op_int_hint" style="font-size:10px;color:var(--ac2);margin-top:3px;min-height:14px"></div>
+      </div>
+      <div class="ig">
+        <label class="il" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Mora diaria (%)</span>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;color:var(--tx2);font-weight:400">
+            <input type="checkbox" id="op_mora_check" style="accent-color:var(--ac)" onchange="toggleMoraField()" checked>
+            Aplicar mora
+          </label>
+        </label>
+        <input class="inp" id="op_mora" type="number" placeholder="0.5" value="0.5" step="0.1" min="0">
+      </div>
+    </div>
+    <div id="opCamposV" style="display:none">
+      <div class="ig"><label class="il">Producto *</label><input class="inp" id="op_prod" placeholder="Ej: iPhone 14..."></div>
+      <div class="ig"><label class="il">Costo (lo que pagué)</label><input class="inp" id="op_costo" type="number" placeholder="0.00"></div>
+      <div class="ig"><label class="il">Precio de venta *</label><input class="inp" id="op_precio" type="number" placeholder="0.00"></div>
+    </div>
+    <div class="ig"><label class="il">Cuotas</label><input class="inp" id="op_cuo" type="number" placeholder="Ej: 12" oninput="syncInteresOp()"></div>
+    <div class="ig"><label class="il">Frecuencia</label><select class="inp sel" id="op_frq"><option value="diario">Diario</option><option value="semanal">Semanal</option><option value="quincenal">Quincenal</option><option value="mensual" selected>Mensual</option></select></div>
+    <div class="ig"><label class="il">Fecha 1° cuota *</label><input class="inp" id="op_fv" type="date"></div>
+    <div class="ig"><label class="il">Notas</label><input class="inp" id="op_not" placeholder="Garantía..."></div>
+    <button class="btn bp" id="opSaveBtn" onclick="guardarOp()">💾 Guardar operación</button>
+    <button class="btn bs" style="margin-top:7px" onclick="closeModal('mop')">Cancelar</button>
+  </div>
+</div>
+
+<div class="mo" id="mver"><div class="modal"><div class="mh"></div><div id="verContent"></div></div></div>
+
+<div class="mo" id="mpago">
+  <div class="modal">
+    <div class="mh"></div><div class="mt" id="pagoMT">💵 Registrar pago</div>
+    <input type="hidden" id="p_fixOp"><input type="hidden" id="p_fixPar">
+    <div class="ig" id="p_opGrp"><label class="il">Cliente y operación *</label><select class="inp sel" id="p_op" onchange="updCuotaEsp()"></select></div>
+    <div class="ig"><label class="il">Cuota esperada</label><div id="p_esp" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--ac2);padding:5px 0">—</div></div>
+    <div class="ig"><label class="il">Monto abonado *</label><input class="inp" id="p_mon" type="number" placeholder="0.00" oninput="chkParcial()"></div>
+    <div id="p_warn" style="display:none;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:7px;padding:8px 10px;font-size:11px;color:var(--yw);margin-bottom:9px">⚠️ Pago parcial — falta <strong id="p_flt"></strong></div>
+    <div class="ig"><label class="il">Método</label><select class="inp sel" id="p_met"><option value="efectivo">💵 Efectivo</option><option value="transferencia">📲 Transferencia</option></select></div>
+    <div class="ig"><label class="il">Fecha</label><input class="inp" id="p_fec" type="date"></div>
+    <div class="ig"><label class="il">Notas</label><input class="inp" id="p_not" placeholder="Cuota N°..."></div>
+    <div id="p_waWrap" style="display:none;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:10px;margin-bottom:10px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;margin-bottom:6px">
+        <input type="checkbox" id="p_sendWa" style="accent-color:var(--gr)">
+        <span>💬 Enviar resumen por WhatsApp <span style="font-size:9px;color:var(--tx2)">(abre WA con el texto)</span></span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px">
+        <input type="checkbox" id="p_sendPdf" style="accent-color:var(--ac)">
+        <span>📄 Descargar comprobante PDF <span style="font-size:9px;color:var(--tx2)">(se guarda en tu dispositivo)</span></span>
+      </label>
+    </div>
+    <button class="btn bgr" id="pagoSaveBtn" onclick="guardarPago()">✅ Registrar pago</button>
+    <button class="btn bs" style="margin-top:7px" onclick="closeModal('mpago')">Cancelar</button>
+  </div>
+</div>
+
+<div class="mo" id="mgasto">
+  <div class="modal">
+    <div class="mh"></div><div class="mt" id="gastoMT">🧾 Gasto</div>
+    <input type="hidden" id="g_id">
+    <div class="ig"><label class="il">Descripción *</label><input class="inp" id="g_des" placeholder="Ej: Pérdida incobrable..."></div>
+    <div class="ig"><label class="il">Monto *</label><input class="inp" id="g_mon" type="number" placeholder="0.00"></div>
+    <div class="ig"><label class="il">Categoría</label><select class="inp sel" id="g_cat"><option value="pérdida">Pérdida incobrable</option><option value="operativo">Costo operativo</option><option value="otro">Otro</option></select></div>
+    <div class="ig"><label class="il">Fecha</label><input class="inp" id="g_fec" type="date"></div>
+    <button class="btn brd" id="gastoSaveBtn" onclick="guardarGasto()">💾 Guardar</button>
+    <button class="btn bs" style="margin-top:7px" onclick="closeModal('mgasto')">Cancelar</button>
+  </div>
+</div>
+
+<div class="mo" id="mevento">
+  <div class="modal">
+    <div class="mh"></div><div class="mt">📅 Evento</div>
+    <input type="hidden" id="ev_id">
+    <div class="ig"><label class="il">Título *</label><input class="inp" id="ev_tit" placeholder="Título..."></div>
+    <div class="ig"><label class="il">Fecha *</label><input class="inp" id="ev_fec" type="date"></div>
+    <div class="ig"><label class="il">Descripción</label><input class="inp" id="ev_desc" placeholder="Detalle..."></div>
+    <div class="ig"><label class="il">Color</label><div style="display:flex;gap:8px;margin-top:4px">
+      <div class="evc" data-c="#6c63ff" onclick="selColor(this)" style="width:26px;height:26px;border-radius:50%;background:#6c63ff;cursor:pointer;border:2px solid #6c63ff"></div>
+      <div class="evc" data-c="#22c55e" onclick="selColor(this)" style="width:26px;height:26px;border-radius:50%;background:#22c55e;cursor:pointer;border:2px solid transparent"></div>
+      <div class="evc" data-c="#f59e0b" onclick="selColor(this)" style="width:26px;height:26px;border-radius:50%;background:#f59e0b;cursor:pointer;border:2px solid transparent"></div>
+      <div class="evc" data-c="#ef4444" onclick="selColor(this)" style="width:26px;height:26px;border-radius:50%;background:#ef4444;cursor:pointer;border:2px solid transparent"></div>
+      <div class="evc" data-c="#06b6d4" onclick="selColor(this)" style="width:26px;height:26px;border-radius:50%;background:#06b6d4;cursor:pointer;border:2px solid transparent"></div>
+    </div><input type="hidden" id="ev_color" value="#6c63ff"></div>
+    <button class="btn bp" id="evSaveBtn" onclick="guardarEvento()">💾 Guardar</button>
+    <button class="btn bs" style="margin-top:7px" onclick="closeModal('mevento')">Cancelar</button>
+  </div>
+</div>
+
+<div class="mo" id="mTerminos">
+  <div class="modal">
+    <div class="mh"></div><div class="mt">📋 Términos y Política de Privacidad</div>
+    <div style="font-size:11px;color:var(--tx2);line-height:1.7;max-height:55vh;overflow-y:auto;margin-bottom:14px">
+      <strong style="color:var(--ac2);font-size:12px">📄 TÉRMINOS Y CONDICIONES DE USO</strong><br><br>
+      <strong style="color:var(--tx)">1. Aceptación</strong><br>Al registrarse y utilizar la plataforma, el usuario acepta estos Términos en su totalidad.<br><br>
+      <strong style="color:var(--tx)">2. Descripción del servicio</strong><br>La plataforma ofrece una herramienta digital para la gestión y organización de clientes, permitiendo el registro de nombre, teléfono y fecha de nacimiento con fines de administración y seguimiento.<br><br>
+      <strong style="color:var(--tx)">3. Responsabilidad del usuario</strong><br>El usuario garantiza que tiene derecho a registrar los datos que ingresa, cuenta con el consentimiento de los titulares o posee una relación legítima, y que la información es veraz. El usuario es el único responsable por cualquier uso indebido.<br><br>
+      <strong style="color:var(--tx)">4. Protección de datos</strong><br>La plataforma se compromete a utilizar los datos exclusivamente para el funcionamiento del servicio, no vender ni compartir información con terceros sin consentimiento, e implementar medidas de seguridad razonables.<br><br>
+      <strong style="color:var(--tx)">5. Limitación de responsabilidad</strong><br>La plataforma no será responsable por el uso indebido de datos por parte de los usuarios, la veracidad de la información cargada, ni daños derivados del uso o imposibilidad de uso del servicio.<br><br>
+      <strong style="color:var(--tx)">6. Acceso y seguridad</strong><br>El usuario es responsable de mantener la confidencialidad de su cuenta y contraseña.<br><br>
+      <strong style="color:var(--tx)">7. Eliminación de datos</strong><br>El usuario podrá eliminar la información cargada en cualquier momento. También podrá solicitar la eliminación total de su cuenta y datos asociados.<br><br>
+      <strong style="color:var(--tx)">8. Uso permitido</strong><br>El usuario se compromete a no utilizar la plataforma para actividades ilegales, carga de datos sin autorización, o cualquier uso que vulnere derechos de terceros.<br><br>
+      <strong style="color:var(--tx)">9. Modificaciones</strong><br>La plataforma podrá modificar estos términos en cualquier momento. Los cambios entrarán en vigencia desde su publicación.<br><br>
+      <strong style="color:var(--tx)">10. Legislación aplicable</strong><br>Estos términos se rigen por las leyes de la República Argentina.<br><br>
+
+      <strong style="color:var(--ac2);font-size:12px">🔒 POLÍTICA DE PRIVACIDAD</strong><br><br>
+      <strong style="color:var(--tx)">1. Datos que recopilamos</strong><br>Nombre, número de teléfono y fecha de nacimiento. Ingresados por los usuarios para gestionar sus propios clientes.<br><br>
+      <strong style="color:var(--tx)">2. Finalidad</strong><br>Los datos se usan exclusivamente para gestión interna de clientes y mejora del servicio. No se usan con fines comerciales externos ni se venden a terceros.<br><br>
+      <strong style="color:var(--tx)">3. Almacenamiento y seguridad</strong><br>Los datos se almacenan en servidores seguros con medidas técnicas razonables. El usuario entiende que ningún sistema es completamente seguro.<br><br>
+      <strong style="color:var(--tx)">4. Acceso a la información</strong><br>Cada usuario solo accede a los datos de su propia cuenta. No se comparte información con terceros salvo obligación legal.<br><br>
+      <strong style="color:var(--tx)">5. Derechos del titular</strong><br>En cumplimiento de la legislación argentina, los titulares pueden acceder, rectificar o solicitar la eliminación de sus datos a través de los canales de contacto.<br><br>
+      <strong style="color:var(--tx)">6. Legislación aplicable</strong><br>Esta política se rige por las leyes de la República Argentina.<br><br>
+      <div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:8px;padding:9px;margin-top:4px;font-size:11px;color:var(--gr)">🔐 Tus datos están protegidos y nunca se comparten con terceros.</div><br>
+      <em style="font-size:10px">Versión 1.0 — 2025</em>
+    </div>
+    <button class="btn bp" onclick="aceptarTerminos()">✅ Acepto los términos</button>
+    <button class="btn bs" style="margin-top:7px" onclick="closeModal('mTerminos')">Cerrar</button>
+  </div>
+</div>
+
+<div class="mo" id="mOpDetalle">
+  <div class="modal">
+    <div class="mh"></div><div id="opDetalleContent"></div>
+  </div>
+</div>
+
+<div class="mo" id="mRenovar">
+  <div class="modal">
+    <div class="mh"></div>
+    <div class="mt">📅 Dar días de acceso</div>
+    <input type="hidden" id="ren_uid">
+
+    <!-- Nombre del usuario -->
+    <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:12px;padding:8px 10px;background:var(--bg3);border-radius:8px" id="ren_info">—</div>
+
+    <!-- Contador actual de días -->
+    <div id="ren_contador" style="display:none;margin-bottom:14px">
+      <div style="font-size:10px;color:var(--tx2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Estado actual del acceso</div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+        <!-- Número grande de días -->
+        <div id="ren_cabeza" style="padding:14px;text-align:center;background:var(--bg3)">
+          <div id="ren_dias_rest" style="font-family:'Syne',sans-serif;font-size:42px;font-weight:800;line-height:1">—</div>
+          <div id="ren_dias_label" style="font-size:11px;color:var(--tx2);margin-top:2px">días restantes</div>
+          <div id="ren_vence_txt" style="font-size:10px;color:var(--tx2);margin-top:4px">—</div>
+        </div>
+        <!-- Barra de progreso -->
+        <div style="height:8px;background:var(--bg2)">
+          <div id="ren_barra" style="height:100%;transition:width .6s ease;width:0%"></div>
+        </div>
+        <!-- Leyenda semáforo -->
+        <div style="display:flex;justify-content:space-between;padding:6px 10px;background:var(--bg2)">
+          <span style="font-size:9px;color:var(--rd)">● Crítico</span>
+          <span style="font-size:9px;color:var(--yw)">● Por vencer</span>
+          <span style="font-size:9px;color:var(--gr)">● Activo</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Acceso vencido sin fecha -->
+    <div id="ren_sin_acceso" style="display:none;margin-bottom:14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:24px;margin-bottom:4px">⛔</div>
+      <div style="font-size:12px;font-weight:700;color:var(--rd)">Sin acceso configurado</div>
+      <div style="font-size:10px;color:var(--tx2);margin-top:2px">El usuario no tiene fecha de vencimiento asignada</div>
+    </div>
+
+    <!-- Selector de días a agregar -->
+    <div class="ig">
+      <label class="il" style="font-weight:700;color:var(--tx)">Días a agregar</label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px">
+        <button type="button" class="btn bs bsm" onclick="setRenDias(7)" style="font-weight:700">7 días</button>
+        <button type="button" class="btn bs bsm" onclick="setRenDias(15)" style="font-weight:700">15 días</button>
+        <button type="button" class="btn bs bsm" onclick="setRenDias(30)" style="font-weight:700">30 días</button>
+        <button type="button" class="btn bs bsm" onclick="setRenDias(60)" style="font-weight:700">60 días</button>
+        <button type="button" class="btn bs bsm" onclick="setRenDias(90)" style="font-weight:700">90 días</button>
+        <button type="button" class="btn bs bsm" onclick="setRenDias(365)" style="font-weight:700">1 año</button>
+      </div>
+      <input class="inp" id="ren_dias" type="number" value="30" min="1" max="730" oninput="actualizarPreviewRen()" style="text-align:center;font-family:'Syne',sans-serif;font-size:20px;font-weight:800">
+    </div>
+
+    <!-- Preview resultado -->
+    <div id="ren_preview" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:10px;padding:12px;margin-bottom:14px">
+      <div style="font-size:10px;color:var(--tx2);margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px">Nuevo vencimiento</div>
+      <div id="ren_preview_fecha" style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--gr)">—</div>
+      <div id="ren_preview_sub" style="font-size:10px;color:var(--tx2);margin-top:2px">—</div>
+    </div>
+
+    <button class="btn bgr" onclick="confirmarRenovar()" style="font-size:14px">✅ Confirmar renovación</button>
+    <button class="btn bs" style="margin-top:7px" onclick="closeModal('mRenovar')">Cancelar</button>
+  </div>
+</div>
+<div class="mo" id="mCamFecha">
+  <div class="modal">
+    <div class="mh"></div><div class="mt">📅 Cambiar fecha de pago</div>
+    <input type="hidden" id="cf_oid">
+    <div class="ig"><label class="il">Nueva fecha *</label><input class="inp" id="cf_fv" type="date"></div>
+    <div class="ig"><label class="il">Nueva frecuencia</label><select class="inp sel" id="cf_frq"><option value="">— Sin cambio —</option><option value="diario">Diario</option><option value="semanal">Semanal</option><option value="quincenal">Quincenal</option><option value="mensual">Mensual</option></select></div>
+    <button class="btn bp" onclick="guardarCamFecha()">✅ Actualizar</button>
+    <button class="btn bs" style="margin-top:7px" onclick="closeModal('mCamFecha')">Cancelar</button>
+  </div>
+</div>
+<div class="mo" id="mBienvenida">
+  <div class="modal" style="text-align:center;padding:28px 20px 32px">
+    <div style="font-size:48px;margin-bottom:10px">🎉</div>
+    <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px">¡Bienvenido a CobroPRO!</div>
+    <div id="bienNegocio" style="font-size:13px;color:var(--ac);font-weight:600;margin-bottom:16px"></div>
+
+    <!-- Privacidad -->
+    <div style="background:var(--bg3);border:1px solid rgba(34,197,94,.3);border-radius:12px;padding:14px;text-align:left;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">🔒 Tu privacidad garantizada</div>
+      <div style="font-size:12px;line-height:1.7;color:var(--tx)">Todos los datos que cargues — clientes, préstamos y pagos — son <strong>estrictamente confidenciales</strong>.<br><br>✅ <strong>Solo vos podés verlos.</strong> Ni el administrador de la plataforma tiene acceso a tu información.<br>✅ Tus datos están protegidos con seguridad a nivel fila (RLS) en la base de datos.<br>✅ Nunca se comparten con terceros.</div>
+    </div>
+
+    <!-- Plan Trial -->
+    <div style="background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2);border-radius:12px;padding:14px;text-align:left;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--ac);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">🧪 Tu plan Trial</div>
+      <div style="font-size:12px;line-height:1.7">Tenés <strong>3 días gratis</strong> y hasta <strong>5 clientes</strong> para probar la app.<br><br>📦 <strong>Plan PRO:</strong> hasta 20 clientes + exportar/importar datos<br>🚀 <strong>Plan Premium:</strong> clientes ilimitados + todas las funciones</div>
+    </div>
+
+    <!-- Soporte -->
+    <div style="background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.2);border-radius:12px;padding:14px;text-align:left;margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">💬 ¿Consultas o sugerencias?</div>
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:8px;line-height:1.5">Contactanos por WhatsApp para cualquier duda, mejora o para conocer los planes disponibles.</div>
+      <a id="bienWsp" href="#" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#25d366;color:#fff;padding:9px 14px;border-radius:8px;text-decoration:none;font-weight:700;font-size:12px">💬 Contactar soporte por WhatsApp</a>
+    </div>
+
+    <button class="btn bp" style="width:100%" onclick="closeModal('mBienvenida')">✅ Entendido, ¡empezar!</button>
+  </div>
+</div>
+<div class="mo" id="mEditPago">
+  <div class="modal">
+    <div class="mh"></div><div class="mt">✏️ Editar pago</div>
+    <input type="hidden" id="ep_id">
+    <div class="ig"><label class="il">Monto *</label><input class="inp" id="ep_mon" type="number" placeholder="0.00"></div>
+    <div class="ig"><label class="il">Método</label><select class="inp sel" id="ep_met"><option value="efectivo">💵 Efectivo</option><option value="transferencia">📲 Transferencia</option></select></div>
+    <div class="ig"><label class="il">Fecha</label><input class="inp" id="ep_fec" type="date"></div>
+    <div class="ig"><label class="il">Notas</label><input class="inp" id="ep_not" placeholder="Notas..."></div>
+    <button class="btn bgr" id="epSaveBtn" onclick="guardarEditPago()">💾 Guardar cambios</button>
+    <button class="btn brd bsm" style="margin-top:7px;width:100%" onclick="confirmarElimPago()">🗑️ Eliminar pago</button>
+    <button class="btn bs" style="margin-top:7px" onclick="closeModal('mEditPago')">Cancelar</button>
+  </div>
+</div>
+<div class="mo" id="mCambiarPlan">
+  <div class="modal">
+    <div class="mh"></div><div class="mt">🔄 Cambiar plan</div>
+    <input type="hidden" id="cp_uid">
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:12px">Usuario: <strong style="color:var(--tx)" id="cp_nombre">—</strong></div>
+    <div class="ig">
+      <label class="il">Plan</label>
+      <select class="inp sel" id="cp_plan">
+        <option value="trial">🧪 Trial (5 clientes)</option>
+        <option value="pro">⭐ PRO (20 clientes + exportar/importar)</option>
+        <option value="premium">👑 Premium (ilimitado + todas las funciones)</option>
+      </select>
+    </div>
+    <div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:12px;font-size:10px;color:var(--tx2);line-height:1.7">
+      📦 <strong style="color:var(--tx)">Trial:</strong> 3 días prueba, máx 5 clientes<br>
+      ⭐ <strong style="color:var(--ac2)">PRO:</strong> hasta 20 clientes, exportar e importar datos<br>
+      👑 <strong style="color:#a78bfa)">Premium:</strong> clientes ilimitados, todas las funciones
+    </div>
+    <button class="btn bp" onclick="confirmarCambiarPlan()">✅ Cambiar plan</button>
+    <button class="btn bs" style="margin-top:7px" onclick="closeModal('mCambiarPlan')">Cancelar</button>
+  </div>
+</div>
+<script>
+const ADMIN_EMAIL='agunitro777@gmail.com';
+let USER_PLAN='trial'; // 'trial' | 'pro' | 'premium'
+const LIMITES={trial:5, pro:20, premium:Infinity};
+// FEATURES por plan: exportar/importar requieren PRO o superior
+function esAdmin(){return currentUser?.email===ADMIN_EMAIL;}
+function esPro(){return USER_PLAN==='pro'||USER_PLAN==='premium'||esAdmin();}
+function esPremium(){return USER_PLAN==='premium'||esAdmin();}
+function limiteClientes(){return esAdmin()?Infinity:(LIMITES[USER_PLAN]||5);}
+function requierePlan(feat, planMin='pro'){
+  if(planMin==='premium'&&!esPremium()||planMin==='pro'&&!esPro()){
+    const wspMsg=encodeURIComponent('Hola! Quiero acceder a "'+feat+'" en CobroPRO. ¿Cómo puedo pasar al plan '+(planMin==='premium'?'Premium':'PRO')+'?');
+    toast(`🔒 <a href="https://wa.me/${WSP_ADMIN}?text=${wspMsg}" target="_blank" style="color:#fbbf24;font-weight:700">${feat} requiere plan ${planMin==='premium'?'Premium':'PRO'}. Contactanos →</a>`,'warn');
+    return false;
+  }
+  return true;
+}
+function requierePro(feat){return requierePlan(feat,'pro');}
+let SB = null, currentUser = null;
+let CFG = {nombre:'',moneda:'$',alertaDias:3,msgWa:'Hola {nombre}, recordatorio: cuota de {cuota} vence {fecha}. ¡Gracias!',msgMora:'Hola {nombre}, tenés {dias} días de atraso. Deuda: {deuda}. Por favor regularizá.'};
+let Cs=[], Ops=[], Ps=[], Gs=[], EVs=[];
+let flt='todos', cajP='todo', finP='semana';
+let calM=new Date().getMonth(), calA=new Date().getFullYear(), calDia='';
+let ocul=false, fotoTemp='', docsTemp=[];
+const M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MC=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+// ══ SUPABASE ══
+function initSB(){localStorage.setItem('sb_url','https://pbswnssgpnkqpxdetgfi.supabase.co');localStorage.setItem('sb_key','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBic3duc3NncG5rcXB4ZGV0Z2ZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MjMxNjIsImV4cCI6MjA5MjM5OTE2Mn0.cFT-UZo85w2si61cQ1JuKDcQcy5KQB3OncA0LqepuxE');localStorage.setItem("sb_url","https://pbswnssgpnkqpxdetgfi.supabase.co");localStorage.setItem("sb_key","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBic3duc3NncG5rcXB4ZGV0Z2ZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MjMxNjIsImV4cCI6MjA5MjM5OTE2Mn0.cFT-UZo85w2si61cQ1JuKDcQcy5KQB3OncA0LqepuxE");
+  const url=localStorage.getItem('sb_url'), key=localStorage.getItem('sb_key');
+  if(url&&key){try{SB=window.supabase.createClient(url,key);return true}catch(e){return false}}
+  return false;
+}
+function guardarSupaCfg(){
+  const url=$('supaUrl').value.trim(), key=$('supaKey').value.trim();
+  if(!url||!key){toast('Completá URL y Key','error');return}
+  localStorage.setItem('sb_url',url);localStorage.setItem('sb_key',key);
+  SB=window.supabase.createClient(url,key);
+  closeModal('mSupaCfg');toast('✅ Conexión guardada. Ahora podés registrarte o iniciar sesión.');
+}
+
+// ══ AUTH ══
+let authMode='login';
+function switchTab(m){
+  authMode=m;
+  $('tabLogin').classList.toggle('active',m==='login');
+  $('tabReg').classList.toggle('active',m==='reg');
+  $('authBtn').textContent=m==='login'?'Iniciar sesión':'Crear cuenta';
+  $('confWrap').style.display=m==='reg'?'block':'none';
+  $('negocioWrap').style.display=m==='reg'?'block':'none';
+  $('telWrap').style.display=m==='reg'?'block':'none';
+  $('termWrap').style.display=m==='reg'?'block':'none';
+  $('forgotWrap').style.display=m==='login'?'block':'none';
+  $('authMsg').style.display='none';
+}
+function aceptarTerminos(){$('termCheck').checked=true;closeModal('mTerminos');}
+function showMsg(txt,tipo){const el=$('authMsg');el.innerHTML=txt;el.className='auth-msg '+(tipo==='ok'?'ok':'err');el.style.display='block'}
+const WSP_ADMIN='5492664778718'; // ← Cambiá por tu número de WhatsApp (sin + ni espacios)
+async function handleAuth(){
+  if(!SB){showMsg('Primero configurá Supabase ↓','err');showModal('mSupaCfg');return}
+  const email=$('authEmail').value.trim(), pass=$('authPass').value;
+  if(!email||!pass){showMsg('Completá email y contraseña','err');return}
+  let captchaToken='';
+  try{captchaToken=hcaptcha.getResponse();}catch(e){}
+  const btn=$('authBtn');
+  const btnOrigText=btn.textContent;
+  btn.disabled=true;btn.textContent='⏳...';
+  const resetBtn=()=>{btn.disabled=false;btn.textContent=btnOrigText;try{hcaptcha.reset();}catch(e){}};
+  try{
+    if(authMode==='login'){
+      const loginOpts=captchaToken?{email,password:pass,options:{captchaToken}}:{email,password:pass};
+      const {data,error}=await SB.auth.signInWithPassword(loginOpts);
+      if(error)throw error;
+      // Verificar bloqueo/vencimiento antes de dejar pasar
+      const uTemp=data.user;
+      if(uTemp.email!==ADMIN_EMAIL){
+        const {data:perfil}=await SB.from('user_profiles').select('activo,expires_at').eq('user_id',uTemp.id).maybeSingle();
+        if(perfil){
+          const vence=perfil.expires_at?new Date(perfil.expires_at):null;
+          if(perfil.activo===false){
+            await SB.auth.signOut();
+            const wspMsg=encodeURIComponent('Hola! Mi cuenta '+email+' fue desactivada en CobroPRO. Quiero más información.');
+            $('authMsg').innerHTML='⛔ Tu cuenta está desactivada.<br><a href="https://wa.me/'+WSP_ADMIN+'?text='+wspMsg+'" target="_blank" style="display:inline-block;margin-top:8px;background:#25d366;color:#fff;padding:7px 12px;border-radius:8px;text-decoration:none;font-weight:700">💬 Contactar soporte</a>';
+            $('authMsg').className='auth-msg err';$('authMsg').style.display='block';
+            resetBtn();return;
+          }
+          if(vence&&vence<new Date()){
+            await SB.auth.signOut();
+            const wspMsg=encodeURIComponent('Hola! Mi acceso en CobroPRO venció. Quiero renovar.');
+            $('authMsg').innerHTML='⏳ Tu acceso venció el '+vence.toLocaleDateString('es-AR')+'.<br><a href="https://wa.me/'+WSP_ADMIN+'?text='+wspMsg+'" target="_blank" style="display:inline-block;margin-top:8px;background:#25d366;color:#fff;padding:7px 12px;border-radius:8px;text-decoration:none;font-weight:700">💬 Contactar soporte</a>';
+            $('authMsg').className='auth-msg err';$('authMsg').style.display='block';
+            resetBtn();return;
+          }
+        }
+      }
+      // El onAuthStateChange con SIGNED_IN se encarga de llamar iniciarApp()
+    } else {
+      if(pass.length<6){showMsg('Contraseña mínimo 6 caracteres','err');resetBtn();return}
+      if(pass!==$('authConf').value){showMsg('Las contraseñas no coinciden','err');resetBtn();return}
+      if(!$('termCheck').checked){showMsg('Debés aceptar los términos y condiciones','err');resetBtn();return}
+      const negocio=$('authNegocio').value.trim();
+      const telReg=$('authTel').value.trim();
+      if(!negocio){showMsg('Ingresá el nombre de tu negocio','err');resetBtn();return}
+      // tel es opcional
+      const regOpts=captchaToken?{email,password:pass,options:{captchaToken,emailRedirectTo:window.location.href}}:{email,password:pass,options:{emailRedirectTo:window.location.href}};
+      const {data:signData,error}=await SB.auth.signUp(regOpts);
+      if(error)throw error;
+      if(signData&&signData.user){
+        const trialEnd=new Date();trialEnd.setDate(trialEnd.getDate()+3);
+        await SB.from('user_profiles').upsert({
+          user_id:signData.user.id,email,activo:true,
+          expires_at:trialEnd.toISOString(),trial:true,
+          negocio,tel:telReg,plan:'trial',
+          created_at:new Date().toISOString()
+        });
+      }
+      // Notificar al admin por WhatsApp
+      const wspAdminMsg=encodeURIComponent('🆕 Nuevo registro en CobroPRO\nNegocio: '+negocio+'\nEmail: '+email+(telReg?'\nTel: '+telReg:'')+'\n\nTrial de 3 días activo.');
+      const wspLink='https://wa.me/'+WSP_ADMIN+'?text='+wspAdminMsg;
+      $('authMsg').innerHTML='<div>✅ <strong>¡Cuenta creada, '+negocio+'!</strong><br>Tenés <strong>3 días de prueba gratis</strong>.<br>'+( $("authConf") ? 'Confirmá tu email y luego iniciá sesión.' : 'Ya podés iniciar sesión.' )+'<br><br>¿Querés continuar después del trial?<br><a href="https://wa.me/'+WSP_ADMIN+'?text='+encodeURIComponent('Hola! Soy '+negocio+' ('+email+'). Quiero información sobre los planes de CobroPRO.')+'" target="_blank" style="display:inline-block;margin-top:8px;background:#25d366;color:#fff;padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:700">💬 Escribinos por WhatsApp</a></div>';
+      $('authMsg').className='auth-msg ok';$('authMsg').style.display='block';
+      // Abrir WSP para notificar al admin automáticamente
+      setTimeout(()=>{try{window.open(wspLink,'_blank');}catch(e){}},1500);
+      switchTab('login');
+    }
+  }catch(e){showMsg(tradErr(e.message),'err')}
+  resetBtn();
+}
+async function handleForgot(){
+  if(!SB){showMsg('Configurá Supabase primero','err');return}
+  const email=$('authEmail').value.trim();
+  if(!email){showMsg('Ingresá tu email primero','err');return}
+  const {error}=await SB.auth.resetPasswordForEmail(email);
+  if(error)showMsg(tradErr(error.message),'err');
+  else showMsg('📧 Te enviamos un link para restablecer tu contraseña','ok');
+}
+function tradErr(m){
+  if(m.includes('Invalid login'))return 'Email o contraseña incorrectos';
+  if(m.includes('Email not confirmed'))return 'Confirmá tu email antes de iniciar sesión';
+  if(m.includes('already registered'))return 'Este email ya está registrado';
+  if(m.includes('Password'))return 'La contraseña debe tener al menos 6 caracteres';
+  return m;
+}
+async function doLogout(){
+  if(SB)await SB.auth.signOut();
+  currentUser=null;Cs=[];Ops=[];Ps=[];Gs=[];EVs=[];
+  $('appScreen').style.display='none';$('authScreen').style.display='flex';
+  closeModal('mPerfil');toast('Sesión cerrada');
+}
+
+// ══ INICIO APP ══
+async function iniciarApp(){
+  $('authScreen').style.display='none';$('loadingScreen').style.display='none';$('appScreen').style.display='block';
+  $('perfilEmail').textContent=currentUser.email;
+  if(currentUser.email===ADMIN_EMAIL){const nav=$('nav-admin');if(nav)nav.style.display='flex';}
+  // Cargar plan del usuario
+  if(currentUser.email!==ADMIN_EMAIL){
+    try{
+      const {data:p}=await SB.from('user_profiles').select('plan,negocio,trial').eq('user_id',currentUser.id).maybeSingle();
+      if(p){
+        USER_PLAN=p.plan||'trial';
+        if(p.negocio)$('perfilEmail').textContent=p.negocio;
+        // Mostrar bienvenida solo la primera vez
+        const bienKey='cobropro_bien_'+currentUser.id;
+        if(!localStorage.getItem(bienKey)){
+          setTimeout(()=>{
+            if(p.negocio)$('bienNegocio').textContent=p.negocio;
+            const wspMsg=encodeURIComponent('Hola! Acabo de registrarme en CobroPRO'+(p.negocio?' como '+p.negocio:'')+'. Quiero información sobre los planes.');
+            $('bienWsp').href='https://wa.me/'+WSP_ADMIN+'?text='+wspMsg;
+            showModal('mBienvenida');
+            localStorage.setItem(bienKey,'1');
+          },800);
+        }
+      }
+    }catch(e){}
+  }
+  await cargarTodo();
+  rInicio();rClis();rCaja();
+}
+const UID=()=>currentUser.id;
+
+// ══ DB HELPERS ══
+function esErrorBloqueo(error){
+  return error&&(error.message||'').includes('row-level security');
+}
+async function dbGet(t){
+  const {data,error}=await SB.from(t).select('*').eq('user_id',UID()).order('id',{ascending:true});
+  if(error){
+    if(esErrorBloqueo(error)){mostrarPantallaBloqueada();return[]}
+    console.error(t,error);return[];
+  }return data||[];
+}
+async function dbIns(t,obj){
+  const {data,error}=await SB.from(t).insert({...obj,user_id:UID()}).select().single();
+  if(error){
+    if(esErrorBloqueo(error)){mostrarPantallaBloqueada();throw new Error('Cuenta bloqueada')}
+    throw error;
+  }return data;
+}
+async function dbUpd(t,id,obj){
+  const {data,error}=await SB.from(t).update(obj).eq('id',id).eq('user_id',UID()).select();
+  if(error){
+    if(esErrorBloqueo(error)){mostrarPantallaBloqueada();throw new Error('Cuenta bloqueada')}
+    throw error;
+  }
+  if(!data||data.length===0){
+    console.warn('dbUpd: 0 rows updated for',t,'id=',id);
+    return null;
+  }
+  return data[0];
+}
+async function dbDel(t,id){
+  const {error}=await SB.from(t).delete().eq('id',id).eq('user_id',UID());
+  if(error){
+    if(esErrorBloqueo(error)){mostrarPantallaBloqueada();throw new Error('Cuenta bloqueada')}
+    throw error;
+  }
+}
+
+async function cargarTodo(){
+  const [cs,ops,ps,gs,evs]=await Promise.all([dbGet('clientes'),dbGet('operaciones'),dbGet('pagos'),dbGet('gastos'),dbGet('eventos')]);
+  Cs=cs.map(c=>({...c,not:c.not_||'',docs:Array.isArray(c.docs)?c.docs:[]}));
+  Ops=ops.map(o=>({...o,desc:o.desc_||'',not:o.not_||'',int:(o.int_!==null&&o.int_!==undefined?parseFloat(o.int_):0),tip:o.tip||'simple',mora:(o.mora!==null&&o.mora!==undefined?parseFloat(o.mora):0.5),pag:parseInt(o.pag)||0,moneda:o.moneda||CFG.moneda||'$'}));
+  Ps=ps.map(p=>({...p,par:!!p.par,flt:parseFloat(p.flt)||0}));
+  Gs=gs;EVs=evs.map(e=>({...e,desc:e.desc_||''}));
+  try{const {data}=await SB.from('config').select('*').eq('user_id',UID()).single();if(data)CFG={...CFG,...data}}catch(e){}
+  rebuildMaps();
+}
+async function saveCfgDB(){try{await SB.from('config').upsert({user_id:UID(),...CFG},{onConflict:'user_id'})}catch(e){}}
+
+// ══ HELPERS ══
+const $=id=>document.getElementById(id);
+const fmt=n=>ocul?'••••':(CFG.moneda||'$')+Math.round(n).toLocaleString('es-AR');
+const fmtOp=(n,op)=>ocul?'••••':(op&&op.moneda?op.moneda:(CFG.moneda||'$'))+Math.round(n).toLocaleString('es-AR');
+const fD=d=>{if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`};
+const hoy=()=>new Date().toISOString().split('T')[0];
+const man=()=>{const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0]};
+// Maps para lookups O(1) en vez de O(n)
+let _cMap=new Map(),_oMap=new Map();
+function rebuildMaps(){_cMap=new Map(Cs.map(c=>[c.id,c]));_oMap=new Map(Ops.map(o=>[o.id,o]));}
+const gC=id=>_cMap.get(id);
+const gO=id=>_oMap.get(id);
+const opsDeCli=cid=>Ops.filter(o=>o.cid===cid);
+const pagoDeOp=oid=>Ps.filter(p=>p.oid===oid);
+function aCol(n){const col=['#6c63ff','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#8b5cf6'];let h=0;for(let c of n)h=(h+c.charCodeAt(0))%col.length;return col[h]}
+const ini=n=>n.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+const esVenta=op=>op.tipo==='venta';
+function cvOp(op){
+  if(esVenta(op))return op.precio/op.cuo;
+  const m=parseFloat(op.mon)||0,i=(parseFloat(op.int)/100)||0,n=parseInt(op.cuo)||1;
+  if(op.tip==='simple')return(m+m*i)/n;
+  if(op.tip==='compuesto'){if(i===0)return m/n;return m*(i*Math.pow(1+i,n))/(Math.pow(1+i,n)-1)}
+  return m/n*(1+i);
+}
+const saldoOp=op=>cvOp(op)*Math.max(0,(parseInt(op.cuo)||1)-(parseInt(op.pag)||0));
+function proxFechaOp(op){
+  const b=new Date(op.fv+'T00:00:00'),frq=op.frq,n=parseInt(op.pag)||0;
+  const d=new Date(b);
+  if(frq==='mensual')d.setMonth(b.getMonth()+n);
+  else if(frq==='quincenal')d.setDate(b.getDate()+n*15);
+  else if(frq==='semanal')d.setDate(b.getDate()+n*7);
+  else d.setDate(b.getDate()+n);
+  return d;
+}
+function diasAtrOp(op){const h=new Date();h.setHours(0,0,0,0);const v=proxFechaOp(op);const d=Math.floor((h-v)/86400000);return d>0?d:0}
+function saldoMOp(op){const s=saldoOp(op),d=diasAtrOp(op);if(d>0&&!esVenta(op))return s+(parseFloat(op.mora)||0.5)/100*s/30*d;return s}
+function stOp(op){
+  const h=new Date();h.setHours(0,0,0,0);
+  if(op.pag>=op.cuo)return'completado';
+  const v=proxFechaOp(op);
+  const df=Math.floor((v-h)/86400000);
+  if(df<0)return'atrasado';if(df<=(CFG.alertaDias||3))return'porVencer';return'aldía';
+}
+function stCli(cid){
+  const ops=opsDeCli(cid).filter(o=>o.pag<o.cuo);
+  if(!ops.length)return'completo';
+  if(ops.some(o=>stOp(o)==='atrasado'))return'atrasado';
+  if(ops.some(o=>stOp(o)==='porVencer'))return'porVencer';
+  return'aldía';
+}
+function rankCli(cid){
+  const opsC=opsDeCli(cid);const pagosC=Ps.filter(p=>opsC.some(o=>o.id===p.oid));
+  if(!pagosC.length)return{lb:'Nuevo',ic:'🆕',cl:'rank-nuevo'};
+  const pct=1-(pagosC.filter(p=>p.par).length/pagosC.length);
+  const s=stCli(cid);
+  if(s==='atrasado')return{lb:'Moroso',ic:'🔴',cl:'rank-moroso'};
+  if(pct>=0.95&&pagosC.length>=3)return{lb:'Oro',ic:'🥇',cl:'rank-oro'};
+  if(pct>=0.75)return{lb:'Plata',ic:'🥈',cl:'rank-plata'};
+  if(pct>=0.5)return{lb:'Bronce',ic:'🥉',cl:'rank-bronce'};
+  return{lb:'Irregular',ic:'⚠️',cl:'rank-moroso'};
+}
+function intOp(op){
+  if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return pagoDeOp(op.id).reduce((s,p)=>s+Math.min(p.mon/cvOp(op),1)*gan,0)}
+  const v=cvOp(op),pr=op.mon/op.cuo;return pagoDeOp(op.id).reduce((s,p)=>s+Math.max(0,Math.min(p.mon,v)-pr),0);
+}
+const saldoTotalCli=cid=>opsDeCli(cid).filter(o=>o.pag<o.cuo).reduce((s,o)=>s+saldoMOp(o),0);
+function fechasOp(op){
+  const r=[],b=new Date(op.fv+'T00:00:00'),frq=op.frq,n=op.cuo-op.pag;
+  for(let i=0;i<n;i++){const d=new Date(b);if(frq==='mensual')d.setMonth(b.getMonth()+i);else if(frq==='quincenal')d.setDate(b.getDate()+i*15);else if(frq==='semanal')d.setDate(b.getDate()+i*7);else d.setDate(b.getDate()+i);r.push(d.toISOString().split('T')[0])}
+  return r;
+}
+function waLinkOp(op){const c=gC(op.cid);if(!c||!c.tel)return'#';const tel=c.tel.replace(/[^0-9]/g,'');const msg=(CFG.msgWa||'Hola {nombre}.').replace('{nombre}',c.nom).replace('{cuota}',fmt(cvOp(op))).replace('{fecha}',fD(op.fv));return`https://wa.me/54${tel}?text=${encodeURIComponent(msg)}`}
+function waMoraLink(op){const c=gC(op.cid);if(!c||!c.tel)return'#';const tel=c.tel.replace(/[^0-9]/g,'');const d=diasAtrOp(op),deuda=saldoMOp(op);const msg=(CFG.msgMora||'Hola {nombre}.').replace('{nombre}',c.nom).replace('{dias}',d).replace('{deuda}',fmt(deuda));return`https://wa.me/54${tel}?text=${encodeURIComponent(msg)}`}
+function comprob(oid){const op=gO(oid);const c=op?gC(op.cid):null;if(!op||!c)return;const ul=pagoDeOp(oid).slice(-1)[0];comprobantePDF(oid,ul?ul.mon:0,ul?ul.fec:hoy(),ul?(ul.par||false):false,ul?(ul.flt||0):0)}
+let _srchT=null;
+function debSearch(){clearTimeout(_srchT);_srchT=setTimeout(rClis,220);}
+function setBtnLoading(id,loading){const b=$(id);if(!b)return;b.disabled=loading;if(loading){b.dataset.orig=b.textContent;b.textContent='⏳ Guardando...'}else{b.textContent=b.dataset.orig||b.textContent}}
+function poblarSelOps(){$('p_op').innerHTML=Ops.filter(o=>o.pag<o.cuo).map(o=>{const c=gC(o.cid);return`<option value="${o.id}">${c?c.nom:'?'} — ${esVenta(o)?o.prod||'Venta':o.desc||'Crédito'} (${fmt(cvOp(o))})</option>`}).join('')}
+function poblarSelClis(){$('op_cli').innerHTML=Cs.map(c=>`<option value="${c.id}">${c.nom}</option>`).join('')}
+function updCuotaEsp(){const fid=parseInt($('p_fixOp').value),oid=fid||parseInt($('p_op').value);const op=gO(oid);$('p_esp').textContent=op?fmt(cvOp(op)):'—'}
+function chkParcial(){
+  const fid=parseInt($('p_fixOp').value),oid=fid||parseInt($('p_op').value);
+  const op=gO(oid);if(!op)return;
+  const parPrevId=parseInt($('p_fixPar').value)||0;
+  let base=cvOp(op);
+  if(parPrevId){const pPrev=Ps.find(x=>x.id===parPrevId);if(pPrev&&pPrev.flt>0)base=pPrev.flt;}
+  const ab=parseFloat($('p_mon').value)||0,flt=base-ab;
+  if(ab>0&&ab<base){$('p_flt').textContent=fmt(flt);$('p_warn').style.display='block'}else $('p_warn').style.display='none';
+}
+function toggleOpTipo(){const t=$('op_tipo').value;$('opCamposP').style.display=t==='prestamo'?'block':'none';$('opCamposV').style.display=t==='venta'?'block':'none'}
+let _intModo='mensual'; // 'mensual' = % por cuota, 'total' = % sobre el total
+function setIntModo(modo){
+  _intModo=modo;
+  const btnM=$('intModoMens'),btnT=$('intModoTotal');
+  if(!btnM||!btnT)return;
+  if(modo==='mensual'){
+    btnM.style.background='var(--ac)';btnM.style.color='#fff';btnM.style.borderColor='var(--ac)';
+    btnT.style.background='var(--card2)';btnT.style.color='var(--tx2)';btnT.style.borderColor='var(--border)';
+  } else {
+    btnT.style.background='var(--ac)';btnT.style.color='#fff';btnT.style.borderColor='var(--ac)';
+    btnM.style.background='var(--card2)';btnM.style.color='var(--tx2)';btnM.style.borderColor='var(--border)';
+  }
+  syncInteresOp();
+}
+function syncInteresOp(){
+  const v=parseFloat($('op_int').value)||0;
+  const cuotas=parseInt($('op_cuo').value)||1;
+  const hint=$('op_int_hint');
+  if(!hint)return;
+  if(!v){hint.textContent='';return}
+  if(_intModo==='mensual'){
+    hint.textContent=`→ Total interés: ${(v*cuotas).toFixed(2)}% (${v}% × ${cuotas} cuotas)`;
+  } else {
+    const porCuota=cuotas>0?(v/cuotas).toFixed(2):v;
+    hint.textContent=`→ ${porCuota}% por cuota (${v}% ÷ ${cuotas} cuotas)`;
+  }
+}
+function toggleMoraField(){
+  const check=$('op_mora_check');
+  const field=$('op_mora');
+  if(!check||!field)return;
+  if(!check.checked){field.value='0';field.disabled=true;field.style.opacity='.4';}
+  else{field.value='0.5';field.disabled=false;field.style.opacity='1';}
+}
+// Interés siempre se guarda como % POR cuota
+function intGuardadoAMostrar(intGuardado,cuotas){
+  if(_intModo==='total') return (parseFloat(intGuardado)||0)*(parseInt(cuotas)||1);
+  return parseFloat(intGuardado)||0;
+}
+function intMostradoAGuardar(intMostrado,cuotas){
+  if(_intModo==='total') return (parseFloat(intMostrado)||0)/(parseInt(cuotas)||1);
+  return parseFloat(intMostrado)||0;
+}
+function selColor(el){document.querySelectorAll('#mevento .evc').forEach(e=>e.style.border='2px solid transparent');el.style.border=`2px solid ${el.dataset.c}`;$('ev_color').value=el.dataset.c}
+function cargarFoto(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{fotoTemp=ev.target.result;$('fotoPreview').innerHTML=`<img src="${fotoTemp}" alt="">`};r.readAsDataURL(file)}
+function cargarDocs(e){Array.from(e.target.files).forEach(file=>{const r=new FileReader();r.onload=ev=>{docsTemp.push({name:file.name,data:ev.target.result,type:file.type});renderDocsTemp()};r.readAsDataURL(file)})}
+function renderDocsTemp(){$('docsList').innerHTML=docsTemp.map((d,i)=>{const ico=d.type==='application/pdf'?'📄':d.type.startsWith('image')?'🖼️':'📎';return`<span style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:10px;color:var(--tx2);display:inline-flex;align-items:center;gap:5px;margin:2px">${ico} ${d.name.substring(0,14)}<button onclick="docsTemp.splice(${i},1);renderDocsTemp()" style="background:none;border:none;color:var(--rd);cursor:pointer;font-size:11px">✕</button></span>`}).join('')}
+
+// ══ NAV / UI ══
+function goPage(id){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const n=document.getElementById('nav-'+id);if(n)n.classList.add('active');
+  closeFab();
+  // Usar requestAnimationFrame para no bloquear el UI al cambiar de página
+  requestAnimationFrame(()=>{
+    ({inicio:rInicio,clientes:rClis,caja:rCaja,cal:rCal,fin:rFin,notif:rNotif,rep:rRep,admin:rAdmin}[id]||function(){})();
+  });
+}
+function showModal(id){document.getElementById(id).classList.add('open');const h=hoy();['p_fec','g_fec','op_fv','ev_fec','cf_fv'].forEach(f=>{const e=document.getElementById(f);if(e&&!e.value)e.value=h});if(id==='mpago'){poblarSelOps();updCuotaEsp()}if(id==='mop')poblarSelClis();if(id==='mPerfil'){$('cfg_n').value=CFG.nombre||'';$('cfg_m').value=CFG.moneda||'$';$('cfg_d').value=CFG.alertaDias||3;$('cfg_w').value=CFG.msgWa||'';$('cfg_mm').value=CFG.msgMora||''}}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.mo').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+function toggleFab(){[$('fab'),$('fabm'),$('do')].forEach(e=>e.classList.toggle('open'))}
+function closeFab(){[$('fab'),$('fabm'),$('do')].forEach(e=>e.classList.remove('open'))}
+function toast(msg,t='success'){const el=$('toast');el.innerHTML=msg;el.className='toast show '+t;if(navigator.vibrate)navigator.vibrate([18,7,18]);setTimeout(()=>el.classList.remove('show'),2700)}
+function toggleOcul(){ocul=!ocul;$('eyeBtn').textContent=ocul?'🙈':'👁️';rInicio();if($('page-clientes').classList.contains('active'))rClis()}
+
+// ══ CRUD CLIENTE ══
+function abrirCli(id=null){$('cliMT').textContent=id?'✏️ Editar cliente':'👤 Nuevo cliente';$('c_id').value=id||'';if(id){const c=gC(id);if(!c)return;$('c_nom').value=c.nom;$('c_tel').value=c.tel||'';$('c_cumple').value=c.cumple||'';$('c_not').value=c.not||''}else['c_nom','c_tel','c_cumple','c_not'].forEach(f=>$(f).value='');showModal('mcli')}
+async function guardarCli(){
+  const nom=$('c_nom').value.trim();if(!nom){toast('Ingresá el nombre','error');return}
+  const id=parseInt($('c_id').value)||null;
+  // Verificar límite de clientes al agregar uno nuevo
+  if(!id){
+    const lim=limiteClientes();
+    if(Cs.length>=lim){
+      const planSig=USER_PLAN==='trial'?'PRO':'Premium';
+      const wspMsg=encodeURIComponent('Hola! Llegué al límite de clientes en CobroPRO (plan '+USER_PLAN+'). Quiero pasar al plan '+planSig+'.');
+      toast(`🔒 <a href="https://wa.me/${WSP_ADMIN}?text=${wspMsg}" target="_blank" style="color:#fbbf24;font-weight:700">Límite de ${lim} clientes alcanzado. Pasá al plan ${planSig} →</a>`,'warn');
+      setBtnLoading('cliSaveBtn',false);return;
+    }
+  }
+  const d={nom,tel:$('c_tel').value.trim(),cumple:$('c_cumple').value,not_:$('c_not').value.trim(),foto:'',docs:[]};
+  setBtnLoading('cliSaveBtn',true);
+  try{if(id){await dbUpd('clientes',id,d);const i=Cs.findIndex(c=>c.id===id);if(i>=0)Cs[i]={...Cs[i],...d,not:d.not_||''};toast(`✅ ${nom} actualizado`)}else{const r=await dbIns('clientes',d);Cs.push({...r,not:r.not_||'',docs:[]});rebuildMaps();toast(`✅ ${nom} agregado`)}closeModal('mcli');setTimeout(()=>{rInicio();rClis();},0);}
+  catch(e){const msg=e.message&&e.message.includes('row-level security')?'Error de permisos (RLS). Verificá las políticas de Supabase para la tabla clientes.':('Error: '+e.message);toast(msg,'error')}setBtnLoading('cliSaveBtn',false);
+}
+async function elimCli(cid){
+  if(!confirm('¿Eliminar cliente y todas sus operaciones?'))return;
+  try{
+    const opIds=opsDeCli(cid).map(o=>o.id);
+    for(const oid of opIds){const pags=Ps.filter(p=>p.oid===oid);for(const p of pags){try{await dbDel('pagos',p.id)}catch(e){}}}
+    for(const oid of opIds){try{await dbDel('operaciones',oid)}catch(e){}}
+    await dbDel('clientes',cid);
+    Cs=Cs.filter(c=>c.id!==cid);Ops=Ops.filter(o=>o.cid!==cid);Ps=Ps.filter(p=>!opIds.includes(p.oid));rebuildMaps();
+    closeModal('mver');toast('Cliente eliminado');setTimeout(()=>{rInicio();rClis();},0);
+  }catch(e){toast('Error: '+e.message,'error')}
+}
+
+// ══ CRUD OPERACIÓN ══
+function abrirOp(cidFijo=null,oid=null){
+  $('opMT').textContent=oid?'✏️ Editar operación':'➕ Nueva operación';$('op_id').value=oid||'';$('op_cidFijo').value=cidFijo||'';
+  $('op_cliGrp').style.display=cidFijo?'none':'block';if(!cidFijo)poblarSelClis();
+  if(oid){
+    const op=gO(oid);if(!op)return;
+    $('op_tipo').value=op.tipo;toggleOpTipo();$('op_cuo').value=op.cuo;$('op_frq').value=op.frq;$('op_fv').value=op.fv;$('op_not').value=op.not||'';$('op_moneda').value=op.moneda||CFG.moneda||'$';
+    if(op.tipo==='venta'){$('op_prod').value=op.prod||'';$('op_costo').value=op.costo||0;$('op_precio').value=op.precio||0}
+    else{
+      $('op_desc').value=op.desc||'';$('op_mon').value=op.mon;
+      _intModo='mensual';setIntModo('mensual');
+      $('op_int').value=op.int||0;
+      const mora=parseFloat(op.mora);
+      if(mora===0){$('op_mora_check').checked=false;$('op_mora').value='0';$('op_mora').disabled=true;$('op_mora').style.opacity='.4';}
+      else{$('op_mora_check').checked=true;$('op_mora').value=mora||0.5;$('op_mora').disabled=false;$('op_mora').style.opacity='1';}
+      $('op_tip').value=op.tip||'simple';syncInteresOp();
+    }
+  } else {
+    ['op_desc','op_mon','op_int','op_cuo','op_not','op_prod','op_costo','op_precio'].forEach(f=>$(f).value='');
+    $('op_mora').value='0.5';$('op_mora').disabled=false;$('op_mora').style.opacity='1';
+    if($('op_mora_check'))$('op_mora_check').checked=true;
+    $('op_fv').value=hoy();$('op_frq').value='mensual';$('op_tipo').value='prestamo';$('op_moneda').value=CFG.moneda||'$';
+    _intModo='mensual';setIntModo('mensual');toggleOpTipo();
+  }
+  showModal('mop');
+}
+async function guardarOp(){
+  const tipo=$('op_tipo').value,cidFijo=parseInt($('op_cidFijo').value)||0,cid=cidFijo||parseInt($('op_cli').value);
+  if(!cid){toast('Seleccioná un cliente','error');return}
+  const cuo=parseInt($('op_cuo').value)||1,frq=$('op_frq').value,fv=$('op_fv').value||hoy();
+  const moneda=$('op_moneda').value||CFG.moneda||'$';
+  let d={cid,tipo,cuo,frq,fv,not_:$('op_not').value.trim(),fa:hoy(),moneda};
+  if(tipo==='venta'){const precio=parseFloat($('op_precio').value);if(!precio){toast('Ingresá el precio','error');return}Object.assign(d,{prod:$('op_prod').value.trim(),costo:parseFloat($('op_costo').value)||0,precio,mon:0,int_:0,mora:0,tip:'cuota',desc_:''})}
+  else{
+    const mon=parseFloat($('op_mon').value);if(!mon){toast('Ingresá el monto','error');return}
+    const intMostrado=parseFloat($('op_int').value)||0;
+    const intPorCuota=intMostradoAGuardar(intMostrado,cuo);
+    const moraCheck=$('op_mora_check');
+    const moraVal=moraCheck&&!moraCheck.checked?0:(parseFloat($('op_mora').value)||0);
+    Object.assign(d,{mon,int_:intPorCuota,mora:moraVal,tip:$('op_tip').value,desc_:$('op_desc').value.trim(),prod:'',costo:0,precio:0});
+  }
+  const oid=parseInt($('op_id').value)||null;setBtnLoading('opSaveBtn',true);
+  try{
+    if(oid){
+      const updated=await dbUpd('operaciones',oid,d);
+      const i=Ops.findIndex(o=>o.id===oid);
+      if(i>=0){
+        Ops[i]={...Ops[i],
+          mon: parseFloat(d.mon)||Ops[i].mon,
+          int: (d.int_!==undefined&&d.int_!==null) ? parseFloat(d.int_) : Ops[i].int,
+          mora: (d.mora!==undefined&&d.mora!==null) ? parseFloat(d.mora) : Ops[i].mora,
+          tip: d.tip||Ops[i].tip,
+          desc: d.desc_!==undefined ? d.desc_ : Ops[i].desc,
+          not: d.not_!==undefined ? d.not_ : Ops[i].not,
+          cuo: parseInt(d.cuo)||Ops[i].cuo,
+          frq: d.frq||Ops[i].frq,
+          fv: d.fv||Ops[i].fv,
+          moneda: d.moneda||Ops[i].moneda,
+          prod: d.prod!==undefined ? d.prod : Ops[i].prod,
+          costo: parseFloat(d.costo)||0,
+          precio: parseFloat(d.precio)||0,
+        };
+      }
+      toast('✅ Operación actualizada');
+    }
+    else{const r=await dbIns('operaciones',{...d,pag:0});Ops.push({...r,desc:r.desc_||'',not:r.not_||'',int:parseFloat(r.int_)||0,pag:0});rebuildMaps();const c=gC(cid);toast(`✅ Op. agregada a ${c?c.nom:''}`)}
+    closeModal('mop');setTimeout(()=>{rInicio();rClis();const mver=document.getElementById('mver');if(mver&&mver.classList.contains('open'))verCli(cid);},0);
+  }catch(e){toast('Error: '+e.message,'error')}setBtnLoading('opSaveBtn',false);
+}
+async function elimOp(oid){
+  if(!confirm('¿Eliminar esta operación?'))return;
+  try{
+    const pags=Ps.filter(p=>p.oid===oid);
+    for(const p of pags){try{await dbDel('pagos',p.id)}catch(e){}}
+    await dbDel('operaciones',oid);
+    Ops=Ops.filter(o=>o.id!==oid);Ps=Ps.filter(p=>p.oid!==oid);rebuildMaps();
+    closeModal('mver');closeModal('mOpDetalle');toast('Operación eliminada');setTimeout(()=>{rInicio();rClis();},0);
+  }catch(e){toast('Error: '+e.message,'error')}
+}
+
+// ══ CRUD PAGO ══
+function abrirPago(fixId=null){
+  $('p_fixOp').value=fixId||'';$('p_fixPar').value='';$('p_opGrp').style.display=fixId?'none':'block';
+  $('pagoMT').textContent='💵 Registrar pago';$('p_mon').value='';$('p_not').value='';
+  $('p_warn').style.display='none';$('p_fec').value=hoy();$('p_sendWa').checked=false;
+  if(fixId){
+    const op=gO(fixId);
+    if(op){$('p_esp').textContent=fmt(cvOp(op));const c=gC(op.cid);$('p_waWrap').style.display=c&&c.tel?'block':'none';}
+  } else {$('p_waWrap').style.display='none';}
+  showModal('mpago');
+}
+function abrirPagoParaOp(oid){closeModal('mver');abrirPago(oid)}
+function completarPar(oid){const p=Ps.find(x=>x.oid===oid&&x.par&&x.flt>0);closeModal('mver');abrirPago(oid);if(p)setTimeout(()=>{$('p_mon').value=Math.round(p.flt);$('pagoMT').textContent='💵 Completar pago parcial';$('p_not').value='Completar cuota';$('p_fixPar').value=p.id;chkParcial()},50)}
+async function guardarPago(){
+  const fid=parseInt($('p_fixOp').value),oid=fid||parseInt($('p_op').value),mon=parseFloat($('p_mon').value);
+  if(!oid||!mon){toast('Completá los datos','error');return}
+  const op=gO(oid);if(!op)return;
+  const parPrevId=parseInt($('p_fixPar').value)||0;
+  let base=cvOp(op);
+  if(parPrevId){const pPrev=Ps.find(x=>x.id===parPrevId);if(pPrev&&pPrev.flt>0)base=pPrev.flt;}
+  const par=mon<base-0.01,flt=par?base-mon:0;
+  const fec=$('p_fec').value||hoy();
+  const d={oid,mon:parseFloat(mon),met:$('p_met').value,fec,not_:$('p_not').value.trim(),par:!!par,flt:parseFloat(flt)||0};
+
+  // Abrir WA ANTES de cualquier await — única forma de no ser bloqueado por el browser
+  const sendWa=$('p_sendWa')&&$('p_sendWa').checked;
+  const sendPdf=$('p_sendPdf')&&$('p_sendPdf').checked;
+  let waWin=null;
+  if(sendWa){
+    const c=gC(op.cid);
+    if(c&&c.tel){
+      const tel=c.tel.replace(/[^0-9]/g,'');
+      const lbl=esVenta(op)?op.prod||'Venta':op.desc||'Crédito';
+      const saldoEst=Math.max(0,saldoOp(op)-cvOp(op));
+      const msg=`📋 *COMPROBANTE DE PAGO*\n*CobroPRO*\n\nCliente: ${c.nom}\nConcepto: ${lbl}\nFecha: ${fD(fec)}\nAbonado: ${fmt(mon)}${par?`\nFalta: ${fmt(flt)}`:`\nSaldo restante: ${fmt(saldoEst)}`}\n\n¡Gracias! 🙏`;
+      waWin=window.open(`https://wa.me/54${tel}?text=${encodeURIComponent(msg)}`,'_blank');
+    }
+  }
+
+  setBtnLoading('pagoSaveBtn',true);
+  try{
+    const r=await dbIns('pagos',d);Ps.push({...r,not:r.not_||''});
+    if(parPrevId){
+      const pPrev=Ps.find(x=>x.id===parPrevId);
+      if(pPrev){pPrev.par=false;pPrev.flt=0;await dbUpd('pagos',parPrevId,{par:false,flt:0})}
+      op.pag=Math.min((op.pag||0)+1,op.cuo);await dbUpd('operaciones',oid,{pag:op.pag});
+    } else if(!par){
+      op.pag=Math.min((op.pag||0)+1,op.cuo);await dbUpd('operaciones',oid,{pag:op.pag});
+    }
+    closeModal('mpago');$('p_fixOp').value='';$('p_fixPar').value='';$('p_opGrp').style.display='block';
+    if(par)toast(`⚠️ Pago parcial. Falta ${fmt(flt)}`,'warn');else toast(`💵 ${fmt(mon)} registrado`);
+    if(sendPdf) comprobantePDF(op.id,mon,fec,par,flt);
+    // Render en background para no bloquear el UI
+    setTimeout(()=>{
+      rInicio();
+      if($('page-clientes').classList.contains('active'))rClis();
+      if($('page-caja').classList.contains('active'))rCaja();
+      // Si el modal de ver cliente está abierto, refrescarlo
+      if(document.getElementById('mver').classList.contains('open'))verCli(op.cid);
+    },0);
+  }catch(e){
+    toast('Error: '+e.message,'error');
+    if(waWin)waWin.close();
+  }
+  setBtnLoading('pagoSaveBtn',false);
+}
+
+// ══ EDITAR PAGO ══
+function abrirEditPago(pid){
+  const p=Ps.find(x=>x.id===pid);if(!p)return;
+  $('ep_id').value=pid;$('ep_mon').value=p.mon;$('ep_met').value=p.met||'efectivo';$('ep_fec').value=p.fec;$('ep_not').value=p.not||'';
+  showModal('mEditPago');
+}
+async function guardarEditPago(){
+  const pid=parseInt($('ep_id').value),mon=parseFloat($('ep_mon').value);
+  if(!pid||!mon){toast('Completá los datos','error');return}
+  const d={mon,met:$('ep_met').value,fec:$('ep_fec').value,not_:$('ep_not').value.trim()};
+  setBtnLoading('epSaveBtn',true);
+  try{await dbUpd('pagos',pid,d);const p=Ps.find(x=>x.id===pid);if(p){p.mon=mon;p.met=d.met;p.fec=d.fec;p.not=d.not_}
+    closeModal('mEditPago');toast('✅ Pago actualizado');setTimeout(()=>{rInicio();if($('page-caja').classList.contains('active'))rCaja();if($('page-clientes').classList.contains('active'))rClis();},0);
+  }catch(e){toast('Error: '+e.message,'error')}setBtnLoading('epSaveBtn',false);
+}
+async function confirmarElimPago(){
+  const pid=parseInt($('ep_id').value);if(!pid)return;
+  if(!confirm('¿Eliminar este pago? Esta acción revertirá la cuota pagada.'))return;
+  try{
+    const p=Ps.find(x=>x.id===pid);
+    if(p&&!p.par){const op=gO(p.oid);if(op&&op.pag>0){op.pag=Math.max(0,op.pag-1);await dbUpd('operaciones',op.id,{pag:op.pag})}}
+    await dbDel('pagos',pid);Ps=Ps.filter(x=>x.id!==pid);
+    closeModal('mEditPago');toast('Pago eliminado','error');setTimeout(()=>{rInicio();if($('page-caja').classList.contains('active'))rCaja();if($('page-clientes').classList.contains('active'))rClis();},0);
+  }catch(e){toast('Error: '+e.message,'error')}
+}
+function abrirGasto(id=null){$('gastoMT').textContent=id?'✏️ Editar gasto':'🧾 Registrar gasto';$('g_id').value=id||'';if(id){const g=Gs.find(x=>x.id===id);if(!g)return;$('g_des').value=g.des;$('g_mon').value=g.mon;$('g_cat').value=g.cat;$('g_fec').value=g.fec}else{$('g_des').value='';$('g_mon').value='';$('g_fec').value=hoy()}showModal('mgasto')}
+async function guardarGasto(){
+  const des=$('g_des').value.trim(),mon=parseFloat($('g_mon').value);if(!des||!mon){toast('Completá los datos','error');return}
+  const id=parseInt($('g_id').value)||null;
+  const fec=$('g_fec').value||hoy();
+  const d={des,mon:parseFloat(mon),cat:$('g_cat').value,fec};
+  setBtnLoading('gastoSaveBtn',true);
+  try{
+    if(id){
+      await dbUpd('gastos',id,d);
+      const i=Gs.findIndex(g=>g.id===id);
+      if(i>=0)Gs[i]={...Gs[i],...d,mon:parseFloat(mon)};
+      toast('Gasto actualizado');
+    }else{
+      const r=await dbIns('gastos',d);
+      // Normalizar tipos para evitar problemas con filtros de fecha y números
+      Gs.push({...r, mon:parseFloat(r.mon||mon), fec:r.fec||fec, des:r.des||des, cat:r.cat||d.cat});
+      toast('🧾 Gasto registrado');
+    }
+    closeModal('mgasto');
+    cajP='todo';
+    document.querySelectorAll('#cajaTabs .tab').forEach((t,i)=>{t.classList.toggle('active',i===3)});
+    setTimeout(()=>{rCaja();rInicio();},0);
+  }catch(e){toast('Error: '+e.message,'error')}
+  setBtnLoading('gastoSaveBtn',false);
+}
+async function elimGasto(id){if(!confirm('¿Eliminar?'))return;try{await dbDel('gastos',id);Gs=Gs.filter(g=>g.id!==id);rCaja();toast('Eliminado','error')}catch(e){toast('Error','error')}}
+
+// ══ CRUD EVENTO ══
+function abrirEvento(fecha=null){$('ev_id').value='';$('ev_tit').value='';$('ev_desc').value='';$('ev_color').value='#6c63ff';$('ev_fec').value=fecha||hoy();document.querySelectorAll('.evc').forEach((e,i)=>e.style.border=i===0?'2px solid #6c63ff':'2px solid transparent');showModal('mevento')}
+async function guardarEvento(){
+  const tit=$('ev_tit').value.trim(),fec=$('ev_fec').value;if(!tit||!fec){toast('Completá título y fecha','error');return}
+  const d={tit,fec,desc_:$('ev_desc').value.trim(),color:$('ev_color').value,notif:true};
+  setBtnLoading('evSaveBtn',true);
+  try{const r=await dbIns('eventos',d);EVs.push({...r,desc:r.desc_||''});closeModal('mevento');toast('📅 Evento agregado');if($('page-cal').classList.contains('active'))rCal()}
+  catch(e){toast('Error: '+e.message,'error')}setBtnLoading('evSaveBtn',false);
+}
+async function elimEvento(id){if(!confirm('¿Eliminar?'))return;try{await dbDel('eventos',id);EVs=EVs.filter(e=>e.id!==id);rCal();toast('Eliminado','error')}catch(e){toast('Error','error')}}
+
+// ══ CAMBIAR FECHA ══
+function abrirCamFecha(oid){closeModal('mver');$('cf_oid').value=oid;$('cf_fv').value='';$('cf_frq').value='';showModal('mCamFecha')}
+async function guardarCamFecha(){const oid=parseInt($('cf_oid').value),fv=$('cf_fv').value;if(!fv){toast('Ingresá la nueva fecha','error');return}const op=gO(oid);if(!op)return;const upd={fv};const nf=$('cf_frq').value;if(nf)upd.frq=nf;try{await dbUpd('operaciones',oid,upd);op.fv=fv;if(nf)op.frq=nf;closeModal('mCamFecha');toast('📅 Fecha actualizada');setTimeout(()=>{rInicio();rClis();},0)}catch(e){toast('Error','error')}}
+
+// ══ CONFIG ══
+async function guardarCfg(){CFG.nombre=$('cfg_n').value||'';CFG.moneda=$('cfg_m').value;CFG.alertaDias=parseInt($('cfg_d').value)||3;CFG.msgWa=$('cfg_w').value||CFG.msgWa;CFG.msgMora=$('cfg_mm').value||CFG.msgMora;await saveCfgDB();closeModal('mPerfil');toast('⚙️ Configuración guardada');rInicio()}
+
+// ══ VER CLIENTE ══
+function verCli(cid){
+  const c=gC(cid);if(!c)return;
+  const ops=opsDeCli(cid),r=rankCli(cid),saldoT=saldoTotalCli(cid),sTC=stCli(cid);
+  const opsAct=ops.filter(o=>o.pag<o.cuo),opsComp=ops.filter(o=>o.pag>=o.cuo);
+  const totInt=ops.reduce((s,o)=>s+intOp(o),0);
+  const bmap={atrasado:'<span class="sb late">Atrasado</span>',porVencer:'<span class="sb due">Por vencer</span>',aldía:'<span class="sb ok">Al día</span>',completo:'<span class="sb done">✅</span>'};
+  const opsHTML=opsAct.map(op=>{
+    const sv=esVenta(op),s=stOp(op),cuota=cvOp(op),sm=saldoMOp(op),pct=Math.round((op.pag/op.cuo)*100);
+    const col=s==='atrasado'?'var(--rd)':sv?'var(--cy)':'var(--ac)';
+    const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito '+fmtOp(op.mon,op));
+    const pp=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);
+    const mTag=op.moneda&&op.moneda!==(CFG.moneda||'$')?`<span style="font-size:8px;background:rgba(6,182,212,.15);color:var(--cy);padding:1px 5px;border-radius:4px;margin-left:4px">${op.moneda}</span>`:'';
+    return`<div class="op-card ${sv?'vc':'pc'}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <div><div class="op-tag ${sv?'v':'p'}">${sv?'🛒 VENTA':'💳 CRÉDITO'}${mTag}</div><div class="op-name">${lbl}</div>
+        <div class="op-meta">${op.pag}/${op.cuo} · ${op.frq} · vence ${fD(op.fv)}</div>
+        ${pp?`<span class="pb" style="margin-top:3px;display:inline-block">Falta ${fmtOp(pp.flt,op)}</span>`:''}</div>
+        <div style="text-align:right"><div class="op-saldo" style="color:${col}">${fmtOp(sm,op)}</div>
+        <div style="font-size:9px;color:var(--tx2)">cuota: ${fmtOp(cuota,op)}</div><div style="margin-top:2px">${bmap[s]||''}</div></div>
+      </div>
+      <div class="op-pt"><div class="op-pf" style="width:${pct}%;background:${col}"></div></div>
+      ${sv?`<div style="font-size:9px;color:var(--tx2);margin-top:4px">Precio: ${fmtOp(op.precio,op)} · Costo: ${fmtOp(op.costo,op)} · Gan: <span style="color:var(--gr)">${fmtOp(op.precio-op.costo,op)}</span></div>`:''}
+      <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn bp bsm" onclick="abrirPagoParaOp(${op.id})">💵 Pago</button>
+        <button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️</button>
+        <button class="btn bs bsm" onclick="abrirCamFecha(${op.id})">📅</button>
+        ${c.tel?`<a href="${waLinkOp(op)}" target="_blank"><button class="btn bgr bsm">💬 WA</button></a>`:''}
+        <button class="btn bs bsm" onclick="comprob(${op.id})">🧾</button>
+        ${s==='atrasado'&&c.tel?`<a href="${waMoraLink(op)}" target="_blank"><button class="btn brd bsm">🔴 Mora</button></a>`:''}
+        ${pp?`<button class="btn byw bsm" onclick="completarPar(${op.id})">Completar</button>`:''}
+        <button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button>
+      </div>
+    </div>`;
+  }).join('');
+  const opsCompHTML=opsComp.length?`<div style="margin-top:12px"><div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">✅ Terminados (${opsComp.length})</div>${opsComp.map(op=>{const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const tot=sv?op.precio:op.mon;const pagosOp=pagoDeOp(op.id);const totCobrado=pagosOp.reduce((s,p)=>s+p.mon,0);return`<div class="op-card" style="opacity:.7;border-left:3px solid var(--gr)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="op-tag" style="color:var(--gr)">${sv?'🛒':'💳'} ${sv?'VENTA':'CRÉDITO'}</div><div style="font-size:13px;font-weight:700">${lbl}</div><div style="font-size:9px;color:var(--tx2)">${op.pag}/${op.cuo} cuotas · ${op.frq}</div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:var(--gr)">${fmt(tot)}</div><span class="sb done">✅ ${op.pag}/${op.cuo} pagadas</span><div style="font-size:9px;color:var(--gr);margin-top:2px">Cobrado: ${fmt(totCobrado)}</div></div></div><div style="display:flex;gap:5px;margin-top:6px"><button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button></div></div>`}).join('')}</div>`:'';
+  const notasHTML=c.not?`<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--tx2)"><span style="font-weight:600;color:var(--tx)">📝 Notas:</span> ${c.not}</div>`:'';
+  $('verContent').innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div class="av" style="width:48px;height:48px;font-size:16px;background:${aCol(c.nom)}22;color:${aCol(c.nom)};border:2px solid ${aCol(c.nom)}44">${ini(c.nom)}</div>
+      <div style="flex:1"><div style="font-family:Syne,sans-serif;font-size:17px;font-weight:800">${c.nom}</div>
+      <div style="font-size:11px;color:var(--tx2)">${c.tel||'Sin teléfono'} ${c.cumple?'· 🎂 '+fD(c.cumple):''}</div>
+      <span class="${r.cl}">${r.ic} ${r.lb}</span></div>
+    </div>
+    ${notasHTML}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
+      <div class="mc"><div class="ml">Por cobrar</div><div class="mv" style="color:var(--cy)">${fmt(saldoT)}</div></div>
+      <div class="mc"><div class="ml">Ganancia</div><div class="mv" style="color:var(--yw)">${fmt(totInt)}</div></div>
+    </div>
+    <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn bp bsm" onclick="closeModal('mver');abrirOp(${cid})">➕ Op.</button>
+      <button class="btn bs bsm" onclick="closeModal('mver');abrirCli(${cid})">✏️ Editar</button>
+      ${c.tel?`<a href="tel:${c.tel}"><button class="btn bs bsm">📞 Llamar</button></a>`:''}
+      <button class="btn brd bsm" onclick="elimCli(${cid})">🗑️ Borrar cliente</button>
+    </div>
+    <div style="font-family:Syne,sans-serif;font-size:12px;font-weight:700;margin-bottom:8px;color:var(--tx2);text-transform:uppercase">⚡ Activos (${opsAct.length})</div>
+    ${opsAct.length?opsHTML:'<div style="font-size:10px;color:var(--tx2);padding:8px 0">Sin operaciones activas</div>'}
+    ${opsCompHTML}
+  `;
+  showModal('mver');
+}
+
+// ══ RENDERS ══
+function rInicio(){
+  const h=new Date(),lu=new Date(h);lu.setDate(h.getDate()-((h.getDay()+6)%7));lu.setHours(0,0,0,0);
+  const do2=new Date(lu);do2.setDate(lu.getDate()+6);do2.setHours(23,59,59,999);
+  $('semLabel').textContent=`${fD(lu.toISOString().split('T')[0])}–${fD(do2.toISOString().split('T')[0])}`;
+  const ps=Ps.filter(p=>{const d=new Date(p.fec+'T00:00:00');return d>=lu&&d<=do2});
+  const tot=ps.reduce((s,p)=>s+p.mon,0),ef=ps.filter(p=>p.met==='efectivo').reduce((s,p)=>s+p.mon,0),tr=ps.filter(p=>p.met==='transferencia').reduce((s,p)=>s+p.mon,0);
+  $('cajSemTot').textContent=fmt(tot);$('cajSemSub').textContent=`${ps.length} pago${ps.length!==1?'s':''}`;$('cajSemEf').textContent=fmt(ef);$('cajSemTr').textContent=fmt(tr);
+  const opsAct=Ops.filter(o=>o.pag<o.cuo),capP=Ops.filter(o=>!esVenta(o)&&o.pag<o.cuo).reduce((s,o)=>s+o.mon,0),porCob=opsAct.reduce((s,o)=>s+saldoMOp(o),0);
+  const mes=new Date().toISOString().substring(0,7),pMes=Ps.filter(p=>p.fec&&p.fec.startsWith(mes)),cob=pMes.reduce((s,p)=>s+p.mon,0);
+  const opsMora=Ops.filter(o=>stOp(o)==='atrasado'),pend=opsMora.reduce((s,o)=>s+saldoMOp(o),0);
+  const intM=pMes.reduce((acc,p)=>{const op=gO(p.oid);return op&&!esVenta(op)?acc+Math.max(0,cvOp(op)-op.mon/op.cuo):acc},0);
+  const ganV=Ops.filter(o=>esVenta(o)).reduce((s,o)=>s+intOp(o),0);
+  $('stCap').textContent=fmt(capP);$('stAct').textContent=`${opsAct.filter(o=>!esVenta(o)).length} créditos`;
+  $('stPorCob').textContent=fmt(porCob);$('stCob').textContent=fmt(cob);$('stPag').textContent=`${pMes.length} pagos`;
+  $('stPend').textContent=fmt(pend);$('stVen').textContent=`${opsMora.length} en mora`;$('stInt').textContent=fmt(intM);$('stGanV').textContent=fmt(ganV);
+  rAlertas();
+  const mn=man(),hs=hoy(),ven=Ops.filter(o=>(o.fv===hs||o.fv===mn)&&o.pag<o.cuo);
+  if(ven.length){$('vCard').style.display='';$('vList').innerHTML=ven.map(o=>{const c=gC(o.cid);return`<div class="ai warning"><span class="ad warning"></span><div class="at"><strong>${ocul?'••••':c?c.nom:'?'}</strong><div class="asub">${o.fv===mn?'Mañana':'Hoy'}: ${fmt(cvOp(o))}</div></div>${c&&c.tel?`<a href="${waLinkOp(o)}" target="_blank"><button class="btn bgr bsm" style="padding:3px 7px">💬</button></a>`:''}</div>`}).join('')}
+  else $('vCard').style.display='none';
+  const hoyMD=hoy().substring(5),cumples=Cs.filter(c=>c.cumple&&c.cumple.substring(5)===hoyMD);
+  if(cumples.length){$('cumpleCard').style.display='';$('cumpleList').innerHTML=cumples.map(c=>`<div class="ai success"><span class="ad success"></span><div class="at"><strong>${c.nom}</strong><div class="asub">🎂 ¡Hoy cumple años!</div></div>${c.tel?`<a href="https://wa.me/54${c.tel}?text=${encodeURIComponent('¡Feliz cumpleaños '+c.nom+'! 🎂🎉')}" target="_blank"><button class="btn bgr bsm" style="padding:3px 7px">💬</button></a>`:''}</div>`).join('')}
+  else $('cumpleCard').style.display='none';
+}
+function rAlertas(){
+  const al=[];
+  Ops.filter(o=>o.pag<o.cuo).forEach(o=>{const s=stOp(o),c=gC(o.cid),lbl=esVenta(o)?(o.prod||'Venta'):(o.desc||'Crédito');if(s==='atrasado'){const d=diasAtrOp(o);al.push({t:'danger',tx:`${c?c.nom:'?'} · ${lbl} — ${d}d`,sub:`Mora: ${fmt(saldoMOp(o))}`,op:o,c})}else if(s==='porVencer'){const v=new Date(o.fv+'T00:00:00'),h2=new Date();h2.setHours(0,0,0,0);const d=Math.ceil((v-h2)/86400000);al.push({t:'warning',tx:`${c?c.nom:'?'} · ${lbl} — vence ${d}d`,sub:`Cuota: ${fmt(cvOp(o))}`,op:o,c})}});
+  Ps.filter(p=>p.par&&p.flt>0).forEach(p=>{const op=gO(p.oid);const c=op?gC(op.cid):null;if(op&&c)al.push({t:'info',tx:`${c.nom} — pago parcial`,sub:`Falta: ${fmt(p.flt)}`,op,c})});
+  const b=$('nb');b.style.display=al.length?'inline-block':'none';b.textContent=al.length;
+  $('alertasSection').innerHTML=al.length?`<div class="card" style="margin-bottom:10px"><div class="ch"><span class="ct">🔔 Alertas</span><span style="font-size:9px;color:var(--tx2)">${al.length}</span></div>${al.slice(0,4).map(a=>`<div class="ai ${a.t}"><span class="ad ${a.t}"></span><div class="at">${ocul?'••••':a.tx}<div class="asub">${a.sub}</div></div>${a.c&&a.c.tel&&a.op?`<a href="${waLinkOp(a.op)}" target="_blank" onclick="event.stopPropagation()"><button class="btn bgr bsm" style="padding:3px 5px">💬</button></a>`:''}</div>`).join('')}</div>`:'';
+}
+function setF(f,el){flt=f;document.querySelectorAll('#cliTabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');rClis()}
+function rClis(){
+  let l=[...Cs];const q=($('srch').value||'').toLowerCase();if(q)l=l.filter(c=>c.nom.toLowerCase().includes(q));
+  if(flt==='activos')l=l.filter(c=>opsDeCli(c.id).some(o=>o.pag<o.cuo));else if(flt==='atrasado')l=l.filter(c=>stCli(c.id)==='atrasado');else if(flt==='completo')l=l.filter(c=>opsDeCli(c.id).length>0&&opsDeCli(c.id).every(o=>o.pag>=o.cuo));
+  const el=$('cliList');
+  if(!l.length){el.innerHTML=`<div style="text-align:center;padding:30px 0;color:var(--tx2);font-size:12px">Sin resultados</div>`;return}
+  el.innerHTML=l.map(c=>{
+    const ops=opsDeCli(c.id),opsAct=ops.filter(o=>o.pag<o.cuo),saldoT=saldoTotalCli(c.id),sTC=stCli(c.id),r=rankCli(c.id);
+    const nP=opsAct.filter(o=>!esVenta(o)).length,nV=opsAct.filter(o=>esVenta(o)).length;
+    const bm={atrasado:'<span class="sb late">Mora</span>',porVencer:'<span class="sb due">Vence pronto</span>',aldía:'<span class="sb ok">Al día</span>',completo:'<span class="sb done">✅</span>'};
+    return`<div class="cli" onclick="verCli(${c.id})">
+      <div class="av" style="background:${aCol(c.nom)}22;color:${aCol(c.nom)};border:2px solid ${aCol(c.nom)}44">${c.foto?`<img src="${c.foto}" alt="">`:ini(c.nom)}</div>
+      <div class="ci"><div class="cn ${ocul?'oculton':''}">${c.nom} <span class="${r.cl}" style="font-size:9px">${r.ic}</span></div>
+      <div class="cm">${nP?`${nP} crédito${nP>1?'s':''}`:''} ${nV?`${nV} venta${nV>1?'s':''}`:''} ${!opsAct.length?'sin activos':''}</div>
+      ${opsAct.length?`<div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap">${opsAct.slice(0,3).map(o=>`<span style="font-size:8px;padding:1px 5px;border-radius:3px;background:${esVenta(o)?'rgba(6,182,212,.15)':'rgba(108,99,255,.15)'};color:${esVenta(o)?'var(--cy)':'var(--ac2)'}">${esVenta(o)?o.prod||'Venta':o.desc||'Crédito'}</span>`).join('')}${opsAct.length>3?`<span style="font-size:8px;color:var(--tx2)">+${opsAct.length-3}</span>`:''}</div>`:''}</div>
+      <div class="cr"><div class="cmonto ${ocul?'oculto':''}" style="color:${sTC==='atrasado'?'var(--rd)':'var(--tx)'}">${opsAct.length?fmt(saldoT):'—'}</div><div style="margin-top:2px">${bm[sTC]||''}</div></div>
+    </div>`;
+  }).join('');
+}
+function setCajaP(p,el){cajP=p;document.querySelectorAll('#cajaTabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');rCaja()}
+function filtrP(lista,campo){const h=new Date();h.setHours(0,0,0,0);return lista.filter(item=>{const f=new Date(item[campo]+'T00:00:00');if(cajP==='hoy')return f.getTime()===h.getTime();if(cajP==='semana'){const lu=new Date(h);lu.setDate(h.getDate()-((h.getDay()+6)%7));const do2=new Date(lu);do2.setDate(lu.getDate()+6);do2.setHours(23,59,59,999);return f>=lu&&f<=do2}if(cajP==='mes')return item[campo]&&item[campo].startsWith(new Date().toISOString().substring(0,7));return true})}
+function rCaja(){
+  const pf=filtrP(Ps,'fec'),gf=filtrP(Gs,'fec');
+  const tc=pf.reduce((s,p)=>s+p.mon,0),ef=pf.filter(p=>p.met==='efectivo').reduce((s,p)=>s+p.mon,0),tr=pf.filter(p=>p.met==='transferencia').reduce((s,p)=>s+p.mon,0),tg=gf.reduce((s,g)=>s+g.mon,0),bal=tc-tg;
+  $('cajaStats').innerHTML=`<div class="sc gr"><div class="sl">Total cobrado</div><div class="sv gr" style="font-size:14px">${fmt(tc)}</div><div class="ss">${pf.length} pagos</div></div><div class="sc ${bal>=0?'bl':'rd'}"><div class="sl">Balance neto</div><div class="sv ${bal>=0?'bl':'rd'}" style="font-size:14px">${fmt(bal)}</div></div><div class="sc gr"><div class="sl">💵 Efectivo</div><div class="sv gr" style="font-size:14px">${fmt(ef)}</div></div><div class="sc bl"><div class="sl">📲 Transf.</div><div class="sv bl" style="font-size:14px">${fmt(tr)}</div></div>`;
+  $('pagosList').innerHTML=pf.length===0?'<div style="font-size:10px;color:var(--tx2);padding:5px 0">Sin pagos</div>':pf.slice().reverse().map(p=>{const op=gO(p.oid);const c=op?gC(op.cid):null;const lbl=op?(esVenta(op)?op.prod||'Venta':op.desc||'Crédito'):'?';return`<div class="pi"><div><div style="font-size:11px;font-weight:600">${ocul?'••••':c?c.nom:'?'} · ${lbl}</div><div class="pd">${fD(p.fec)}${p.not?' · '+p.not:''}${p.par?' · <span class="pb">parcial</span>':''}</div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px"><div class="pm">${fmt(p.mon)}</div><span class="mt2 ${p.met}">${p.met}</span><button class="btn bs bsm" style="padding:2px 6px;font-size:9px" onclick="abrirEditPago(${p.id})">✏️ Editar</button></div></div>`}).join('');
+  // Lista de operaciones/créditos del período
+  const opsDelPeriodo=Ops.filter(op=>{const fa=op.fa||op.fv;return filtrP([{fec:fa}],'fec').length>0});
+  $('opsList').innerHTML=opsDelPeriodo.length===0?'<div style="font-size:10px;color:var(--tx2);padding:5px 0">Sin operaciones en este período</div>':opsDelPeriodo.slice().reverse().map(op=>{const c=gC(op.cid);const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const monto=sv?op.precio:op.mon;const s=stOp(op);const col={completado:'var(--gr)',atrasado:'var(--rd)',porVencer:'var(--yw)',aldía:'var(--ac2)'}[s]||'var(--tx)';return`<div class="pi" style="cursor:pointer" onclick="verOpDetalle(${op.id})"><div><div style="font-size:11px;font-weight:600">${ocul?'••••':c?c.nom:'?'} · ${lbl}</div><div class="pd">${sv?'🛒 Venta':'💳 Crédito'} · ${op.cuo} cuotas · ${op.frq}</div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:700;font-size:12px;color:${col}">${fmt(monto)}</div><span class="sb ${s==='completado'?'done':s==='atrasado'?'late':s==='porVencer'?'due':'ok'}">${{completado:'✅',atrasado:'Mora',porVencer:'Por vencer',aldía:'Al día'}[s]||s}</span></div></div>`}).join('');
+  const ci={pérdida:'⛔',operativo:'🏢',otro:'📌'};
+  $('gastosList').innerHTML=gf.length===0?'<div style="font-size:10px;color:var(--tx2);padding:5px 0">Sin gastos</div>':gf.slice().reverse().map(g=>`<div class="gi"><div class="gic">${ci[g.cat]||'💸'}</div><div class="gin"><div class="gn">${g.des}</div><div class="gd">${fD(g.fec)} · ${g.cat}</div></div><div style="display:flex;align-items:center;gap:5px"><div class="ga">−${fmt(g.mon)}</div><button class="btn bs bsm" style="padding:4px 6px" onclick="abrirGasto(${g.id})">✏️</button><button class="btn brd bsm" style="padding:4px 6px" onclick="elimGasto(${g.id})">🗑️</button></div></div>`).join('');
+}
+
+function verOpDetalle(oid){
+  const op=gO(oid);if(!op)return;
+  const c=gC(op.cid),sv=esVenta(op),lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito'),s=stOp(op);
+  const ps=pagoDeOp(oid),totCob=ps.reduce((s,p)=>s+p.mon,0),saldo=saldoOp(op),cuota=cvOp(op);
+  const pct=Math.round((op.pag/op.cuo)*100);
+  const col={completado:'var(--gr)',atrasado:'var(--rd)',porVencer:'var(--yw)',aldía:'var(--ac2)'}[s]||'var(--tx)';
+  $('opDetalleContent').innerHTML=`
+    <div class="mt">${sv?'🛒':'💳'} ${lbl}</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:12px">Cliente: <strong style="color:var(--tx)">${c?c.nom:'?'}</strong></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
+      <div class="mc"><div class="ml">Monto</div><div class="mv">${fmt(sv?op.precio:op.mon)}</div></div>
+      <div class="mc"><div class="ml">Cuota</div><div class="mv">${fmt(cuota)}</div></div>
+      <div class="mc"><div class="ml">Progreso</div><div class="mv">${op.pag}/${op.cuo}</div></div>
+      <div class="mc"><div class="ml">Saldo</div><div class="mv" style="color:${col}">${fmt(saldo)}</div></div>
+      <div class="mc"><div class="ml">Total cobrado</div><div class="mv" style="color:var(--gr)">${fmt(totCob)}</div></div>
+      <div class="mc"><div class="ml">Frecuencia</div><div class="mv" style="font-size:12px">${op.frq}</div></div>
+    </div>
+    <div class="op-pt" style="margin-bottom:12px"><div class="op-pf" style="width:${pct}%;background:${col}"></div></div>
+    ${sv?`<div style="background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.2);border-radius:8px;padding:9px;margin-bottom:10px;font-size:11px">Costo: ${fmt(op.costo)} · Precio: ${fmt(op.precio)} · <span style="color:var(--gr)">Ganancia: ${fmt(op.precio-op.costo)}</span></div>`:''}
+    ${!sv&&op.int?`<div style="font-size:10px;color:var(--tx2);margin-bottom:10px">Interés: ${op.int}% (${op.tip}) · Mora diaria: ${op.mora}%</div>`:''}
+    <div style="font-family:Syne,sans-serif;font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;margin-bottom:6px">Historial de pagos</div>
+    ${ps.length?ps.slice().reverse().map(p=>`<div class="pi"><div><div style="font-size:10px;font-weight:600">${fD(p.fec)}${p.not?' · '+p.not:''}</div><div class="pd">${p.met}${p.par?' · <span class="pb">parcial falta '+fmt(p.flt)+'</span>':''}</div></div><div style="text-align:right"><div class="pm" style="font-size:12px">${fmt(p.mon)}</div><button class="btn bs bsm" style="padding:2px 5px;margin-top:2px" onclick="abrirEditPago(${p.id})">✏️</button></div></div>`).join(''):'<div style="font-size:10px;color:var(--tx2)">Sin pagos aún</div>'}
+    <div style="display:flex;gap:5px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn bp bsm" onclick="closeModal('mOpDetalle');abrirPago(${oid})">💵 Pago</button>
+      <button class="btn brd bsm" onclick="closeModal('mOpDetalle');elimOp(${oid})">🗑️ Borrar</button>
+      <button class="btn bs bsm" onclick="closeModal('mOpDetalle')">Cerrar</button>
+    </div>
+  `;
+  showModal('mOpDetalle');
+}
+
+// ══ ADMIN ══
+const SQL_SETUP = `-- ══════════════════════════════════════════
+-- CobroPRO - SQL para Supabase
+-- Ejecutar en: Supabase > SQL Editor
+-- ══════════════════════════════════════════
+
+-- 1. Crear tabla user_profiles si no existe
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  email text,
+  activo boolean DEFAULT true,
+  expires_at timestamptz,
+  paused_at timestamptz,
+  trial boolean DEFAULT false,
+  plan text DEFAULT 'trial',
+  negocio text,
+  tel text,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(user_id)
+);
+
+-- 1b. Agregar columna plan si ya existe la tabla sin ella
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS plan text DEFAULT 'trial';
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS paused_at timestamptz;
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS negocio text;
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS tel text;
+
+-- 2. Habilitar RLS
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+
+-- 3. Política: cada usuario puede VER su propio perfil
+DROP POLICY IF EXISTS "user_profiles_select_own" ON public.user_profiles;
+CREATE POLICY "user_profiles_select_own"
+  ON public.user_profiles FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- 4. Política: el ADMIN puede VER todos los perfiles
+DROP POLICY IF EXISTS "user_profiles_select_admin" ON public.user_profiles;
+CREATE POLICY "user_profiles_select_admin"
+  ON public.user_profiles FOR SELECT
+  USING (auth.email() = 'agunitro777@gmail.com');
+
+-- 5. Política: el ADMIN puede INSERT nuevos perfiles
+DROP POLICY IF EXISTS "user_profiles_insert_admin" ON public.user_profiles;
+CREATE POLICY "user_profiles_insert_admin"
+  ON public.user_profiles FOR INSERT
+  WITH CHECK (auth.email() = 'agunitro777@gmail.com');
+
+-- 6. Política: el ADMIN puede UPDATE (bloquear/activar)
+DROP POLICY IF EXISTS "user_profiles_update_admin" ON public.user_profiles;
+CREATE POLICY "user_profiles_update_admin"
+  ON public.user_profiles FOR UPDATE
+  USING (auth.email() = 'agunitro777@gmail.com');
+
+-- 7. Política: el usuario puede UPDATE su propio perfil (solo lectura de estado)
+DROP POLICY IF EXISTS "user_profiles_update_own" ON public.user_profiles;
+CREATE POLICY "user_profiles_update_own"
+  ON public.user_profiles FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- 8. Función que verifica si el usuario actual está activo
+-- Usada por las políticas RLS de todas las tablas
+CREATE OR REPLACE FUNCTION public.usuario_activo()
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  perfil RECORD;
+BEGIN
+  -- El admin siempre tiene acceso
+  IF auth.email() = 'agunitro777@gmail.com' THEN
+    RETURN true;
+  END IF;
+  SELECT activo, expires_at INTO perfil
+  FROM public.user_profiles
+  WHERE user_id = auth.uid();
+  IF NOT FOUND THEN RETURN true; END IF;
+  IF perfil.activo = false THEN RETURN false; END IF;
+  IF perfil.expires_at IS NOT NULL AND perfil.expires_at < now() THEN RETURN false; END IF;
+  RETURN true;
+END;
+$$;
+
+-- 9. Aplicar RLS basada en usuario_activo() a todas las tablas de datos
+-- CLIENTES
+DROP POLICY IF EXISTS "clientes_acceso_activo" ON public.clientes;
+CREATE POLICY "clientes_acceso_activo" ON public.clientes
+  USING (auth.uid() = user_id AND public.usuario_activo());
+
+-- OPERACIONES
+DROP POLICY IF EXISTS "operaciones_acceso_activo" ON public.operaciones;
+CREATE POLICY "operaciones_acceso_activo" ON public.operaciones
+  USING (auth.uid() = user_id AND public.usuario_activo());
+
+-- PAGOS
+DROP POLICY IF EXISTS "pagos_acceso_activo" ON public.pagos;
+CREATE POLICY "pagos_acceso_activo" ON public.pagos
+  USING (auth.uid() = user_id AND public.usuario_activo());
+
+-- GASTOS
+DROP POLICY IF EXISTS "gastos_acceso_activo" ON public.gastos;
+CREATE POLICY "gastos_acceso_activo" ON public.gastos
+  USING (auth.uid() = user_id AND public.usuario_activo());
+
+-- EVENTOS (si existe)
+DROP POLICY IF EXISTS "eventos_acceso_activo" ON public.eventos;
+CREATE POLICY "eventos_acceso_activo" ON public.eventos
+  USING (auth.uid() = user_id AND public.usuario_activo());
+
+-- 10. Trigger: crear perfil automáticamente al registrarse
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  trial_end timestamptz := now() + interval '3 days';
+BEGIN
+  INSERT INTO public.user_profiles (user_id, email, activo, expires_at, trial)
+  VALUES (new.id, new.email, true, trial_end, true)
+  ON CONFLICT (user_id) DO NOTHING;
+  RETURN new;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();`;
+
+function toggleSQLPanel(){
+  const p=$('sqlPanel');
+  const visible=p.style.display==='block';
+  p.style.display=visible?'none':'block';
+  if(!visible){$('sqlText').value=SQL_SETUP;}
+}
+function copiarSQL(){
+  const t=$('sqlText');t.select();
+  try{
+    navigator.clipboard.writeText(SQL_SETUP).then(()=>toast('📋 SQL copiado al portapapeles')).catch(()=>{document.execCommand('copy');toast('📋 SQL copiado')});
+  }catch(e){document.execCommand('copy');toast('📋 SQL copiado')}
+}
+
+let _adminData=[];
+let _adminFiltPlan='todos';
+function filtrarAdmin(){renderAdminUsers()}
+function filtrarAdminPlan(plan){
+  _adminFiltPlan=plan;
+  document.querySelectorAll('[id^="af-"]').forEach(b=>{b.style.borderColor=b.id==='af-'+plan?'var(--ac)':'var(--border)'});
+  renderAdminUsers();
+}
+function renderAdminUsers(){
+  const q=($('adminSearch')&&$('adminSearch').value||'').toLowerCase();
+  const ahora=new Date();
+  let lista=_adminData;
+  if(q)lista=lista.filter(u=>(u.email||'').toLowerCase().includes(q)||(u.negocio||'').toLowerCase().includes(q));
+  if(_adminFiltPlan!=='todos'){
+    if(_adminFiltPlan==='vencido')lista=lista.filter(u=>{const v=u.expires_at?new Date(u.expires_at):null;return u.activo===false||(v&&v<=ahora)});
+    else lista=lista.filter(u=>(u.plan||'trial')===_adminFiltPlan);
+  }
+  if(!lista.length){$('adminUserList').innerHTML='<div style="font-size:10px;color:var(--tx2);padding:5px 0">Sin resultados</div>';return}
+  $('adminUserList').innerHTML=lista.map(u=>{
+    const vence=u.expires_at?new Date(u.expires_at):null;
+    const activo=u.activo!==false&&(!vence||vence>ahora);
+    const diasRest=vence?Math.ceil((vence-ahora)/86400000):null;
+    const pausadoAt=u.paused_at?new Date(u.paused_at):null;
+    const diasPausado=(!activo&&pausadoAt)?Math.floor((ahora-pausadoAt)/86400000):null;
+    const planLabel=u.plan==='premium'?'<span style="font-size:9px;font-weight:700;color:#a78bfa;background:rgba(167,139,250,.15);padding:2px 7px;border-radius:10px">👑 Premium</span>':u.plan==='pro'?'<span style="font-size:9px;font-weight:700;color:#6c63ff;background:rgba(108,99,255,.15);padding:2px 7px;border-radius:10px">⭐ PRO</span>':u.trial?'<span style="font-size:9px;font-weight:700;color:#f59e0b;background:rgba(245,158,11,.12);padding:2px 7px;border-radius:10px">🧪 TRIAL</span>':'<span style="font-size:9px;color:var(--tx2)">Sin plan</span>';
+    const telClean=(u.tel||'').replace(/\D/g,'');
+    const wspUsr=telClean?`https://wa.me/549${telClean}?text=${encodeURIComponent('Hola '+(u.negocio||u.email||'')+'! Tu acceso a CobroPRO fue habilitado. Ya podés ingresar en '+window.location.href)}`:'';
+    // Contador visual de días
+    const colorDias=!vence?'var(--tx2)':diasRest<=0?'var(--rd)':diasRest<=7?'var(--rd)':diasRest<=20?'var(--yw)':'var(--gr)';
+    const pctDias=!vence||diasRest===null||diasRest<=0?0:Math.min(100,Math.round((diasRest/90)*100));
+    const barraColorDias=!vence?'var(--bg3)':diasRest<=0?'var(--rd)':diasRest<=7?'var(--rd)':diasRest<=20?'var(--yw)':'var(--gr)';
+    const diasTexto=!vence?'Sin vencimiento':diasRest<=0?'⛔ Vencido':`${diasRest} día${diasRest!==1?'s':''} restantes`;
+    const contadorHTML=`<div style="margin:8px 0;background:var(--bg2);border-radius:8px;padding:8px 10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-size:10px;font-weight:700;color:${colorDias}">${diasTexto}</span>
+        <span style="font-size:9px;color:var(--tx2)">${vence?vence.toLocaleDateString('es-AR'):''}</span>
+      </div>
+      <div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pctDias}%;background:${barraColorDias};border-radius:3px;transition:width .4s"></div>
+      </div>
+    </div>`;
+    return`<div style="background:var(--bg3);border:1px solid ${activo?'var(--border)':'rgba(239,68,68,.3)'};border-radius:var(--rs);padding:11px;margin-bottom:7px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700">${u.negocio||'Sin nombre'}</div>
+          <div style="font-size:10px;color:var(--tx2);margin-top:1px">${u.email||'—'}${u.tel?' · 📱 '+u.tel:''}</div>
+          <div style="font-size:9px;color:var(--tx2)">Alta: ${u.created_at?new Date(u.created_at).toLocaleDateString('es-AR'):'-'}</div>
+          <div style="margin-top:5px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">${planLabel}
+            ${diasPausado!==null?`<span style="font-size:9px;color:var(--rd);font-weight:600">⏸ ${diasPausado}d pausado</span>`:''}
+          </div>
+        </div>
+        <span class="sb ${activo?'ok':'late'}" style="flex-shrink:0;margin-left:6px">${activo?'Activo':'Inactivo'}</span>
+      </div>
+      ${contadorHTML}
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+        <button class="btn ${activo?'brd':'bgr'} bsm" data-uid="${u.user_id||u.id}" data-activo="${activo}" data-email="${(u.email||'').replace(/"/g,'')}" onclick="toggleActivo(this.dataset.uid,this.dataset.activo==='true',this.dataset.email)">${activo?'⏸ Bloquear':'▶️ Activar'}</button>
+        <button class="btn bs bsm" data-uid="${u.user_id||u.id}" data-nombre="${(u.negocio||u.email||'').replace(/"/g,'')}" data-expires="${u.expires_at||''}" onclick="abrirRenovar(this.dataset.uid,this.dataset.nombre,this.dataset.expires)">📅 Dar días</button>
+        <button class="btn bs bsm" data-uid="${u.user_id||u.id}" data-plan="${u.plan||'trial'}" data-nombre="${(u.negocio||u.email||'').replace(/"/g,'')}" onclick="abrirCambiarPlan(this.dataset.uid,this.dataset.plan,this.dataset.nombre)" style="color:${u.plan==='premium'?'var(--ac2)':u.plan==='pro'?'var(--ac)':'var(--yw)'}">🔄 ${u.plan==='premium'?'👑 Premium':u.plan==='pro'?'⭐ PRO':'🧪 Trial'}</button>
+        ${wspUsr?`<a href="${wspUsr}" target="_blank"><button class="btn bgr bsm">💬 WSP</button></a>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function rAdmin(){
+  if(!currentUser||currentUser.email!==ADMIN_EMAIL)return;
+  $('adminEmail').textContent=`Logueado como: ${currentUser.email}`;
+  try{
+    const {data,error}=await SB.from('user_profiles').select('*').order('created_at',{ascending:false});
+    if(error||!data){$('adminUserList').innerHTML='<div style="font-size:10px;color:var(--tx2)">No se pudo cargar. Asegurate de tener la tabla user_profiles en Supabase.</div>';return}
+    _adminData=data;
+    const ahora=new Date();
+    const tots=data.length,act=data.filter(u=>u.activo!==false&&(!u.expires_at||new Date(u.expires_at)>ahora)).length;
+    const pros=data.filter(u=>u.plan==='pro').length,prem=data.filter(u=>u.plan==='premium').length,tri=data.filter(u=>!u.plan||u.plan==='trial').length;
+    $('adminStats').innerHTML=`<div class="sc bl"><div class="sl">Total usuarios</div><div class="sv bl" style="font-size:18px">${tots}</div></div><div class="sc gr"><div class="sl">Activos</div><div class="sv gr" style="font-size:18px">${act}</div></div><div class="sc rd"><div class="sl">Inactivos</div><div class="sv rd" style="font-size:18px">${tots-act}</div></div><div class="sc yw"><div class="sl">Trial</div><div class="sv yw" style="font-size:18px">${tri}</div></div><div class="sc bl"><div class="sl">PRO ⭐</div><div class="sv bl" style="font-size:18px">${pros}</div></div><div class="sc cy"><div class="sl">Premium 👑</div><div class="sv cy" style="font-size:18px">${prem}</div></div>`;
+    renderAdminUsers();
+  }catch(e){$('adminUserList').innerHTML=`<div style="font-size:10px;color:var(--rd)">Error: ${e.message}</div>`}
+}
+async function toggleActivo(uid,activo,email){
+  try{
+    const nuevoEstado=!activo;
+    const upd={activo:nuevoEstado,paused_at:activo?new Date().toISOString():null};
+    // Primero intentar update (el registro ya existe)
+    const {data:existing}=await SB.from('user_profiles').select('id').eq('user_id',uid).single();
+    let error;
+    if(existing){
+      const r=await SB.from('user_profiles').update(upd).eq('user_id',uid);
+      error=r.error;
+    } else {
+      const r=await SB.from('user_profiles').insert({...upd,user_id:uid,email:email||''});
+      error=r.error;
+    }
+    if(error)throw error;
+    toast(activo?'⏸ Usuario bloqueado':'▶️ Usuario activado');
+    rAdmin();
+  }catch(e){toast('Error: '+e.message,'error');console.error(e)}
+}
+let _renExpires=null;
+function setRenDias(d){$('ren_dias').value=d;actualizarPreviewRen();}
+function actualizarPreviewRen(){
+  const dias=parseInt($('ren_dias').value)||0;
+  const ahora=new Date();
+  const baseEsVencimiento=_renExpires&&_renExpires>ahora;
+  const base=baseEsVencimiento?new Date(_renExpires):new Date();
+  const nuevaFecha=new Date(base);nuevaFecha.setDate(nuevaFecha.getDate()+dias);
+  const fechaEl=$('ren_preview_fecha');
+  const subEl=$('ren_preview_sub');
+  if(fechaEl)fechaEl.textContent=nuevaFecha.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  if(subEl)subEl.textContent=`+${dias} días desde ${baseEsVencimiento?'la fecha de vencimiento actual':'hoy'}`;
+}
+function abrirRenovar(uid,nombre,expiresAt){
+  $('ren_uid').value=uid;
+  $('ren_info').textContent=nombre||uid;
+  $('ren_dias').value=30;
+  const ahora=new Date();
+  _renExpires=expiresAt?new Date(expiresAt):null;
+  const tieneVencimiento=_renExpires&&!isNaN(_renExpires.getTime());
+  const cont=$('ren_contador');
+  const sinAcceso=$('ren_sin_acceso');
+
+  if(tieneVencimiento){
+    cont.style.display='block';
+    sinAcceso.style.display='none';
+    const diasRest=Math.ceil((_renExpires-ahora)/86400000);
+    const esVencido=diasRest<=0;
+    // Color semáforo
+    const color=esVencido?'var(--rd)':diasRest<=7?'var(--rd)':diasRest<=20?'var(--yw)':'var(--gr)';
+    const bgColor=esVencido?'rgba(239,68,68,.12)':diasRest<=7?'rgba(239,68,68,.08)':diasRest<=20?'rgba(245,158,11,.08)':'rgba(34,197,94,.08)';
+    // Número grande
+    const diasEl=$('ren_dias_rest');
+    diasEl.style.color=color;
+    diasEl.textContent=esVencido?'0':String(Math.max(0,diasRest));
+    $('ren_dias_label').textContent=esVencido?'acceso vencido':'días restantes';
+    $('ren_dias_label').style.color=color;
+    $('ren_vence_txt').textContent=esVencido?`⛔ Venció el ${_renExpires.toLocaleDateString('es-AR')}`:`Vence el ${_renExpires.toLocaleDateString('es-AR')}`;
+    $('ren_vence_txt').style.color=esVencido?'var(--rd)':'var(--tx2)';
+    $('ren_cabeza').style.background=bgColor;
+    // Barra — máximo referencia = 90 días para escala
+    const maxRef=90;
+    const pct=esVencido?0:Math.min(100,Math.round((diasRest/maxRef)*100));
+    const barra=$('ren_barra');
+    barra.style.width=pct+'%';
+    barra.style.background=esVencido?'var(--rd)':diasRest<=7?'var(--rd)':diasRest<=20?'var(--yw)':'var(--gr)';
+  } else {
+    cont.style.display='none';
+    sinAcceso.style.display='block';
+  }
+  actualizarPreviewRen();
+  showModal('mRenovar');
+}
+async function confirmarRenovar(){
+  const uid=$('ren_uid').value,dias=parseInt($('ren_dias').value)||30;
+  try{
+    const {data}=await SB.from('user_profiles').select('expires_at,email,negocio,tel').eq('user_id',uid).single();
+    const base=data&&data.expires_at&&new Date(data.expires_at)>new Date()?new Date(data.expires_at):new Date();
+    base.setDate(base.getDate()+dias);
+    await SB.from('user_profiles').update({expires_at:base.toISOString(),activo:true,trial:false}).eq('user_id',uid);
+    closeModal('mRenovar');
+    const venceStr=base.toLocaleDateString('es-AR');
+    toast(`✅ Habilitado ${dias} días — vence ${venceStr}`);
+    const telClean=((data&&data.tel)||'').replace(/\D/g,'');
+    if(telClean){
+      const nombre=data.negocio||data.email||'';
+      const msg=encodeURIComponent(`Hola ${nombre}! Tu acceso a CobroPRO fue renovado hasta el ${venceStr}. ¡Gracias! 💜`);
+      toast(`💬 <a href="https://wa.me/549${telClean}?text=${msg}" target="_blank" style="color:#22c55e;font-weight:700">Enviar confirmación por WhatsApp →</a>`,'ok');
+    }
+    rAdmin();
+  }catch(e){toast('Error: '+e.message,'error')}
+}
+function abrirCambiarPlan(uid, planActual, nombre){
+  $('cp_uid').value=uid;
+  $('cp_nombre').textContent=nombre;
+  $('cp_plan').value=planActual||'trial';
+  showModal('mCambiarPlan');
+}
+async function confirmarCambiarPlan(){
+  const uid=$('cp_uid').value, nuevoPlan=$('cp_plan').value;
+  if(!uid){toast('Error: sin usuario','error');return;}
+  const labels={'trial':'Trial 🧪','pro':'PRO ⭐','premium':'Premium 👑'};
+  try{
+    const {error}=await SB.from('user_profiles').update({plan:nuevoPlan,trial:nuevoPlan==='trial'}).eq('user_id',uid);
+    if(error)throw error;
+    // Actualizar cache local inmediatamente
+    const idx=_adminData.findIndex(u=>(u.user_id||u.id)===uid);
+    if(idx>=0){_adminData[idx].plan=nuevoPlan;_adminData[idx].trial=nuevoPlan==='trial';}
+    toast('✅ Plan cambiado a '+labels[nuevoPlan]);
+    closeModal('mCambiarPlan');
+    renderAdminUsers(); // re-render local (ya tiene el dato nuevo)
+    rAdmin(); // también recarga desde Supabase para confirmar
+  }catch(e){toast('Error al cambiar plan: '+e.message,'error');console.error('setPlan error:',e);}
+}
+async function setPlan(uid, planActual){
+  // mantener compatibilidad legacy
+  const ciclo={'trial':'pro','pro':'premium','premium':'trial'};
+  const nuevoPlan=ciclo[planActual]||'pro';
+  const labels={'trial':'Trial','pro':'PRO ⭐','premium':'Premium 👑'};
+  try{
+    await SB.from('user_profiles').update({plan:nuevoPlan,trial:nuevoPlan==='trial'}).eq('user_id',uid);
+    toast('Plan cambiado a '+labels[nuevoPlan]);
+    rAdmin();
+  }catch(e){toast('Error: '+e.message,'error')}
+}
+function calPrev(){calM--;if(calM<0){calM=11;calA--}rCal()}
+function calNext(){calM++;if(calM>11){calM=0;calA++}rCal()}
+function rCal(){
+  $('calTitle').textContent=`${M[calM]} ${calA}`;
+  const dias=['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
+  const p1=new Date(calA,calM,1),off=(p1.getDay()+6)%7,dm=new Date(calA,calM+1,0).getDate(),hs=hoy();
+  const fmesStr=`${calA}-${String(calM+1).padStart(2,'0')}`;
+  const cobM={},venM={},cumM={},evM={};
+  Ops.filter(o=>o.pag<o.cuo).forEach(o=>{fechasOp(o).forEach(f=>{if(!f.startsWith(fmesStr))return;if(!cobM[f])cobM[f]=[];cobM[f].push(o)});if(stOp(o)==='atrasado'){if(!venM[o.fv])venM[o.fv]=[];venM[o.fv].push(o)}});
+  Cs.forEach(c=>{if(!c.cumple)return;const cm=c.cumple.substring(5);const fc=`${calA}-${cm}`;if(fc.startsWith(fmesStr)){if(!cumM[fc])cumM[fc]=[];cumM[fc].push(c)}});
+  EVs.forEach(e=>{if(e.fec&&e.fec.startsWith(fmesStr)){if(!evM[e.fec])evM[e.fec]=[];evM[e.fec].push(e)}});
+  let html=dias.map(d=>`<div class="chd">${d}</div>`).join('');
+  for(let i=0;i<off;i++)html+=`<div class="cd emp"></div>`;
+  for(let d=1;d<=dm;d++){const ds=`${fmesStr}-${String(d).padStart(2,'0')}`;const hC=cobM[ds]&&cobM[ds].length,hV=venM[ds]&&venM[ds].length,hB=cumM[ds]&&cumM[ds].length,hE=evM[ds]&&evM[ds].length,isT=ds===hs;html+=`<div class="${['cd',isT?'today':'',hV?'hv':hC?'hc':'',hB&&!hC&&!hV?'hb':'',hE&&!hC&&!hV&&!hB?'he':''].filter(Boolean).join(' ')}" onclick="verDia('${ds}')">${d}<div style="position:absolute;bottom:2px;display:flex;gap:1px;justify-content:center;width:100%">${hC?`<span class="dot c"></span>`:''}${hV?`<span class="dot v"></span>`:''}${hB?`<span class="dot b"></span>`:''}${hE?`<span class="dot e"></span>`:''}</div></div>`}
+  $('calGrid').innerHTML=html;$('calDet').style.display='none';
+  const h2=new Date();h2.setHours(0,0,0,0);const prx=[];
+  for(let i=0;i<14;i++){const d=new Date(h2);d.setDate(d.getDate()+i);const ds=d.toISOString().split('T')[0];Ops.filter(o=>o.pag<o.cuo).forEach(o=>{const f=fechasOp(o);if(f.includes(ds)){const c=gC(o.cid);prx.push({fec:ds,o,c,cv:cvOp(o)})}})}
+  prx.sort((a,b)=>a.fec.localeCompare(b.fec));
+  $('proxCob').innerHTML=prx.length===0?'<div style="font-size:10px;color:var(--tx2)">Sin cobros próximos</div>':prx.slice(0,10).map(p=>`<div class="pi"><div><div style="font-size:11px;font-weight:600">${ocul?'••••':p.c?p.c.nom:'?'} · ${esVenta(p.o)?p.o.prod||'Venta':p.o.desc||'Crédito'}</div><div class="pd">${fD(p.fec)} · ${p.o.frq}</div></div><div style="display:flex;align-items:center;gap:4px"><div class="pm">${fmt(p.cv)}</div>${p.c&&p.c.tel?`<a href="${waLinkOp(p.o)}" target="_blank"><button class="btn bgr bsm" style="padding:3px 5px">💬</button></a>`:''}</div></div>`).join('');
+  $('eventosList').innerHTML=[...EVs].sort((a,b)=>a.fec.localeCompare(b.fec)).map(e=>`<div class="ev-item"><div class="ev-dot" style="background:${e.color||'var(--ac)'}"></div><div class="ev-info"><div class="ev-name">${e.tit}</div><div class="ev-date">${fD(e.fec)}${e.desc?' · '+e.desc:''}</div></div><button class="btn brd bsm" style="padding:3px 6px" onclick="elimEvento(${e.id})">🗑️</button></div>`).join('')||'<div style="font-size:10px;color:var(--tx2)">Sin eventos</div>';
+}
+function verDia(ds){
+  calDia=ds;const co=[];Ops.filter(o=>o.pag<o.cuo).forEach(o=>{const f=fechasOp(o);if(f.includes(ds)){const c=gC(o.cid);co.push({o,c})}});
+  const pd=Ps.filter(p=>p.fec===ds),ev=EVs.filter(e=>e.fec===ds),cuB=Cs.filter(c=>c.cumple&&c.cumple.substring(5)===ds.substring(5));
+  $('calDet').style.display='';$('calDetT').textContent=`📅 ${fD(ds)}`;
+  $('calDetList').innerHTML=`${cuB.length?`<div style="font-size:9px;color:var(--gr);margin-bottom:4px;font-weight:600">🎂 CUMPLEAÑOS</div>${cuB.map(c=>`<div class="pi"><div style="font-size:11px;font-weight:600">${c.nom}</div>${c.tel?`<a href="https://wa.me/54${c.tel}?text=${encodeURIComponent('¡Feliz cumpleaños '+c.nom+'! 🎂')}" target="_blank"><button class="btn bgr bsm">💬 Saludar</button></a>`:''}</div>`).join('')}`:''}${ev.length?`<div style="font-size:9px;color:var(--yw);margin:${cuB.length?'8px':0} 0 4px;font-weight:600">📌 EVENTOS</div>${ev.map(e=>`<div class="pi"><div><div style="font-size:11px;font-weight:600">${e.tit}</div><div class="pd">${e.desc||''}</div></div><button class="btn brd bsm" style="padding:3px 5px" onclick="elimEvento(${e.id})">🗑️</button></div>`).join('')}`:''}${co.length?`<div style="font-size:9px;color:var(--ac2);margin:${ev.length||cuB.length?'8px':0} 0 4px;font-weight:600">💰 CUOTAS</div>${co.map(x=>`<div class="pi"><div><div style="font-size:11px;font-weight:600">${x.c?x.c.nom:'?'} — ${esVenta(x.o)?x.o.prod||'Venta':x.o.desc||'Crédito'}</div><div class="pd">${x.o.frq}</div></div><div style="display:flex;align-items:center;gap:4px"><div class="pm">${fmt(cvOp(x.o))}</div>${x.c&&x.c.tel?`<a href="${waLinkOp(x.o)}" target="_blank"><button class="btn bgr bsm" style="padding:3px 5px">💬</button></a>`:''}</div></div>`).join('')}`:''}${pd.length?`<div style="font-size:9px;color:var(--gr);margin:${co.length?'8px':0} 0 4px;font-weight:600">✅ PAGOS</div>${pd.map(p=>{const op=gO(p.oid);const c=op?gC(op.cid):null;return`<div class="pi"><div><div style="font-size:11px;font-weight:600">${c?c.nom:'?'}</div><div class="pd">${p.not||''}</div></div><div class="pm">${fmt(p.mon)}</div></div>`}).join('')}`:''}${!co.length&&!pd.length&&!ev.length&&!cuB.length?'<div style="font-size:10px;color:var(--tx2)">Sin actividad</div>':''}`;
+}
+function setFinP(p,el){finP=p;document.querySelectorAll('#finTabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');rFin()}
+function rFin(){
+  if(finP==='proyeccion'){rFinProy();return}
+  const h=new Date();let pf=[],label='';
+  if(finP==='semana'){const lu=new Date(h);lu.setDate(h.getDate()-((h.getDay()+6)%7));lu.setHours(0,0,0,0);const do2=new Date(lu);do2.setDate(lu.getDate()+6);do2.setHours(23,59,59,999);pf=Ps.filter(p=>{const d=new Date(p.fec+'T00:00:00');return d>=lu&&d<=do2});label='Esta semana'}
+  else if(finP==='mes'){pf=Ps.filter(p=>p.fec&&p.fec.startsWith(h.toISOString().substring(0,7)));label='Este mes'}
+  else{pf=Ps.filter(p=>p.fec&&p.fec.startsWith(h.getFullYear().toString()));label='Este año'}
+  const tc=pf.reduce((s,p)=>s+p.mon,0),int=pf.reduce((acc,p)=>{const op=gO(p.oid);return op&&!esVenta(op)?acc+Math.max(0,cvOp(op)-op.mon/op.cuo):acc},0);
+  const ef=pf.filter(p=>p.met==='efectivo').reduce((s,p)=>s+p.mon,0),tr=pf.filter(p=>p.met==='transferencia').reduce((s,p)=>s+p.mon,0);
+  const tg=Gs.reduce((s,g)=>s+g.mon,0),capP=Ops.filter(o=>!esVenta(o)&&o.pag<o.cuo).reduce((s,o)=>s+o.mon,0),porCob=Ops.filter(o=>o.pag<o.cuo).reduce((s,o)=>s+saldoOp(o),0);
+  $('finContent').innerHTML=`<div class="fpc" style="background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.07));border-color:rgba(34,197,94,.3)"><div class="fpl">${label} · Total cobrado</div><div class="fpv" style="color:var(--gr)">${fmt(tc)}</div></div><div class="sg"><div class="sc yw"><div class="sl">Intereses</div><div class="sv yw" style="font-size:14px">${fmt(int)}</div></div><div class="sc ${tc-tg>=0?'bl':'rd'}"><div class="sl">Ganancia neta</div><div class="sv ${tc-tg>=0?'bl':'rd'}" style="font-size:14px">${fmt(tc-tg)}</div></div><div class="sc gr"><div class="sl">💵 Efectivo</div><div class="sv gr" style="font-size:14px">${fmt(ef)}</div></div><div class="sc bl"><div class="sl">📲 Transf.</div><div class="sv bl" style="font-size:14px">${fmt(tr)}</div></div><div class="sc bl"><div class="sl">Total prestado</div><div class="sv bl" style="font-size:14px">${fmt(capP)}</div></div><div class="sc cy"><div class="sl">Por cobrar</div><div class="sv cy" style="font-size:14px">${fmt(porCob)}</div></div></div>`;
+  const hm=[];for(let i=11;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);hm.push(d.toISOString().substring(0,7))}
+  $('finHist').innerHTML=hm.map(m=>{const ps=Ps.filter(p=>p.fec&&p.fec.startsWith(m));const tot=ps.reduce((s,p)=>s+p.mon,0),int2=ps.reduce((acc,p)=>{const op=gO(p.oid);return op&&!esVenta(op)?acc+Math.max(0,cvOp(op)-op.mon/op.cuo):acc},0);const l=MC[parseInt(m.split('-')[1])-1]+' '+m.split('-')[0].substring(2);return`<div class="pi"><div><div style="font-size:11px;font-weight:600">${l}</div><div class="pd">Intereses: ${fmt(int2)}</div></div><div class="pm">${fmt(tot)}</div></div>`}).join('');
+}
+function rFinProy(){
+  const h=new Date();h.setHours(0,0,0,0);const meses=[];for(let i=0;i<12;i++){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()+i);meses.push(d.toISOString().substring(0,7))}
+  const res=meses.map(mes=>{let total=0,intereses=0,ganV=0,n=0;Ops.filter(o=>o.pag<o.cuo).forEach(o=>{const cuota=cvOp(o),fecs=fechasOp(o);fecs.forEach(f=>{if(!f.startsWith(mes))return;const fd=new Date(f+'T00:00:00');if(fd<h)return;total+=cuota;n++;if(esVenta(o))ganV+=(o.precio-o.costo)/o.cuo;else intereses+=Math.max(0,cuota-o.mon/o.cuo)})});return{mes,total,intereses,ganV,n}});
+  const totTot=res.reduce((s,r)=>s+r.total,0),totInt=res.reduce((s,r)=>s+r.intereses,0),totGV=res.reduce((s,r)=>s+r.ganV,0),mx=Math.max(...res.map(r=>r.total),1);
+  $('finContent').innerHTML=`<div class="fpc" style="background:linear-gradient(135deg,rgba(108,99,255,.15),rgba(167,139,250,.08));border-color:rgba(108,99,255,.3)"><div class="fpl">💹 Proyección 12 meses</div><div class="fpv" style="color:var(--ac2)">${fmt(totTot)}</div></div><div class="sg"><div class="sc yw"><div class="sl">Intereses proyect.</div><div class="sv yw" style="font-size:14px">${fmt(totInt)}</div></div><div class="sc gr"><div class="sl">Gan. ventas proyect.</div><div class="sv gr" style="font-size:14px">${fmt(totGV)}</div></div></div>`;
+  $('finHist').innerHTML=`<div style="font-size:10px;color:var(--tx2);margin-bottom:7px;font-weight:600">MES A MES</div>`+res.map(r=>{const l=MC[parseInt(r.mes.split('-')[1])-1]+' '+r.mes.split('-')[0].substring(2);const pct=Math.round((r.total/mx)*100);return`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px"><span style="font-weight:600">${l} <span style="color:var(--tx2);font-weight:400;font-size:10px">(${r.n} cuotas)</span></span><span style="font-family:'Syne',sans-serif;font-weight:700;color:var(--ac2)">${fmt(r.total)}</span></div><div class="proy-bar"><div class="proy-fill" style="width:${pct}%"></div></div><div style="display:flex;gap:12px;margin-top:3px;font-size:9px;color:var(--tx2)"><span>Intereses: <b style="color:var(--yw)">${fmt(r.intereses)}</b></span>${r.ganV>0?`<span>Gan.ventas: <b style="color:var(--gr)">${fmt(r.ganV)}</b></span>`:''}</div></div>`}).join('');
+}
+function rNotif(){
+  const al=[];Ops.filter(o=>o.pag<o.cuo).forEach(o=>{const s=stOp(o),c=gC(o.cid),lbl=esVenta(o)?o.prod||'Venta':o.desc||'Crédito';if(s==='atrasado'){const d=diasAtrOp(o);al.push({t:'danger',tx:`${c?c.nom:'?'} · ${lbl}`,sub:`${d}d atraso · ${fmt(saldoMOp(o))}`,o,c})}else if(s==='porVencer'){const v=new Date(o.fv+'T00:00:00'),h=new Date();h.setHours(0,0,0,0);const d=Math.ceil((v-h)/86400000);al.push({t:'warning',tx:`${c?c.nom:'?'} · ${lbl}`,sub:`Vence en ${d}d · ${fmt(cvOp(o))}`,o,c})}});
+  Ps.filter(p=>p.par&&p.flt>0).forEach(p=>{const op=gO(p.oid);const c=op?gC(op.cid):null;if(op&&c)al.push({t:'info',tx:`${c.nom} — pago parcial`,sub:`Falta: ${fmt(p.flt)}`,o:op,c})});
+  $('notifContent').innerHTML=al.length===0?'<div class="card" style="text-align:center;padding:16px;color:var(--tx2);font-size:12px">✅ Sin alertas</div>':al.map(a=>`<div class="ai ${a.t}" style="cursor:pointer" onclick="verCli(${a.c?a.c.id:0})"><span class="ad ${a.t}"></span><div class="at"><strong>${a.tx}</strong><div class="asub">${a.sub}</div></div>${a.c&&a.c.tel&&a.o?`<a href="${waLinkOp(a.o)}" target="_blank" onclick="event.stopPropagation()"><button class="btn bgr bsm" style="padding:3px 5px">💬</button></a>`:''}</div>`).join('');
+  const mn=man();const prxMan=[];Ops.filter(o=>o.pag<o.cuo).forEach(o=>{const f=fechasOp(o);if(f.includes(mn)){const c=gC(o.cid);prxMan.push({o,c})}});
+  $('recList').innerHTML=prxMan.length===0?'<div style="font-size:10px;color:var(--tx2)">No hay vencimientos mañana</div>':prxMan.map(x=>`<div class="pi"><div><div style="font-size:11px;font-weight:600">${x.c?x.c.nom:'?'} · ${esVenta(x.o)?x.o.prod||'Venta':x.o.desc||'Crédito'}</div><div class="pd">Mañana: ${fmt(cvOp(x.o))}</div></div>${x.c&&x.c.tel?`<a href="${waLinkOp(x.o)}" target="_blank"><button class="btn bgr bsm">Enviar 💬</button></a>`:'<span style="font-size:10px;color:var(--tx2)">Sin tel.</span>'}</div>`).join('');
+  const morosos=Ops.filter(o=>stOp(o)==='atrasado');
+  $('morososList').innerHTML=morosos.length===0?'<div style="font-size:10px;color:var(--tx2)">Sin morosos 🎉</div>':morosos.map(o=>{const c=gC(o.cid);return`<div class="pi"><div><div style="font-size:11px;font-weight:600">${c?c.nom:'?'} · ${esVenta(o)?o.prod||'Venta':o.desc||'Crédito'}</div><div class="pd">${diasAtrOp(o)}d atraso · ${fmt(saldoMOp(o))}</div></div>${c&&c.tel?`<a href="${waMoraLink(o)}" target="_blank"><button class="btn brd bsm">🔴 Recordar</button></a>`:'<span style="font-size:10px;color:var(--tx2)">Sin tel.</span>'}</div>`}).join('');
+}
+function rRep(){
+  const opsAct=Ops.filter(o=>o.pag<o.cuo),opsMora=Ops.filter(o=>stOp(o)==='atrasado');
+  const totP=Ps.reduce((s,p)=>s+p.mon,0),totG=Gs.reduce((s,g)=>s+g.mon,0);
+  const cap=Ops.filter(o=>!esVenta(o)&&o.pag<o.cuo).reduce((s,o)=>s+o.mon,0),porCob=opsAct.reduce((s,o)=>s+saldoOp(o),0);
+  const mor=opsAct.length>0?Math.round((opsMora.length/opsAct.length)*100):0;
+  const totInt=Ps.reduce((acc,p)=>{const op=gO(p.oid);return op&&!esVenta(op)?acc+Math.max(0,cvOp(op)-op.mon/op.cuo):acc},0);
+  const ganV=Ops.filter(o=>esVenta(o)).reduce((s,o)=>s+intOp(o),0);
+  $('repGrid').innerHTML=`<div class="rc"><div class="rcl">Total cobrado</div><div class="rcv" style="color:var(--gr)">${fmt(totP)}</div></div><div class="rc"><div class="rcl">Capital prestado</div><div class="rcv" style="color:var(--ac2)">${fmt(cap)}</div></div><div class="rc"><div class="rcl">Por cobrar</div><div class="rcv" style="color:var(--cy)">${fmt(porCob)}</div></div><div class="rc"><div class="rcl">Intereses</div><div class="rcv" style="color:var(--yw)">${fmt(totInt)}</div></div><div class="rc"><div class="rcl">Ganancia neta</div><div class="rcv" style="color:${totP-totG>=0?'var(--gr)':'var(--rd)'}">${fmt(totP-totG)}</div></div><div class="rc"><div class="rcl">Gan. ventas</div><div class="rcv" style="color:var(--cy)">${fmt(ganV)}</div></div>`;
+  const circ=170,off=circ-(mor/100)*circ;$('mRing').style.strokeDashoffset=off;$('mPct').textContent=mor+'%';
+  $('mAnal').innerHTML=mor===0?'✅ Todos al día.':mor<20?'⚡ Baja.':mor<50?'⚠️ Moderada.':'🔴 Alta. Acción urgente.';
+  const topClis=[...Cs].sort((a,b)=>opsDeCli(b.id).reduce((s,o)=>s+intOp(o),0)-opsDeCli(a.id).reduce((s,o)=>s+intOp(o),0)).slice(0,5);
+  $('topClis').innerHTML=topClis.map((c,i)=>{const tot=opsDeCli(c.id).reduce((s,o)=>s+intOp(o),0);const r=rankCli(c.id);return`<div class="pi"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px">${['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</span><div><div style="font-size:11px;font-weight:600">${c.nom} <span class="${r.cl}">${r.ic}</span></div><div style="font-size:9px;color:var(--tx2)">${opsDeCli(c.id).length} op.</div></div></div><div style="text-align:right"><div class="pm" style="color:var(--yw)">${fmt(tot)}</div><div style="font-size:9px;color:var(--tx2)">rentabilidad</div></div></div>`}).join('')||'<div style="font-size:10px;color:var(--tx2)">Sin datos</div>';
+  const roi=cap>0?((totInt/cap)*100).toFixed(1):0;
+  $('iaAnal').innerHTML=`📊 <b>Resumen:</b> ${Cs.length} clientes · ${Ops.length} operaciones · Capital: <b>${fmt(cap)}</b>${totInt>0?` · ROI ≈ ${roi}%`:''}<br>Por cobrar: <b>${fmt(porCob)}</b><br>${opsMora.length>0?`⚠️ ${opsMora.length} en mora.<br>`:'✅ Sin mora.<br>'}${totG>0?`💸 Gastos: ${fmt(totG)} · Neta: ${fmt(totP-totG)}<br>`:''}${ganV>0?`🛒 Gan.ventas: ${fmt(ganV)}<br>`:''}💡 ${mor>30?'Priorizar cobros.':'Negocio saludable.'}`;
+}
+
+// ══ EXPORTAR EXCEL ══
+function exportarExcel(){if(!requierePro('Exportar Excel'))return;
+  if(!Cs.length&&!Ops.length){toast("Sin datos para exportar","warn");return}
+  const WB=XLSX.utils.book_new();
+  const fd=d=>{if(!d)return"";const p=d.split("-");return p[2]+"/"+p[1]+"/"+p[0]};
+  const fm=n=>Math.round(n).toLocaleString("es-AR");
+  const mon=CFG.moneda||"$";
+
+  // Clientes
+  XLSX.utils.book_append_sheet(WB,XLSX.utils.json_to_sheet(Cs.map(c=>{
+    const oa=opsDeCli(c.id).filter(o=>o.pag<o.cuo);
+    return{"Nombre":c.nom,"Telefono":c.tel||"","Cumpleanos":fd(c.cumple),"Notas":c.not||"","Ops activas":oa.length,"Por cobrar":mon+fm(saldoTotalCli(c.id)),"Ranking":rankCli(c.id).lb,"Estado":stCli(c.id)};
+  })),"Clientes");
+
+  // Operaciones
+  XLSX.utils.book_append_sheet(WB,XLSX.utils.json_to_sheet(Ops.map(o=>{
+    const c=gC(o.cid);
+    return{"Cliente":c?c.nom:"?","Tipo":esVenta(o)?"Venta":"Credito","Descripcion":esVenta(o)?o.prod||"":o.desc||"","Monto":mon+fm(esVenta(o)?o.precio:o.mon),"Cuotas":o.cuo,"Pagadas":o.pag,"Valor cuota":mon+fm(cvOp(o)),"Saldo":mon+fm(saldoOp(o)),"Frecuencia":o.frq,"Vencimiento":fd(o.fv),"Estado":stOp(o)};
+  })),"Operaciones");
+
+  // Pagos
+  XLSX.utils.book_append_sheet(WB,XLSX.utils.json_to_sheet(Ps.map(p=>{
+    const op=gO(p.oid),c=op?gC(op.cid):null;
+    return{"Cliente":c?c.nom:"?","Operacion":op?(esVenta(op)?op.prod||"Venta":op.desc||"Credito"):"?","Monto":mon+fm(p.mon),"Metodo":p.met,"Fecha":fd(p.fec),"Parcial":p.par?"Si":"No","Falta":p.flt>0?mon+fm(p.flt):""};
+  })),"Pagos");
+
+  // Gastos
+  XLSX.utils.book_append_sheet(WB,XLSX.utils.json_to_sheet(Gs.length?Gs.map(g=>({"Descripcion":g.des,"Monto":mon+fm(g.mon),"Categoria":g.cat,"Fecha":fd(g.fec)})):[{"Info":"Sin gastos"}]),"Gastos");
+
+  // Resumen
+  const oa=Ops.filter(o=>o.pag<o.cuo);
+  const cap=Ops.filter(o=>!esVenta(o)&&o.pag<o.cuo).reduce((s,o)=>s+o.mon,0);
+  const pc=oa.reduce((s,o)=>s+saldoMOp(o),0);
+  const tp=Ps.reduce((s,p)=>s+p.mon,0),tg=Gs.reduce((s,g)=>s+g.mon,0);
+  const ti=Ps.reduce((acc,p)=>{const op=gO(p.oid);return op&&!esVenta(op)?acc+Math.max(0,cvOp(op)-op.mon/op.cuo):acc},0);
+  XLSX.utils.book_append_sheet(WB,XLSX.utils.json_to_sheet([
+    {"Concepto":"Fecha exportacion","Valor":new Date().toLocaleDateString("es-AR")},
+    {"Concepto":"Total clientes","Valor":Cs.length},
+    {"Concepto":"Total operaciones","Valor":Ops.length},
+    {"Concepto":"Operaciones activas","Valor":oa.length},
+    {"Concepto":"Capital prestado","Valor":mon+fm(cap)},
+    {"Concepto":"Total por cobrar","Valor":mon+fm(pc)},
+    {"Concepto":"Total cobrado","Valor":mon+fm(tp)},
+    {"Concepto":"Intereses ganados","Valor":mon+fm(ti)},
+    {"Concepto":"Total gastos","Valor":mon+fm(tg)},
+    {"Concepto":"Ganancia neta","Valor":mon+fm(tp-tg)},
+  ]),"Resumen");
+
+  XLSX.writeFile(WB,"CobrosPRO-"+hoy()+".xlsx");
+  toast("📊 Excel exportado");
+}
+
+// ══ EXPORTAR PDF ══
+function exportarPDF(){if(!requierePro('Exportar PDF'))return;
+  if(!Cs.length&&!Ops.length){toast("Sin datos para exportar","warn");return}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+  const fd=d=>{if(!d)return"";const p=d.split("-");return p[2]+"/"+p[1]+"/"+p[0]};
+  const fm=n=>(CFG.moneda||"$")+Math.round(n).toLocaleString("es-AR");
+  let y=15;
+
+  // Header
+  doc.setFillColor(108,99,255);
+  doc.rect(0,0,210,22,"F");
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16);doc.setFont("helvetica","bold");
+  doc.text("CobrosPRO - Reporte completo",105,13,{align:"center"});
+  doc.setFontSize(9);
+  doc.text("Generado: "+new Date().toLocaleDateString("es-AR"),105,19,{align:"center"});
+  y=30;
+
+  // Resumen
+  const oa=Ops.filter(o=>o.pag<o.cuo);
+  const cap=Ops.filter(o=>!esVenta(o)&&o.pag<o.cuo).reduce((s,o)=>s+o.mon,0);
+  const pc=oa.reduce((s,o)=>s+saldoMOp(o),0);
+  const tp=Ps.reduce((s,p)=>s+p.mon,0),tg=Gs.reduce((s,g)=>s+g.mon,0);
+  const ti=Ps.reduce((acc,p)=>{const op=gO(p.oid);return op&&!esVenta(op)?acc+Math.max(0,cvOp(op)-op.mon/op.cuo):acc},0);
+  const mora=Ops.filter(o=>stOp(o)==="atrasado");
+
+  doc.setTextColor(30,30,30);doc.setFontSize(12);doc.setFont("helvetica","bold");
+  doc.text("RESUMEN EJECUTIVO",14,y);y+=5;
+  doc.autoTable({startY:y,
+    head:[["Concepto","Valor"]],
+    body:[
+      ["Clientes registrados",Cs.length],
+      ["Operaciones activas",oa.length],
+      ["Capital prestado activo",fm(cap)],
+      ["Total por cobrar",fm(pc)],
+      ["Total cobrado",fm(tp)],
+      ["Intereses ganados",fm(ti)],
+      ["Gastos totales",fm(tg)],
+      ["Ganancia neta",fm(tp-tg)],
+      ["En mora",mora.length],
+    ],
+    styles:{fontSize:9},
+    headStyles:{fillColor:[108,99,255]},
+    alternateRowStyles:{fillColor:[245,245,255]},
+    margin:{left:14,right:14}
+  });
+  y=doc.lastAutoTable.finalY+10;
+
+  // Clientes
+  if(y>230){doc.addPage();y=15}
+  doc.setFontSize(12);doc.setFont("helvetica","bold");doc.setTextColor(30,30,30);
+  doc.text("CLIENTES ("+Cs.length+")",14,y);y+=5;
+  doc.autoTable({startY:y,
+    head:[["Nombre","Telefono","Ops","Por cobrar","Estado","Ranking"]],
+    body:Cs.map(c=>{
+      const opsA=opsDeCli(c.id).filter(o=>o.pag<o.cuo);
+      return[c.nom,c.tel||"-",opsA.length,fm(saldoTotalCli(c.id)),stCli(c.id),rankCli(c.id).lb];
+    }),
+    styles:{fontSize:8},
+    headStyles:{fillColor:[108,99,255]},
+    alternateRowStyles:{fillColor:[245,245,255]},
+    margin:{left:14,right:14}
+  });
+  y=doc.lastAutoTable.finalY+10;
+
+  // Operaciones
+  if(y>210){doc.addPage();y=15}
+  doc.setFontSize(12);doc.setFont("helvetica","bold");doc.text("OPERACIONES ("+Ops.length+")",14,y);y+=5;
+  doc.autoTable({startY:y,
+    head:[["Cliente","Tipo","Descripcion","Monto","Cuotas","Saldo","Vencimiento","Estado"]],
+    body:Ops.map(o=>{
+      const c=gC(o.cid);
+      return[c?c.nom:"?",esVenta(o)?"Venta":"Credito",esVenta(o)?o.prod||"-":o.desc||"-",fm(esVenta(o)?o.precio:o.mon),o.pag+"/"+o.cuo,fm(saldoOp(o)),fd(o.fv),stOp(o)];
+    }),
+    styles:{fontSize:7},
+    headStyles:{fillColor:[108,99,255]},
+    alternateRowStyles:{fillColor:[245,245,255]},
+    margin:{left:14,right:14}
+  });
+  y=doc.lastAutoTable.finalY+10;
+
+  // Pagos
+  if(y>210){doc.addPage();y=15}
+  doc.setFontSize(12);doc.setFont("helvetica","bold");doc.text("HISTORIAL DE PAGOS ("+Ps.length+")",14,y);y+=5;
+  doc.autoTable({startY:y,
+    head:[["Cliente","Operacion","Monto","Metodo","Fecha","Parcial"]],
+    body:Ps.slice().reverse().map(p=>{
+      const op=gO(p.oid),c=op?gC(op.cid):null;
+      return[c?c.nom:"?",op?(esVenta(op)?op.prod||"Venta":op.desc||"Credito"):"?",fm(p.mon),p.met,fd(p.fec),p.par?"Si (falta "+fm(p.flt)+")":"No"];
+    }),
+    styles:{fontSize:7},
+    headStyles:{fillColor:[34,197,94]},
+    alternateRowStyles:{fillColor:[240,255,245]},
+    margin:{left:14,right:14}
+  });
+
+  // Footer en todas las paginas
+  const pages=doc.internal.getNumberOfPages();
+  for(let i=1;i<=pages;i++){
+    doc.setPage(i);
+    doc.setFontSize(8);doc.setTextColor(150,150,150);
+    doc.text("CobrosPRO · Pagina "+i+" de "+pages,105,290,{align:"center"});
+  }
+
+  doc.save("CobrosPRO-"+hoy()+".pdf");
+  toast("📄 PDF exportado");
+}
+
+// ══ COMPROBANTE PDF ══
+function comprobantePDF(oid,monPag,fec,par,flt){
+  const op=gO(oid);const c=op?gC(op.cid):null;if(!op||!c)return;
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const fm=n=>(CFG.moneda||'$')+Math.round(n).toLocaleString('es-AR');
+  const fd=d=>{if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`};
+  const lbl=esVenta(op)?op.prod||'Venta':op.desc||'Crédito';
+
+  // Header
+  doc.setFillColor(108,99,255);doc.rect(0,0,210,28,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(18);doc.setFont('helvetica','bold');
+  doc.text('COMPROBANTE DE PAGO',105,13,{align:'center'});
+  doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text((CFG.nombre||'CobroPRO')+' · '+new Date().toLocaleDateString('es-AR'),105,21,{align:'center'});
+
+  // Box datos cliente
+  doc.setDrawColor(200,200,220);doc.setFillColor(248,248,255);
+  doc.roundedRect(14,34,182,36,3,3,'FD');
+  doc.setTextColor(80,80,120);doc.setFontSize(8);doc.setFont('helvetica','bold');
+  doc.text('CLIENTE',20,42);doc.text('CONCEPTO',105,42);
+  doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);doc.setFontSize(11);
+  doc.text(c.nom,20,50);doc.text(lbl,105,50);
+  doc.setFontSize(9);doc.setTextColor(120,120,140);
+  if(c.tel)doc.text('Tel: '+c.tel,20,58);
+  doc.text('Fecha: '+fd(fec),105,58);
+
+  // Monto principal
+  doc.setFillColor(108,99,255);doc.roundedRect(14,76,182,28,3,3,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(10);doc.setFont('helvetica','bold');
+  doc.text('MONTO ABONADO',105,86,{align:'center'});
+  doc.setFontSize(22);doc.text(fm(monPag),105,98,{align:'center'});
+
+  // Detalles
+  let y=114;
+  doc.setFillColor(245,245,255);doc.roundedRect(14,y,182,par?40:32,3,3,'F');
+  doc.setTextColor(80,80,120);doc.setFontSize(9);doc.setFont('helvetica','bold');
+  doc.text('DETALLE',20,y+8);
+  doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);doc.setFontSize(10);
+  doc.text('Cuotas: '+op.pag+'/'+op.cuo,20,y+17);
+  doc.text('Frecuencia: '+op.frq,100,y+17);
+  doc.text('Saldo restante: '+fm(saldoOp(op)),20,y+26);
+  if(par){doc.setTextColor(200,100,0);doc.text('⚠ Pago parcial — Falta: '+fm(flt),20,y+35)}
+
+  // Footer
+  y=par?170:162;
+  doc.setDrawColor(200,200,220);doc.line(14,y,196,y);
+  doc.setTextColor(150,150,170);doc.setFontSize(8);
+  doc.text('CobroPRO · Documento generado automáticamente · No requiere firma',105,y+7,{align:'center'});
+
+  doc.save('Comprobante-'+c.nom.replace(/\s/g,'-')+'-'+fec+'.pdf');
+  toast('📄 Comprobante PDF descargado');
+}
+
+// ══ IMPORTAR CLIENTES XLSX ══
+async function importarClientes(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets['Clientes'];
+      if(!ws){toast('No se encontró hoja "Clientes" en el archivo','error');return}
+      const rows=XLSX.utils.sheet_to_json(ws);
+      if(!rows.length){toast('El archivo no tiene clientes','warn');return}
+      let nuevos=0,omitidos=0;
+      for(const row of rows){
+        const nom=(row['Nombre']||'').trim();
+        if(!nom){omitidos++;continue}
+        const yaExiste=Cs.some(c=>c.nom.toLowerCase()===nom.toLowerCase());
+        if(yaExiste){omitidos++;continue}
+        // Parsear cumpleaños dd/mm/yyyy -> yyyy-mm-dd
+        let cumple='';
+        if(row['Cumpleanos']){const p=String(row['Cumpleanos']).split('/');if(p.length===3)cumple=`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`}
+        const tel=((row['Telefono']||row['Teléfono']||row['telefono']||'')).toString().trim();
+        const notas=(row['Notas']||row['notas']||row['Nota']||'').toString().trim();
+        const d={nom,tel,cumple,not_:notas,foto:'',docs:[]};
+        try{
+          const r=await dbIns('clientes',d);
+          Cs.push({...r,not:r.not_||'',docs:[]});nuevos++;
+        }catch(err){
+          console.error('Import error:',err.message);omitidos++;
+        }
+      }
+      input.value='';
+      toast(`✅ ${nuevos} clientes importados${omitidos?`, ${omitidos} omitidos`:''}`);
+      closeModal('mPerfil');setTimeout(()=>{rClis();rInicio();},0);
+    }catch(err){toast('Error al leer el archivo: '+err.message,'error')}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ══ RESET PASSWORD ══
+function showResetMsg(txt,tipo){const el=$('resetMsg');el.textContent=txt;el.className='auth-msg '+(tipo==='ok'?'ok':'err');el.style.display='block'}
+async function handleResetPass(){
+  const pass=$('newPass').value,conf=$('newPassConf').value;
+  if(pass.length<6){showResetMsg('Mínimo 6 caracteres','err');return}
+  if(pass!==conf){showResetMsg('Las contraseñas no coinciden','err');return}
+  const btn=$('resetBtn');btn.disabled=true;btn.textContent='⏳ Guardando...';
+  try{
+    const {error}=await SB.auth.updateUser({password:pass});
+    if(error)throw error;
+    showResetMsg('✅ Contraseña actualizada. Redirigiendo...','ok');
+    setTimeout(()=>{$('resetScreen').style.display='none';$('authScreen').style.display='flex'},2000);
+  }catch(e){showResetMsg('Error: '+e.message,'err')}
+  btn.disabled=false;btn.textContent='🔒 Guardar nueva contraseña';
+}
+
+// ══ INIT ══
+async function verificarAcceso(user){
+  if(!user)return false;
+  if(user.email===ADMIN_EMAIL)return true;
+  try{
+    const {data:perfil,error}=await SB.from('user_profiles').select('activo,expires_at').eq('user_id',user.id).maybeSingle();
+    if(error)return true; // error de red, no bloquear
+    if(!perfil)return true; // sin perfil, dejar pasar (usuario nuevo)
+    if(perfil.activo===false)return false;
+    if(perfil.expires_at&&new Date(perfil.expires_at)<new Date())return false;
+  }catch(e){return true}
+  return true;
+}
+function mostrarPantallaBloqueada(){
+  // Si ya se está mostrando, no hacer nada
+  if(document.getElementById('pantallaBloqueada'))return;
+  const wspMsg=encodeURIComponent('Hola! Mi cuenta de CobroPRO fue bloqueada. Quiero más información.');
+  const div=document.createElement('div');
+  div.id='pantallaBloqueada';
+  div.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0f;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center';
+  div.innerHTML=`
+    <div style="font-size:56px;margin-bottom:16px">🔒</div>
+    <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:800;color:#fff;margin-bottom:8px">Cuenta bloqueada</div>
+    <div style="font-size:14px;color:#888;margin-bottom:32px;max-width:280px;line-height:1.6">Tu acceso fue desactivado por el administrador. Contactate con soporte para más información.</div>
+    <a href="https://wa.me/${WSP_ADMIN}?text=${wspMsg}" target="_blank"
+      style="display:flex;align-items:center;gap:10px;background:#25d366;color:#fff;padding:14px 24px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;margin-bottom:16px">
+      💬 Contactar soporte por WhatsApp
+    </a>
+    <button onclick="doLogout()" style="background:transparent;border:1px solid #333;color:#666;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px">Cerrar sesión</button>
+  `;
+  document.body.appendChild(div);
+  // Cerrar sesión en background
+  try{SB.auth.signOut();}catch(e){}
+}
+async function bloquearYEchar(motivo){
+  try{await SB.auth.signOut();}catch(e){}
+  currentUser=null;
+  document.getElementById('appScreen').style.display='none';
+  document.getElementById('loadingScreen').style.display='none';
+  document.getElementById('authScreen').style.display='flex';
+  const wspMsg=encodeURIComponent('Hola! Necesito ayuda con mi cuenta de CobroPRO. '+motivo);
+  const el=document.getElementById('authMsg');
+  el.innerHTML=`<strong>⛔ Acceso bloqueado</strong><br>${motivo}<br><br><a href="https://wa.me/${WSP_ADMIN}?text=${wspMsg}" target="_blank" style="display:inline-block;margin-top:8px;background:#25d366;color:#fff;padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:700">💬 Contactar soporte por WhatsApp</a>`;
+  el.className='auth-msg err';el.style.display='block';
+}
+async function init(){
+  const savedUrl=localStorage.getItem('sb_url'),savedKey=localStorage.getItem('sb_key');
+  if(savedUrl)$('supaUrl').value=savedUrl;if(savedKey)$('supaKey').value=savedKey;
+  if(!initSB())return;
+
+  // Detectar si viene del link de recuperación de contraseña
+  const hash=window.location.hash;
+  if(hash&&hash.includes('type=recovery')){
+    $('authScreen').style.display='none';
+    $('resetScreen').style.display='flex';
+    return;
+  }
+
+  // Mostrar pantalla de carga mientras verificamos sesión
+  $('authScreen').style.display='none';
+  $('loadingScreen').style.display='flex';
+
+  let sessionOk = false;
+  try{
+    // Intentar recuperar sesión existente
+    const {data:{session},error}=await SB.auth.getSession();
+    if(session&&session.user){
+      currentUser=session.user;
+      const ok=await verificarAcceso(currentUser);
+      if(ok){await iniciarApp();sessionOk=true;}
+      else{await SB.auth.signOut();currentUser=null;}
+    }else if(!session){
+      // Intentar refrescar el token
+      try{
+        const {data:ref}=await SB.auth.refreshSession();
+        if(ref&&ref.session&&ref.session.user){
+          currentUser=ref.session.user;
+          const ok=await verificarAcceso(currentUser);
+          if(ok){await iniciarApp();sessionOk=true;}
+          else{await SB.auth.signOut();currentUser=null;}
+        }
+      }catch(e){}
+    }
+  }catch(e){console.error('Session restore error:',e)}
+
+  if(!sessionOk){
+    $('loadingScreen').style.display='none';
+    $('authScreen').style.display='flex';
+  }
+
+  SB.auth.onAuthStateChange(async(event,session)=>{
+    if(event==='PASSWORD_RECOVERY'){
+      $('authScreen').style.display='none';
+      $('loadingScreen').style.display='none';
+      $('resetScreen').style.display='flex';
+      return;
+    }
+    if(event==='TOKEN_REFRESHED'&&session){
+      currentUser=session.user;
+      const ok=await verificarAcceso(currentUser);
+      if(!ok){await bloquearYEchar('Tu período de acceso venció. Contactate con soporte para renovar.');}
+    }
+    if(event==='SIGNED_IN'&&session){
+      // Siempre procesar SIGNED_IN - handleAuth ya no llama iniciarApp directamente
+      currentUser=session.user;
+      const appVisible=$('appScreen').style.display==='block';
+      if(!appVisible){
+        const ok=await verificarAcceso(currentUser);
+        if(ok)await iniciarApp();
+        else{await SB.auth.signOut();currentUser=null;}
+      }
+    }
+    if(event==='SIGNED_OUT'){
+      currentUser=null;
+      $('appScreen').style.display='none';
+      $('loadingScreen').style.display='none';
+      $('authScreen').style.display='flex';
+    }
+  });
+}
+init();
+
+// Verificar acceso cada 60 segundos
+setInterval(async()=>{
+  if(!currentUser||!SB)return;
+  if(currentUser.email===ADMIN_EMAIL)return;
+  try{
+    const {data:perfil}=await SB.from('user_profiles').select('activo,expires_at').eq('user_id',currentUser.id).maybeSingle();
+    if(!perfil)return;
+    const bloqueado=perfil.activo===false;
+    const vencido=perfil.expires_at&&new Date(perfil.expires_at)<new Date();
+    if(bloqueado||vencido){
+      const motivo=bloqueado?'Tu cuenta fue desactivada. Contactate con soporte para más información.':'Tu período de acceso venció. Contactate con soporte para renovar.';
+      await bloquearYEchar(motivo);
+    }
+  }catch(e){}
+},60*1000);
+</script>
+</body>
+</html>
