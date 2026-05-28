@@ -3281,10 +3281,18 @@ async function guardarPago(){
   const notaBase=$('p_not').value.trim();
   // ── Detectar mora: comparar fecha de pago vs fecha de vencimiento de la cuota
   let diasMoraPago=0;
-  if(!soloInt&&!par){
-    const fechaVenc=proxFechaOp(op);
+  if(!soloInt){
+    // Calcular mora tanto para pagos completos como parciales
+    let fechaVencMora;
+    if(parPrevId){
+      // Si hay un parcial previo, la mora corre desde el vencimiento original de esa cuota
+      const pPrevMora=Ps.find(x=>x.id===parPrevId);
+      fechaVencMora=pPrevMora?proxFechaOp(op):proxFechaOp(op);
+    } else {
+      fechaVencMora=proxFechaOp(op);
+    }
     const fechaPago=new Date(fec+'T00:00:00');
-    diasMoraPago=Math.max(0,Math.floor((fechaPago-fechaVenc)/86400000));
+    diasMoraPago=Math.max(0,Math.floor((fechaPago-fechaVencMora)/86400000));
   }
   const moraTag=diasMoraPago>0?`[MORA:${diasMoraPago}d] `:'';
   const not_=soloInt?('🔄 INTERES'+(notaBase?': '+notaBase:'')):(moraTag+notaBase);
@@ -3324,8 +3332,16 @@ async function guardarPago(){
       }
     } else if(parPrevId){
       const pPrev=Ps.find(x=>x.id===parPrevId);
-      if(pPrev){pPrev.par=false;pPrev.flt=0;await dbUpd('pagos',parPrevId,{par:false,flt:0})}
-      await sincPagOp(oid);
+      if(par){
+        // El nuevo pago tampoco alcanza: acumular sobre el parcial anterior
+        // El nuevo registro tiene el flt actualizado; marcar el anterior como absorbido
+        if(pPrev){pPrev.par=false;pPrev.flt=0;await dbUpd('pagos',parPrevId,{par:false,flt:0})}
+        // NO llamar sincPagOp: la cuota sigue pendiente
+      } else {
+        // El nuevo pago completó la cuota
+        if(pPrev){pPrev.par=false;pPrev.flt=0;await dbUpd('pagos',parPrevId,{par:false,flt:0})}
+        await sincPagOp(oid);
+      }
     } else if(!par){
       await sincPagOp(oid);
     }
@@ -3541,7 +3557,7 @@ function verCli(cid){
       </div>
     </div>`;
   }).join('');
-  const opsCompHTML=opsComp.length?`<div style="margin-top:12px"><div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">✅ Terminados (${opsComp.length})</div>${opsComp.map(op=>{const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const tot=sv?op.precio:op.mon;const pagosOp=pagoDeOp(op.id);const totCobrado=pagosOp.reduce((s,p)=>s+p.mon,0);return`<div class="op-card" style="opacity:.7;border-left:3px solid var(--gr)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="op-tag" style="color:var(--gr)">${sv?'🛒':'💳'} ${sv?'VENTA':'CRÉDITO'}</div><div style="font-size:13px;font-weight:700">${lbl}</div><div style="font-size:9px;color:var(--tx2)">${op.pag}/${op.cuo} cuotas · ${op.frq}</div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:var(--gr)">${fmt(tot)}</div><span class="sb done">✅ ${op.pag}/${op.cuo} pagadas</span><div style="font-size:9px;color:var(--gr);margin-top:2px">Cobrado: ${fmt(totCobrado)}</div></div></div><div style="display:flex;gap:5px;margin-top:6px"><button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfCreditoNuevoWA(gO(${op.id}),gC(${cid}))">📲 PDF</button><button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button></div></div>`}).join('')}</div>`:'';
+  const opsCompHTML=opsComp.length?`<div style="margin-top:12px"><div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">✅ Terminados (${opsComp.length})</div>${opsComp.map(op=>{const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const tot=sv?op.precio:op.mon;const pagosOp=pagoDeOp(op.id);const totCobrado=pagosOp.reduce((s,p)=>s+p.mon,0);return`<div class="op-card" style="opacity:.7;border-left:3px solid var(--gr)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="op-tag" style="color:var(--gr)">${sv?'🛒':'💳'} ${sv?'VENTA':'CRÉDITO'}</div><div style="font-size:13px;font-weight:700">${lbl}</div><div style="font-size:9px;color:var(--tx2)">${op.pag}/${op.cuo} cuotas · ${op.frq}</div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:var(--gr)">${fmt(tot)}</div><span class="sb done">✅ ${op.pag}/${op.cuo} pagadas</span><div style="font-size:9px;color:var(--gr);margin-top:2px">Cobrado: ${fmt(totCobrado)}</div></div></div><div style="display:flex;gap:5px;margin-top:6px"><button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️ Editar</button><button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfCreditoNuevoWA(gO(${op.id}),gC(${cid}))">📲 PDF</button><button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button></div></div>`}).join('')}</div>`:'';
   const notasHTML=c.not?`<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--tx2)"><span style="font-weight:600;color:var(--tx)">📝 Notas:</span> ${c.not}</div>`:'';
   $('verContent').innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
