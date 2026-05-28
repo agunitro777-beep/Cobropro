@@ -794,7 +794,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
 <div class="pg" id="page-cal">
   <div class="cn2"><button class="cnb" onclick="calPrev()">‹</button><span class="cmt" id="calTitle"></span><button class="cnb" onclick="calNext()">›</button></div>
   <div class="card"><div class="cg" id="calGrid"></div></div>
-  <div class="card" id="calDet" style="display:none"><div class="ch"><span class="ct" id="calDetT">Día</span><button class="btn bs bsm" onclick="abrirEvento(calDia)">+ Evento</button></div><div id="calDetList"></div></div>
+  <div class="card" id="calDet" style="display:none;background:var(--card);border:1px solid var(--border)"><div class="ch"><span class="ct" id="calDetT">Día</span><button class="btn bs bsm" onclick="abrirEvento(calDia)">+ Evento</button></div><div id="calDetList"></div></div>
   <div class="card"><div class="ch"><span class="ct">📋 Próximos 14 días</span></div><div id="proxCob"></div></div>
   <div class="card"><div class="ch"><span class="ct">📌 Eventos</span><button class="btn bs bsm" onclick="abrirEvento()">+ Agregar</button></div><div id="eventosList"></div></div>
 </div>
@@ -3425,17 +3425,24 @@ async function confirmarElimPago(){
     const p=Ps.find(x=>x.id===pid);
     const opId=p?p.oid:null;
     const eraCompleto=p&&!p.par;
+    const op=opId?gO(opId):null;
+    const cidPago=op?op.cid:null;
     await dbDel('pagos',pid);
     // Actualizar estado local inmediatamente
     Ps=Ps.filter(x=>x.id!==pid);
     // Recalcular pag desde los pagos reales si era un pago completo
-    if(eraCompleto&&opId){await sincPagOp(opId).catch(()=>{const op=gO(opId);if(op&&op.pag>0)op.pag=Math.max(0,op.pag-1);})}
+    if(eraCompleto&&opId){await sincPagOp(opId).catch(()=>{const op2=gO(opId);if(op2&&op2.pag>0)op2.pag=Math.max(0,op2.pag-1);})}
     closeModal('mEditPago');
     toast('Pago eliminado','warn');
     // Re-render instantáneo sin setTimeout
     rInicio();
     rCaja();
     if($('page-clientes').classList.contains('active'))rClis();
+    // Reabrir ficha del cliente si estaba abierta
+    const mver=document.getElementById('mver');
+    if(cidPago&&mver&&mver.classList.contains('open')){
+      setTimeout(()=>verCli(cidPago),80);
+    }
   }catch(e){toast('Error: '+e.message,'error')}
 }
 function abrirGasto(id=null){$('gastoMT').textContent=id?'✏️ Editar gasto':'🧾 Registrar gasto';$('g_id').value=id||'';if(id){const g=Gs.find(x=>x.id===id);if(!g)return;$('g_des').value=g.des;$('g_mon').value=g.mon;$('g_cat').value=g.cat;$('g_fec').value=g.fec}else{$('g_des').value='';$('g_mon').value='';$('g_fec').value=hoy()}showModal('mgasto')}
@@ -5161,16 +5168,17 @@ async function comprobantePDFWA(oid,monPag,fec,par,flt){
   const fname='Comprobante-'+c.nom.replace(/\s/g,'-')+'-'+fec+'.pdf';
   const fm2=n=>(op.moneda||CFG.moneda||'$')+Math.round(n).toLocaleString('es-AR');
   const tel=c.tel?(c.tel.replace(/[^0-9]/g,'')):null;
+  const telFull=tel?(tel.startsWith('54')?tel:'54'+tel):null;
   const waMsg=tel?encodeURIComponent('📋 *COMPROBANTE DE PAGO*\nCliente: '+c.nom+'\nAbonado: '+fm2(monPag)+'\nFecha: '+fec+'\n'+(par?'⚠ Pago parcial — falta: '+fm2(flt):'✅ Cuota completa')+'\n\n_El PDF fue descargado en tu dispositivo_'):null;
   try{
     doc.save(fname);
     if(telFull){
-      setTimeout(()=>window.open('https://wa.me/'+telFull,'_blank'),400);
+      setTimeout(()=>window.open('https://wa.me/'+telFull+'?text='+waMsg,'_blank'),400);
       toast('📲 PDF descargado · Abriendo chat de '+c.nom);
     } else {
       toast('📄 PDF descargado (sin teléfono)');
     }
-  }catch(e){doc.save(fname);toast('📄 PDF descargado');}
+  }catch(e){toast('📄 Error al generar PDF');}
 }
 
 // ══ IMPORTAR CLIENTES XLSX ══
