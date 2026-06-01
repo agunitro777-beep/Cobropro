@@ -753,8 +753,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
   </div>
   <div class="sg" id="cajaStats"></div>
   <div id="cajaCobradorPanel" style="display:none"><div id="cobEquipoDetalle"></div></div>
-  <div class="card"><div class="ch"><span class="ct">🧾 Pagos</span></div><div id="pagosList"></div></div>
-  <div class="card"><div class="ch"><span class="ct">💳 Créditos y ventas del período</span></div><div id="opsList"></div></div>
+  <div class="card"><div class="ch"><span class="ct">📊 Transacciones</span></div><div id="transaccionesList"></div></div>
   <div class="card"><div class="ch"><span class="ct">💸 Gastos</span><button class="btn bs bsm" onclick="abrirGasto()">+ Agregar</button></div><div id="gastosList"></div></div>
 </div>
 
@@ -4445,7 +4444,7 @@ function setCajaP(p,el){
   el.classList.add('active');
   const isCob=p==='cobrador';
   $('cajaCobradorPanel').style.display=isCob?'block':'none';
-  ['pagosList','opsList','gastosList'].forEach(id=>{
+  ['transaccionesList','gastosList'].forEach(id=>{
     const card=document.getElementById(id)?.closest?.('.card');
     if(card) card.style.display=isCob?'none':'block';
   });
@@ -4457,10 +4456,21 @@ function rCaja(){
   const pf=filtrP(Ps,'fec'),gf=filtrP(Gs,'fec');
   const tc=pf.reduce((s,p)=>s+p.mon,0),ef=pf.filter(p=>p.met==='efectivo').reduce((s,p)=>s+p.mon,0),tr=pf.filter(p=>p.met==='transferencia').reduce((s,p)=>s+p.mon,0),tg=gf.reduce((s,g)=>s+g.mon,0),bal=tc-tg;
   $('cajaStats').innerHTML=`<div class="sc gr"><div class="sl">Total cobrado</div><div class="sv gr" style="font-size:14px">${fmt(tc)}</div><div class="ss">${pf.length} pagos</div></div><div class="sc ${bal>=0?'bl':'rd'}"><div class="sl">Balance neto</div><div class="sv ${bal>=0?'bl':'rd'}" style="font-size:14px">${fmt(bal)}</div></div><div class="sc gr"><div class="sl">💵 Efectivo</div><div class="sv gr" style="font-size:14px">${fmt(ef)}</div></div><div class="sc bl"><div class="sl">📲 Transf.</div><div class="sv bl" style="font-size:14px">${fmt(tr)}</div></div>`;
-  $('pagosList').innerHTML=pf.length===0?'<div style="font-size:10px;color:var(--tx2);padding:5px 0">Sin pagos</div>':pf.slice().reverse().map(p=>{const op=gO(p.oid);const c=op?gC(op.cid):null;const lbl=op?(esVenta(op)?op.prod||'Venta':op.desc||'Crédito'):'?';return`<div class="pi"><div><div style="font-size:11px;font-weight:600">${ocul?'••••':c?c.nom:'?'} · ${lbl}</div><div class="pd">${fD(p.fec)}${p.not?' · '+p.not:''}${p.par?' · <span class="pb">parcial</span>':''}</div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px"><div class="pm">${fmt(p.mon)}</div><span class="mt2 ${p.met}">${p.met}</span><button class="btn bs bsm" style="padding:2px 6px;font-size:9px" onclick="abrirEditPago(${p.id})">✏️ Editar</button></div></div>`}).join('');
-  // Lista de operaciones/créditos del período
+  // ── Transacciones unificadas: cobros + préstamos, ordenados por fecha desc ──
+  const txCobros=pf.map(p=>{const op=gO(p.oid);const c=op?gC(op.cid):null;const lbl=op?(esVenta(op)?op.prod||'Venta':op.desc||'Crédito'):'?';return{tipo:'cobro',fec:p.fec,nom:c?c.nom:'?',lbl,mon:p.mon,met:p.met,par:p.par,not:p.not,id:p.id};});
   const opsDelPeriodo=Ops.filter(op=>{const fa=op.fa||op.fv;return filtrP([{fec:fa}],'fec').length>0});
-  $('opsList').innerHTML=opsDelPeriodo.length===0?'<div style="font-size:10px;color:var(--tx2);padding:5px 0">Sin operaciones en este período</div>':opsDelPeriodo.slice().reverse().map(op=>{const c=gC(op.cid);const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const monto=sv?op.precio:op.mon;const s=stOp(op);const col={completado:'var(--gr)',atrasado:'var(--rd)',porVencer:'var(--yw)',aldía:'var(--ac2)'}[s]||'var(--tx)';return`<div class="pi" style="cursor:pointer" onclick="verOpDetalle(${op.id})"><div><div style="font-size:11px;font-weight:600">${ocul?'••••':c?c.nom:'?'} · ${lbl}</div><div class="pd">${sv?'🛒 Venta':'💳 Crédito'} · ${op.cuo} cuotas · ${op.frq}</div><div class="pd" style="font-size:9px;color:var(--tx2)">${fD(op.fa||op.fv)}</div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:700;font-size:12px;color:${col}">${fmt(monto)}</div><span class="sb ${s==='completado'?'done':s==='atrasado'?'late':s==='porVencer'?'due':'ok'}">${{completado:'✅',atrasado:'Mora',porVencer:'Por vencer',aldía:'Al día'}[s]||s}</span></div></div>`}).join('');
+  const txPrestamos=opsDelPeriodo.map(op=>{const c=gC(op.cid);const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const monto=sv?op.precio:op.mon;return{tipo:sv?'venta':'prestamo',fec:op.fa||op.fv,nom:c?c.nom:'?',lbl,mon:monto,cuo:op.cuo,frq:op.frq,oid:op.id,s:stOp(op)};});
+  const txTodas=[...txCobros,...txPrestamos].sort((a,b)=>b.fec.localeCompare(a.fec));
+  $('transaccionesList').innerHTML=txTodas.length===0?'<div style="font-size:10px;color:var(--tx2);padding:5px 0">Sin transacciones</div>':txTodas.map(tx=>{
+    if(tx.tipo==='cobro'){
+      return`<div class="pi"><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">💵</div><div><div style="font-size:11px;font-weight:600">${ocul?'••••':tx.nom} · ${tx.lbl}</div><div class="pd">${fD(tx.fec)}${tx.not?' · '+tx.not:''}${tx.par?' · <span class="pb">parcial</span>':''}</div></div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px"><div class="pm" style="color:var(--gr)">+${fmt(tx.mon)}</div><span class="mt2 ${tx.met}">${tx.met}</span><button class="btn bs bsm" style="padding:2px 6px;font-size:9px" onclick="abrirEditPago(${tx.id})">✏️</button></div></div>`;
+    } else {
+      const icon=tx.tipo==='venta'?'🛒':'💳';
+      const col=tx.tipo==='venta'?'var(--cy)':'var(--rd)';
+      const label=tx.tipo==='venta'?'Venta':'Préstamo';
+      return`<div class="pi" style="cursor:pointer" onclick="verOpDetalle(${tx.oid})"><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">${icon}</div><div><div style="font-size:11px;font-weight:600">${ocul?'••••':tx.nom} · ${tx.lbl}</div><div class="pd">${label} · ${tx.cuo} cuota${tx.cuo>1?'s':''} · ${tx.frq} · ${fD(tx.fec)}</div></div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:700;font-size:12px;color:${col}">−${fmt(tx.mon)}</div><span style="font-size:9px;color:var(--tx2)">${label}</span></div></div>`;
+    }
+  }).join('');
   const ci={pérdida:'⛔',operativo:'🏢',otro:'📌'};
   $('gastosList').innerHTML=gf.length===0?'<div style="font-size:10px;color:var(--tx2);padding:5px 0">Sin gastos</div>':gf.slice().reverse().map(g=>`<div class="gi"><div class="gic">${ci[g.cat]||'💸'}</div><div class="gin"><div class="gn">${g.des}</div><div class="gd">${fD(g.fec)} · ${g.cat}</div></div><div style="display:flex;align-items:center;gap:5px"><div class="ga">−${fmt(g.mon)}</div><button class="btn bs bsm" style="padding:4px 6px" onclick="abrirGasto(${g.id})">✏️</button><button class="btn brd bsm" style="padding:4px 6px" onclick="elimGasto(${g.id})">🗑️</button></div></div>`).join('');
 }
