@@ -2572,8 +2572,8 @@ window.addEventListener('popstate',function(e){
     const closingId=openModal.id;
     const st=e.state||{};
     openModal.classList.remove('open');
-    // Si venía de mver abierto y no estamos cerrando mver, reabrirlo
-    if(closingId!=='mver'&&st.mverOpen&&st.mverCid){
+    // Si venía de mver abierto (o había un cliente activo) y no estamos cerrando mver, reabrirlo
+    if(closingId!=='mver'&&st.mverCid){
       setTimeout(()=>verCli(st.mverCid),60);
     } else {
       history.pushState({page:_lastPage},'',window.location.pathname+'#'+_lastPage);
@@ -2599,8 +2599,12 @@ window.addEventListener('popstate',function(e){
 });
 function showModal(id){
   // Pushear estado al abrir modal para que "atrás" lo cierre
-  if(id==='mver') history.pushState({modal:'mver',cid:_mverCid},'',window.location.href);
-  else history.pushState({modal:id,mverOpen:document.getElementById('mver')?.classList.contains('open'),mverCid:_mverCid},'',window.location.href);
+  const mverEl=document.getElementById('mver');
+  const mverIsOpen=mverEl&&mverEl.classList.contains('open');
+  // Guardar mverCid aunque mver esté cerrado (por si se cerró justo antes de abrir este modal)
+  const savedCid=_mverCid||0;
+  if(id==='mver') history.pushState({modal:'mver',cid:savedCid},'',window.location.href);
+  else history.pushState({modal:id,mverOpen:mverIsOpen||!!(savedCid),mverCid:savedCid},'',window.location.href);
   document.getElementById(id).classList.add('open');
   // Aplicar zoom de letra al modal recién abierto
   try{const zoom=_FSIZE_ZOOM[localStorage.getItem('cobropro_fsize')||'normal']||1;const inner=document.querySelector('#'+id+' .modal');if(inner)inner.style.zoom=zoom;}catch(e){}
