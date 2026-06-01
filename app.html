@@ -1982,7 +1982,7 @@ function _buildPdfResumenCli(cid){
     doc.setFillColor(248,248,255);doc.setDrawColor(220,220,235);
     doc.roundedRect(14,y,182,16,2,2,'FD');
     doc.setTextColor(80,80,120);doc.setFontSize(7.5);doc.setFont('helvetica','bold');
-    doc.text('PAGADAS',18,y+5);doc.text('SALDO',65,y+5);doc.text('FRECUENCIA',110,y+5);doc.text('INICIO',158,y+5);
+    doc.text('PAGADAS',18,y+5);doc.text('SALDO',65,y+5);doc.text('FRECUENCIA',110,y+5);doc.text('1er CUOTA',158,y+5);
     doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);doc.setFontSize(9);
     doc.text(`${op.pag} / ${op.cuo}  (${pct}%)`,18,y+12);
     doc.setTextColor(st==='atrasado'?200:34,st==='atrasado'?30:150,st==='atrasado'?30:80);
@@ -1990,6 +1990,16 @@ function _buildPdfResumenCli(cid){
     doc.setTextColor(20,20,20);
     doc.text(op.frq,110,y+12);
     doc.text(fd(op.fv),158,y+12);
+    if(op.facr){
+      y+=16;
+      doc.setFillColor(248,248,255);doc.setDrawColor(200,200,220);
+      doc.roundedRect(14,y,182,12,2,2,'FD');
+      doc.setTextColor(80,80,120);doc.setFontSize(7.5);doc.setFont('helvetica','bold');
+      doc.text('FECHA DE ACREDITACIÓN',18,y+5);
+      doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);doc.setFontSize(9);
+      doc.text(fd(op.facr),18,y+10);
+      y-=16;
+    }
     y+=19;
 
     // ── Tabla cuotas pendientes ──
@@ -5322,19 +5332,25 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
   // Detalle de cuota actual
   const altoDet=par?44:36;
   doc.setFillColor(245,245,255);doc.setDrawColor(200,200,220);
-  doc.roundedRect(14,y,182,altoDet,3,3,'FD');
+  doc.roundedRect(14,y,182,altoDet+(op.facr?10:0),3,3,'FD');
   doc.setTextColor(80,80,120);doc.setFontSize(8);doc.setFont('helvetica','bold');
   doc.text('DETALLE DE CUOTA',20,y+8);
   doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);doc.setFontSize(10);
   doc.text(`Cuota ${numCuota} de ${op.cuo}  ·  ${fm(cuota)} por ${op.frq}`,20,y+18);
   const restantes=op.cuo-numCuota;
   doc.setFontSize(9);doc.setTextColor(100,100,120);
-  doc.text(`Quedan ${restantes} cuota${restantes!==1?'s':''} por pagar`,20,y+27);
+  doc.text(`Fecha de pago: ${fd(fec)}`,20,y+27);
+  if(op.facr){
+    doc.setTextColor(80,80,120);doc.setFontSize(8);doc.setFont('helvetica','bold');
+    doc.text('Fecha acreditación:',115,y+27);
+    doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);doc.setFontSize(9);
+    doc.text(fd(op.facr),163,y+27);
+  }
   if(par){
     doc.setTextColor(200,100,0);doc.setFontSize(9);doc.setFont('helvetica','bold');
-    doc.text('⚠ Pago parcial — Falta de esta cuota: '+fm(flt),20,y+altoDet-8);
+    doc.text('⚠ Pago parcial — Falta de esta cuota: '+fm(flt),20,y+altoDet-8+(op.facr?10:0));
   }
-  y+=altoDet+8;
+  y+=altoDet+(op.facr?10:0)+8;
 
   // Historial de todos los pagos del crédito con días de atraso por cuota
   const todosLosPagos=pagoDeOp(oid).sort((a,b)=>(a.fec||'').localeCompare(b.fec||''));
