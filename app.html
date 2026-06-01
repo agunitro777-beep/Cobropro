@@ -267,6 +267,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 .chart-leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .chart-tooltip{position:absolute;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:11px;pointer-events:none;display:none;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,.4);min-width:120px}
 .chart-tooltip strong{font-family:'Syne',sans-serif;font-size:13px;display:block;margin-bottom:4px}
+.fin-periodo-sel{display:flex;gap:4px;background:var(--bg3);border-radius:8px;padding:3px}
+.fin-periodo-btn{font-size:10px;padding:3px 10px;border-radius:6px;border:none;cursor:pointer;font-weight:600;color:var(--tx2);background:transparent;transition:all .2s}
+.fin-periodo-btn.active{background:var(--ac);color:#fff}
+.fin-month-labels{display:flex;justify-content:space-between;margin-top:6px;padding:0 4px}
+.fin-month-label{font-size:9px;color:var(--tx2);text-align:center;flex:1}
+.fin-month-label.current{color:var(--ac);font-weight:700}
+.fin-chart-tooltip{position:absolute;background:var(--bg2);border:1px solid rgba(108,99,255,.4);border-radius:10px;padding:8px 12px;pointer-events:none;display:none;z-index:10;min-width:120px;font-size:11px}
+.fin-chart-tooltip .tip-month{font-size:10px;color:var(--tx2);margin-bottom:3px}
+.fin-chart-tooltip .tip-cobrado{color:#22c55e;font-weight:700}
+.fin-chart-tooltip .tip-porcobrar{color:#6c63ff;font-weight:700}
 
 /* ══ AGENDA DIARIA ══ */
 .agenda-date-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--ra);padding:10px 14px}
@@ -1911,7 +1921,9 @@ function calcMoraPago(p,op){
 function comprob(oid){
   const op=gO(oid);const c=op?gC(op.cid):null;
   if(!op||!c){toast('No se encontró la operación','error');return;}
-  const ul=pagoDeOp(oid).filter(p=>!p.par).slice(-1)[0];
+  // Tomar el último pago registrado (completo o parcial)
+  const todos=pagoDeOp(oid).slice().sort((a,b)=>a.fec.localeCompare(b.fec));
+  const ul=todos[todos.length-1];
   if(!ul){toast('Sin pagos registrados en esta operación','warn');return;}
   toast('⏳ Generando comprobante...');
   setTimeout(()=>comprobantePDF(oid,ul.mon,ul.fec,ul.par||false,ul.flt||0),80);
@@ -3332,18 +3344,25 @@ async function guardarPago(){
       }
     } else if(parPrevId){
       const pPrev=Ps.find(x=>x.id===parPrevId);
+      // Cerrar TODOS los parciales anteriores de esta operación (no solo el último)
+      const todosParAnt=Ps.filter(x=>x.oid===oid&&x.par&&x.flt>0&&x.id!==r.id);
+      for(const pp of todosParAnt){pp.par=false;pp.flt=0;await dbUpd('pagos',pp.id,{par:false,flt:0});}
       if(par){
-        // El nuevo pago tampoco alcanza: acumular sobre el parcial anterior
-        // El nuevo registro tiene el flt actualizado; marcar el anterior como absorbido
-        if(pPrev){pPrev.par=false;pPrev.flt=0;await dbUpd('pagos',parPrevId,{par:false,flt:0})}
+        // El nuevo pago tampoco alcanza: sigue pendiente
         // NO llamar sincPagOp: la cuota sigue pendiente
       } else {
         // El nuevo pago completó la cuota
-        if(pPrev){pPrev.par=false;pPrev.flt=0;await dbUpd('pagos',parPrevId,{par:false,flt:0})}
         await sincPagOp(oid);
       }
     } else if(!par){
+      // Cerrar cualquier parcial huérfano que haya quedado en esta operación
+      const huerfanos=Ps.filter(x=>x.oid===oid&&x.par&&x.flt>0&&x.id!==r.id);
+      for(const pp of huerfanos){pp.par=false;pp.flt=0;await dbUpd('pagos',pp.id,{par:false,flt:0});}
       await sincPagOp(oid);
+    } else if(par){
+      // Nuevo parcial sin parcial previo: cerrar cualquier parcial anterior huérfano
+      const huerfanos2=Ps.filter(x=>x.oid===oid&&x.par&&x.flt>0&&x.id!==r.id);
+      for(const pp of huerfanos2){pp.par=false;pp.flt=0;await dbUpd('pagos',pp.id,{par:false,flt:0});}
     }
     closeModal('mpago');$('p_fixOp').value='';$('p_fixPar').value='';$('p_opGrp').style.display='block';
     if($('p_soloInt')){$('p_soloInt').value='';$('p_soloIntBanner').style.display='none';}
@@ -4747,27 +4766,43 @@ function rFin(){
     </div>`;
 
   // Preparar datos para gráfico: últimos 12 meses
-  const hm=[];
-  for(let i=11;i>=0;i--){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);hm.push(d.toISOString().substring(0,7));}
-  const chartData=hm.map(m=>{
+  const hm12=[];
+  for(let i=11;i>=0;i--){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);hm12.push(d.toISOString().substring(0,7));}
+  const todosGrafData=hm12.map(m=>{
     const ps=Ps.filter(p=>p.fec&&p.fec.startsWith(m));
     const tot=ps.reduce((s,p)=>s+p.mon,0);
     const int2=ps.reduce((acc,p)=>{const op=gO(p.oid);return op&&!esVenta(op)?acc+Math.max(0,cvOp(op)-op.mon/op.cuo):acc},0);
+    const porCob=Ops.filter(o=>o.pag<o.cuo).reduce((s,o)=>s+saldoOp(o),0);
     const mes=parseInt(m.split('-')[1])-1;
-    const lbl=MC[mes].substring(0,3);
-    return{label:lbl,val1:tot,val2:int2};
+    const lbl=MC[mes].substring(0,3)+' '+m.split('-')[0].substring(2);
+    return{label:lbl,cobrado:tot,porCobrar:porCob,intereses:int2};
   });
 
   $('finHist').innerHTML=`
     <div class="card" style="margin-bottom:10px">
-      <div class="ch"><span class="ct">📊 Últimos 12 meses</span></div>
-      <div class="chart-wrap"><canvas id="finChart"></canvas></div>
-      <div class="chart-legend">
+      <div class="ch" style="display:flex;justify-content:space-between;align-items:center">
+        <span class="ct">📊 Historial mensual</span>
+        <div class="fin-periodo-sel">
+          <button class="fin-periodo-btn" onclick="setFinGrafPeriodo(3,this)">3m</button>
+          <button class="fin-periodo-btn" onclick="setFinGrafPeriodo(6,this)">6m</button>
+          <button class="fin-periodo-btn active" onclick="setFinGrafPeriodo(12,this)">12m</button>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:160px;position:relative">
+        <canvas id="finChart"></canvas>
+        <div class="fin-chart-tooltip" id="finChartTip">
+          <div class="tip-month" id="finTipMes"></div>
+          <div class="tip-cobrado" id="finTipCob"></div>
+          <div class="tip-porcobrar" id="finTipPorCob"></div>
+        </div>
+      </div>
+      <div class="fin-month-labels" id="finMonthLabels"></div>
+      <div class="chart-legend" style="margin-top:10px">
         <div class="chart-leg-item"><div class="chart-leg-dot" style="background:#22c55e"></div>Cobrado</div>
-        <div class="chart-leg-item"><div class="chart-leg-dot" style="background:#f59e0b"></div>Intereses</div>
+        <div class="chart-leg-item"><div class="chart-leg-dot" style="background:#6c63ff"></div>Por cobrar</div>
       </div>
     </div>
-  `+hm.map(m=>{
+  `+hm12.map(m=>{
     const ps=Ps.filter(p=>p.fec&&p.fec.startsWith(m));
     const tot=ps.reduce((s,p)=>s+p.mon,0);
     const int2=ps.reduce((acc,p)=>{const op=gO(p.oid);return op&&!esVenta(op)?acc+Math.max(0,cvOp(op)-op.mon/op.cuo):acc},0);
@@ -4775,8 +4810,9 @@ function rFin(){
     return`<div class="pi"><div><div style="font-size:11px;font-weight:600">${l}</div><div class="pd">Intereses: ${fmt(int2)}</div></div><div class="pm">${fmt(tot)}</div></div>`;
   }).join('');
 
-  // Dibujar gráfico después de que el DOM esté listo
-  requestAnimationFrame(()=>drawChart('finChart', chartData));
+  window._finGrafData=todosGrafData;
+  window._finGrafPeriodo=12;
+  requestAnimationFrame(()=>drawLineChart('finChart',todosGrafData,12));
 }
 function rFinProy(){
   const h=new Date();h.setHours(0,0,0,0);
@@ -6516,7 +6552,81 @@ function _updateFsizeBtns(active){
   });
 }
 
-// ══ GRÁFICO CANVAS ══
+// ══ GRÁFICO LÍNEAS FINANZAS ══
+function setFinGrafPeriodo(p,btn){
+  window._finGrafPeriodo=p;
+  document.querySelectorAll('.fin-periodo-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  if(window._finGrafData)drawLineChart('finChart',window._finGrafData,p);
+}
+function drawLineChart(canvasId,datos,periodo){
+  const canvas=document.getElementById(canvasId);if(!canvas)return;
+  const data=datos.slice(-periodo);
+  const n=data.length;if(n<2)return;
+  const wrap=canvas.parentElement;
+  const dpr=window.devicePixelRatio||1;
+  const W=wrap.offsetWidth,H=160;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);ctx.clearRect(0,0,W,H);
+  const isLight=document.body.classList.contains('light');
+  const GRID=isLight?'rgba(0,0,0,.07)':'rgba(255,255,255,.06)';
+  const padL=8,padR=8,padT=16,padB=8;
+  const cW=W-padL-padR,cH=H-padT-padB;
+  const maxVal=Math.max(...data.map(d=>Math.max(d.cobrado,d.porCobrar)),1)*1.15;
+  const xOf=i=>padL+i*(cW/(n-1));
+  const yOf=v=>padT+cH-(v/maxVal)*cH;
+  for(let i=0;i<=3;i++){
+    const y=padT+(cH/3)*i;
+    ctx.beginPath();ctx.strokeStyle=GRID;ctx.lineWidth=1;ctx.setLineDash([3,4]);
+    ctx.moveTo(padL,y);ctx.lineTo(padL+cW,y);ctx.stroke();ctx.setLineDash([]);
+  }
+  function drawLine(color,vals,fill){
+    if(fill){
+      ctx.beginPath();
+      vals.forEach((v,i)=>{const x=xOf(i),y=yOf(v);i===0?ctx.moveTo(x,y):ctx.bezierCurveTo(xOf(i-.5),yOf(vals[i-1]),xOf(i-.5),y,x,y);});
+      ctx.lineTo(xOf(n-1),padT+cH);ctx.lineTo(padL,padT+cH);ctx.closePath();
+      const grad=ctx.createLinearGradient(0,padT,0,padT+cH);
+      grad.addColorStop(0,color+'44');grad.addColorStop(1,color+'05');
+      ctx.fillStyle=grad;ctx.fill();
+    }
+    ctx.beginPath();
+    vals.forEach((v,i)=>{const x=xOf(i),y=yOf(v);i===0?ctx.moveTo(x,y):ctx.bezierCurveTo(xOf(i-.5),yOf(vals[i-1]),xOf(i-.5),y,x,y);});
+    ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.stroke();
+    const lv=vals[n-1];
+    ctx.beginPath();ctx.arc(xOf(n-1),yOf(lv),5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+    ctx.beginPath();ctx.arc(xOf(n-1),yOf(lv),2.5,0,Math.PI*2);
+    ctx.fillStyle=isLight?'#fff':'#13162a';ctx.fill();
+  }
+  drawLine('#6c63ff',data.map(d=>d.porCobrar),true);
+  drawLine('#22c55e',data.map(d=>d.cobrado),true);
+  const labEl=document.getElementById('finMonthLabels');
+  if(labEl)labEl.innerHTML=data.map((d,i)=>`<span class="fin-month-label ${i===n-1?'current':''}">${d.label.split(' ')[0]}</span>`).join('');
+  function handleFinTouch(e){
+    const rect=canvas.getBoundingClientRect();
+    const cx=e.touches?e.touches[0].clientX:e.clientX;
+    const relX=(cx-rect.left)*(W/rect.width);
+    let cl=0,minD=Infinity;
+    data.forEach((_,i)=>{const d=Math.abs(relX-xOf(i));if(d<minD){minD=d;cl=i;}});
+    const d=data[cl];
+    const tip=document.getElementById('finChartTip');if(!tip)return;
+    const tMes=document.getElementById('finTipMes'),tCob=document.getElementById('finTipCob'),tPorCob=document.getElementById('finTipPorCob');
+    if(tMes)tMes.textContent=d.label;
+    if(tCob)tCob.textContent='● Cobrado: '+fmt(d.cobrado);
+    if(tPorCob)tPorCob.textContent='● Por cobrar: '+fmt(d.porCobrar);
+    const pct=(cl/(n-1))*100;
+    tip.style.display='block';
+    tip.style.left=pct>60?'auto':(pct+'%');
+    tip.style.right=pct>60?'0':'auto';
+    tip.style.top='0';
+  }
+  canvas.ontouchstart=handleFinTouch;canvas.ontouchmove=handleFinTouch;
+  canvas.onmousemove=handleFinTouch;
+  canvas.onmouseleave=()=>{const t=document.getElementById('finChartTip');if(t)t.style.display='none';};
+}
+
+// ══ GRÁFICO CANVAS (barras) ══
 let _chartInstance = null;
 function drawChart(canvasId, data){
   const canvas = document.getElementById(canvasId);
