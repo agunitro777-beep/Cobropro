@@ -1978,11 +1978,17 @@ function _buildPdfResumenCli(cid){
     doc.text(`Cuota ${fm(cuota)}`,196,y+5.5,{align:'right'});
     y+=10;
 
-    // Resumen de la operación
+    // Resumen de la operación — altura dinámica según si tiene acreditación
+    const tieneAcr=!!(op.facr);
+    const altRes=tieneAcr?26:16;
     doc.setFillColor(248,248,255);doc.setDrawColor(220,220,235);
-    doc.roundedRect(14,y,182,16,2,2,'FD');
+    doc.roundedRect(14,y,182,altRes,2,2,'FD');
+    // Etiquetas fila 1
     doc.setTextColor(80,80,120);doc.setFontSize(7.5);doc.setFont('helvetica','bold');
-    doc.text('PAGADAS',18,y+5);doc.text('SALDO',65,y+5);doc.text('FRECUENCIA',110,y+5);doc.text('1er CUOTA',158,y+5);
+    // Columnas: PAGADAS(18) SALDO(65) FRECUENCIA(110) FECHA(158)
+    const fechaLabel=op.cuo===1?'FECHA DE PAGO':'1er CUOTA';
+    doc.text('PAGADAS',18,y+5);doc.text('SALDO',65,y+5);doc.text('FRECUENCIA',110,y+5);doc.text(fechaLabel,158,y+5);
+    // Valores fila 1
     doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);doc.setFontSize(9);
     doc.text(`${op.pag} / ${op.cuo}  (${pct}%)`,18,y+12);
     doc.setTextColor(st==='atrasado'?200:34,st==='atrasado'?30:150,st==='atrasado'?30:80);
@@ -1990,17 +1996,16 @@ function _buildPdfResumenCli(cid){
     doc.setTextColor(20,20,20);
     doc.text(op.frq,110,y+12);
     doc.text(fd(op.fv),158,y+12);
-    if(op.facr){
-      y+=16;
-      doc.setFillColor(248,248,255);doc.setDrawColor(200,200,220);
-      doc.roundedRect(14,y,182,12,2,2,'FD');
+    // Fila 2: acreditación (si existe), dentro del mismo box
+    if(tieneAcr){
+      doc.setDrawColor(220,220,235);doc.setLineWidth(0.3);
+      doc.line(18,y+15,192,y+15);
       doc.setTextColor(80,80,120);doc.setFontSize(7.5);doc.setFont('helvetica','bold');
-      doc.text('FECHA DE ACREDITACIÓN',18,y+5);
+      doc.text('FECHA DE ACREDITACIÓN',18,y+20);
       doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);doc.setFontSize(9);
-      doc.text(fd(op.facr),18,y+10);
-      y-=16;
+      doc.text(fd(op.facr),70,y+20);
     }
-    y+=19;
+    y+=altRes+3;
 
     // ── Tabla cuotas pendientes ──
     if(y>240){doc.addPage();y=16;}
