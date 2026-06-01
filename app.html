@@ -2038,6 +2038,22 @@ function _buildPdfResumenCli(cid){
     if(idx<opsAct.length-1&&y>230){doc.addPage();y=16;}
   });
 
+  // ── Total a pagar (solo si todas las ops tienen 1 cuota y vencen el mismo día) ──
+  if(opsAct.length>1){
+    const todasUnaCuota=opsAct.every(o=>o.cuo===1);
+    const fechaRef=opsAct[0].fv;
+    const todasMismaFecha=opsAct.every(o=>o.fv===fechaRef);
+    if(todasUnaCuota&&todasMismaFecha){
+      const totalPagar=opsAct.reduce((s,o)=>s+saldoMOp(o),0);
+      if(y>260){doc.addPage();y=16;}
+      doc.setFillColor(108,99,255);doc.roundedRect(14,y,182,16,3,3,'F');
+      doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont('helvetica','bold');
+      doc.text(`TOTAL A PAGAR — ${fd(fechaRef)}`,18,y+6.5);
+      doc.setFontSize(13);doc.text(fm(totalPagar),196,y+11,{align:'right'});
+      y+=22;
+    }
+  }
+
   // ── Historial de pagos ──
   const todosLosPagos=opsDeCli(cid).flatMap(op=>pagoDeOp(op.id).map(p=>({...p,_op:op})))
     .sort((a,b)=>b.fec.localeCompare(a.fec));
