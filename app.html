@@ -2805,7 +2805,8 @@ async function guardarOp(){
   if(!cid){toast('Seleccioná un cliente','error');_guardando=false;return}
   const cuo=parseInt($('op_cuo').value)||1,frq=$('op_frq').value,fv=$('op_fv').value||hoy();
   const moneda=$('op_moneda').value||CFG.moneda||'$';
-  let d={cid,tipo,cuo,frq,fv,not_:$('op_not').value.trim(),fa:hoy(),moneda,facr:$('op_facr').value||null};
+  const oid=parseInt($('op_id').value)||null;
+  let d={cid,tipo,cuo,frq,fv,not_:$('op_not').value.trim(),fa:oid?((Ops.find(o=>o.id===oid)||{}).fa||hoy()):hoy(),moneda,facr:$('op_facr').value||null};
   const tipInt=$('op_tip')?$('op_tip').value:'simple';
   if(tipInt==='diario_abierto'){
     const monD=parseFloat($('op_mon_d')?.value)||0;
@@ -2848,7 +2849,7 @@ async function guardarOp(){
     const cuotaFijaGuardar=cuotaFija>0?Math.round(cuotaFija):null;
     Object.assign(d,{mon,int_:intPorCuota,mora:moraVal,tip:$('op_tip').value,desc_:$('op_desc').value.trim(),prod:'',costo:0,precio:0,cuota_fija:cuotaFijaGuardar});
   }
-  const oid=parseInt($('op_id').value)||null;setBtnLoading('opSaveBtn',true);
+  setBtnLoading('opSaveBtn',true);
   try{
     if(oid){
       const updated=await dbUpd('operaciones',oid,d);
