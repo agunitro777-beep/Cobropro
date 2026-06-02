@@ -2582,7 +2582,7 @@ window.addEventListener('popstate',function(e){
     openModal.classList.remove('open');
     if(closingId!=='mver'&&activeCid){
       _reopeningMver=true;
-      setTimeout(()=>verCli(activeCid),60);
+      verCli(activeCid);
     } else {
       history.pushState({page:_lastPage},'',window.location.pathname+'#'+_lastPage);
     }
@@ -2591,7 +2591,7 @@ window.addEventListener('popstate',function(e){
   // 3. Si el state tiene modal, es que ya fue cerrado — si hay cid, reabrir cliente
   if(st.modal&&st.modal!=='mver'&&activeCid){
     _reopeningMver=true;
-    setTimeout(()=>verCli(activeCid),60);
+    verCli(activeCid);
     return;
   }
   // 4. Si el estado indica una página válida distinta, ir a ella
