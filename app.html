@@ -833,12 +833,17 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <div style="font-size:10px;color:var(--tx2);margin-bottom:10px;line-height:1.5">Descargá un resumen financiero completo en Excel o PDF.</div>
     <div class="ig">
       <label class="il">Período</label>
-      <select class="inp sel" id="rep_periodo">
+      <select class="inp sel" id="rep_periodo" onchange="toggleRepMesEsp()">
         <option value="semana">Esta semana</option>
         <option value="quincena">Esta quincena</option>
         <option value="mes" selected>Este mes</option>
+        <option value="mes_esp">Mes específico</option>
         <option value="anual">Este año</option>
       </select>
+    </div>
+    <div class="ig" id="rep_mes_esp_wrap" style="display:none">
+      <label class="il">Elegir mes</label>
+      <input type="month" class="inp" id="rep_mes_esp" style="width:100%">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <button class="btn bgr" onclick="exportarReporteXLS()">📊 Excel</button>
@@ -7391,6 +7396,11 @@ function exportSimPDF(){
 }
 
 // ══ EXPORTAR REPORTE FINANCIERO (solo Premium) ══
+function toggleRepMesEsp(){
+  const v=($('rep_periodo')||{}).value;
+  const w=$('rep_mes_esp_wrap');
+  if(w)w.style.display=v==='mes_esp'?'':'none';
+}
 function _getRepPeriodo(){
   const p=($('rep_periodo')||{}).value||'mes';
   const hoyD=new Date(); hoyD.setHours(0,0,0,0);
@@ -7398,18 +7408,24 @@ function _getRepPeriodo(){
   if(p==='semana'){ desde.setDate(hoyD.getDate()-hoyD.getDay()); hasta.setDate(desde.getDate()+6); }
   else if(p==='quincena'){ const d=hoyD.getDate(); desde=new Date(hoyD.getFullYear(),hoyD.getMonth(),d<=15?1:16); hasta=new Date(hoyD.getFullYear(),hoyD.getMonth(),d<=15?15:new Date(hoyD.getFullYear(),hoyD.getMonth()+1,0).getDate()); }
   else if(p==='mes'){ desde=new Date(hoyD.getFullYear(),hoyD.getMonth(),1); hasta=new Date(hoyD.getFullYear(),hoyD.getMonth()+1,0); }
+  else if(p==='mes_esp'){
+    const val=($('rep_mes_esp')||{}).value||`${hoyD.getFullYear()}-${String(hoyD.getMonth()+1).padStart(2,'0')}`;
+    const [y,m]=val.split('-').map(Number);
+    desde=new Date(y,m-1,1); hasta=new Date(y,m,0);
+  }
   else if(p==='anual'){ desde=new Date(hoyD.getFullYear(),0,1); hasta=new Date(hoyD.getFullYear(),11,31); }
   const desdeStr=desde.toISOString().split('T')[0], hastaStr=hasta.toISOString().split('T')[0];
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const fd2=d=>d.toISOString().split('T')[0].split('-').reverse().join('-');
-  const pLabelBase={semana:'Esta semana',quincena:'Esta quincena',mes:'Este mes',anual:'Este año'}[p]||p;
-  const pLabelFecha=p==='mes'?meses[desde.getMonth()]+'-'+desde.getFullYear():
+  const fd2=d=>d.toISOString().split('T')[0].split('-').reverse().join('/');
+  const pLabelBase={semana:'Esta semana',quincena:'Esta quincena',mes:'Este mes',mes_esp:meses[desde.getMonth()]+' '+desde.getFullYear(),anual:'Año '+desde.getFullYear()}[p]||p;
+  const pLabelFecha=p==='mes'||p==='mes_esp'?meses[desde.getMonth()]+'-'+desde.getFullYear():
     p==='anual'?'Año-'+desde.getFullYear():
     p==='semana'?'Semana-'+fd2(desde)+'-al-'+fd2(hasta):
     p==='quincena'?'Quincena-'+fd2(desde)+'-al-'+fd2(hasta):p;
   const pLabel=pLabelBase;
   const pLabelFile=pLabelFecha;
-  // Filtrar pagos del período
+  const esAnual=p==='anual';
+  // Filtrar datos del período
   const pagos=Ps.filter(pg=>pg.fec>=desdeStr&&pg.fec<=hastaStr);
   const gastos=Gs.filter(g=>g.fec>=desdeStr&&g.fec<=hastaStr);
   const ops=Ops.filter(o=>o.fa>=desdeStr&&o.fa<=hastaStr);
@@ -7417,7 +7433,6 @@ function _getRepPeriodo(){
   const totalGastos=gastos.reduce((s,g)=>s+g.mon,0);
   const totalPrestado=ops.filter(o=>!esVenta(o)).reduce((s,o)=>s+o.mon,0);
   const totalVentas=ops.filter(esVenta).reduce((s,o)=>s+o.precio,0);
-  // Ganancia = intereses cobrados en el período - gastos del período
   const gananciaInt=pagos.reduce((acc,p)=>{
     const op=gO(p.oid);if(!op)return acc;
     const v=cvOp(op),pr=op.mon/op.cuo;
@@ -7425,7 +7440,7 @@ function _getRepPeriodo(){
     return acc+Math.max(0,Math.min(p.mon,v)-pr);
   },0);
   const ganancia=gananciaInt-totalGastos;
-  return {pLabel,pLabelFile,desdeStr,hastaStr,pagos,gastos,ops,totalCobrado,totalGastos,totalPrestado,totalVentas,ganancia,gananciaInt};
+  return {pLabel,pLabelFile,desdeStr,hastaStr,pagos,gastos,ops,totalCobrado,totalGastos,totalPrestado,totalVentas,ganancia,gananciaInt,esAnual,meses,desde};
 }
 function exportarReporteXLS(){
   if(!requierePlan('Exportar reporte financiero','premium')) return;
@@ -7451,38 +7466,189 @@ function exportarReporteXLS(){
 function exportarReportePDF(){
   if(!requierePlan('Exportar reporte financiero','premium')) return;
   try{
-    const {jsPDF}=window.jspdf; const r=_getRepPeriodo();
-    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const {jsPDF}=window.jspdf;
+    const r=_getRepPeriodo();
     const mon=CFG.moneda||'$';
-    doc.setFont('helvetica','bold');doc.setFontSize(16);
-    doc.text('Reporte Financiero — CobroPRO',14,16);
-    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120);
-    doc.text(`Período: ${r.pLabel}  |  ${r.desdeStr} → ${r.hastaStr}`,14,23);
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const fm=v=>mon+Math.round(v).toLocaleString('es-AR');
+    const W=210,mar=14;
+
+    // ── Header ──
+    doc.setFillColor(108,99,255);doc.rect(0,0,W,28,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(16);
+    doc.text('REPORTE FINANCIERO',mar,12);
+    doc.setFontSize(8);doc.setFont('helvetica','normal');
+    doc.text(`CobroPRO · ${r.pLabel} · ${r.desdeStr.split('-').reverse().join('/')} → ${r.hastaStr.split('-').reverse().join('/')}`,mar,20);
+    const hoyStr=new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    doc.text(`Generado: ${hoyStr}`,W-mar,20,{align:'right'});
     doc.setTextColor(0);
-    // Resumen
-    doc.autoTable({head:[['Concepto','Monto']],body:[
-      ['Total cobrado',mon+r.totalCobrado.toLocaleString('es-AR')],
-      ['Intereses cobrados',mon+Math.round(r.gananciaInt||0).toLocaleString('es-AR')],
-      ['Total gastos',mon+r.totalGastos.toLocaleString('es-AR')],
-      ['Ganancia neta',mon+Math.round(r.ganancia).toLocaleString('es-AR')],
-      ['Capital prestado (período)',mon+r.totalPrestado.toLocaleString('es-AR')],
-      ['Ventas (período)',mon+r.totalVentas.toLocaleString('es-AR')],
-    ],startY:28,styles:{fontSize:9},headStyles:{fillColor:[108,99,255]},columnStyles:{1:{halign:'right'}}});
-    // Pagos
-    if(r.pagos.length){
-      const y=doc.lastAutoTable.finalY+8;
-      doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('Pagos recibidos',14,y);
-      doc.autoTable({head:[['Fecha','Cliente','Operación','Método','Monto']],body:r.pagos.map(p=>{const op=gO(p.oid),c=op?gC(op.cid):null;return[p.fec,c?c.nom:'—',op?(esVenta(op)?op.prod:'Crédito'):'—',p.met||'efectivo',mon+p.mon.toLocaleString('es-AR')];}),startY:y+4,styles:{fontSize:8},headStyles:{fillColor:[34,197,94]},columnStyles:{4:{halign:'right'}}});
+
+    let y=36;
+
+    // ── Tarjetas resumen (2x2) ──
+    const cards=[
+      {label:'Total cobrado',val:fm(r.totalCobrado),col:[34,197,94]},
+      {label:'Capital prestado',val:fm(r.totalPrestado),col:[239,68,68]},
+      {label:'Ganancia (intereses)',val:fm(r.gananciaInt),col:[108,99,255]},
+      {label:'Gastos del período',val:fm(r.totalGastos),col:[245,158,11]},
+    ];
+    const cW2=(W-mar*2-8)/2;
+    cards.forEach((c,i)=>{
+      const cx=mar+(i%2)*(cW2+8);
+      const cy=y+Math.floor(i/2)*22;
+      doc.setFillColor(c.col[0],c.col[1],c.col[2]);doc.setGState(new doc.GState({opacity:0.08}));
+      doc.roundedRect(cx,cy,cW2,18,2,2,'F');doc.setGState(new doc.GState({opacity:1}));
+      doc.setDrawColor(c.col[0],c.col[1],c.col[2]);doc.setLineWidth(0.4);
+      doc.roundedRect(cx,cy,cW2,18,2,2,'S');
+      doc.setTextColor(c.col[0],c.col[1],c.col[2]);doc.setFont('helvetica','bold');doc.setFontSize(7);
+      doc.text(c.label.toUpperCase(),cx+4,cy+6);
+      doc.setFontSize(12);doc.text(c.val,cx+cW2-3,cy+14,{align:'right'});
+    });
+    y+=52;
+
+    // ── Ganancia neta destacada ──
+    doc.setFillColor(108,99,255);doc.roundedRect(mar,y,W-mar*2,14,2,2,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(9);
+    doc.text('GANANCIA NETA (intereses − gastos)',mar+4,y+6);
+    doc.setFontSize(13);doc.text(fm(r.ganancia),W-mar-3,y+10,{align:'right'});
+    doc.setTextColor(0);
+    y+=22;
+
+    if(r.esAnual){
+      // ── REPORTE ANUAL: mes a mes + clientes + morosos ──
+
+      // Tabla mes a mes
+      doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(40,40,40);
+      doc.text('Resumen por mes',mar,y);y+=5;
+      const mesesRows=r.meses.map((nm,mi)=>{
+        const mStr=`${r.desde.getFullYear()}-${String(mi+1).padStart(2,'0')}`;
+        const psMes=Ps.filter(p=>p.fec&&p.fec.startsWith(mStr));
+        const opsMes=Ops.filter(o=>(o.fa||o.fv||'').startsWith(mStr)&&!esVenta(o));
+        const cob=psMes.reduce((s,p)=>s+p.mon,0);
+        const prest=opsMes.reduce((s,o)=>s+o.mon,0);
+        const gan=psMes.reduce((acc,p)=>{const op=gO(p.oid);if(!op||esVenta(op))return acc;const v=cvOp(op),pr=op.mon/op.cuo;return acc+Math.max(0,Math.min(p.mon,v)-pr);},0);
+        return[nm,fm(cob),fm(prest),fm(gan)];
+      });
+      doc.autoTable({
+        head:[['Mes','Cobrado','Prestado','Ganancia']],
+        body:mesesRows,
+        startY:y,styles:{fontSize:8},
+        headStyles:{fillColor:[108,99,255]},
+        columnStyles:{1:{halign:'right'},2:{halign:'right'},3:{halign:'right'}},
+        alternateRowStyles:{fillColor:[248,248,255]}
+      });
+      y=doc.lastAutoTable.finalY+10;
+
+      // Top clientes por cobrado
+      const porCli={};
+      Ps.forEach(p=>{const op=gO(p.oid);if(!op)return;const c=gC(op.cid);if(!c)return;if(!porCli[c.id])porCli[c.id]={nom:c.nom,cob:0,prest:0};porCli[c.id].cob+=p.mon;});
+      Ops.filter(o=>!esVenta(o)).forEach(o=>{const c=gC(o.cid);if(!c)return;if(!porCli[c.id])porCli[c.id]={nom:c.nom,cob:0,prest:0};porCli[c.id].prest+=o.mon;});
+      const topClis=Object.values(porCli).sort((a,b)=>b.cob-a.cob).slice(0,15);
+      if(topClis.length){
+        if(y>220){doc.addPage();y=16;}
+        doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(40,40,40);
+        doc.text('Top clientes',mar,y);y+=5;
+        doc.autoTable({
+          head:[['Cliente','Cobrado','Prestado']],
+          body:topClis.map(c=>[c.nom,fm(c.cob),fm(c.prest)]),
+          startY:y,styles:{fontSize:8},
+          headStyles:{fillColor:[34,197,94]},
+          columnStyles:{1:{halign:'right'},2:{halign:'right'}},
+          alternateRowStyles:{fillColor:[248,255,248]}
+        });
+        y=doc.lastAutoTable.finalY+10;
+      }
+
+      // Morosos
+      const morosos=Ops.filter(o=>stOp(o)==='atrasado').map(o=>{
+        const c=gC(o.cid);
+        const diasAtr=Math.floor((new Date()-new Date(o.fv))/(86400000));
+        return{nom:c?c.nom:'?',saldo:fm(saldoOp(o)),dias:diasAtr,fv:o.fv};
+      }).sort((a,b)=>b.dias-a.dias);
+      if(morosos.length){
+        if(y>220){doc.addPage();y=16;}
+        doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(40,40,40);
+        doc.text('Clientes con mora',mar,y);y+=5;
+        doc.autoTable({
+          head:[['Cliente','Saldo pendiente','Días atraso','Vencimiento']],
+          body:morosos.map(m=>[m.nom,m.saldo,m.dias+'d',m.fv.split('-').reverse().join('/')]),
+          startY:y,styles:{fontSize:8},
+          headStyles:{fillColor:[239,68,68]},
+          columnStyles:{1:{halign:'right'},2:{halign:'right'}},
+          alternateRowStyles:{fillColor:[255,248,248]}
+        });
+      }
+
+    } else {
+      // ── REPORTE MES/PERÍODO: cobros, préstamos, desglose por cliente ──
+
+      // Cobros del período
+      if(r.pagos.length){
+        doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(40,40,40);
+        doc.text(`Cobros del período (${r.pagos.length})`,mar,y);y+=5;
+        doc.autoTable({
+          head:[['Fecha','Cliente','Concepto','Método','Monto']],
+          body:r.pagos.map(p=>{const op=gO(p.oid),c=op?gC(op.cid):null;return[p.fec.split('-').reverse().join('/'),c?c.nom:'—',op?(esVenta(op)?op.prod||'Venta':op.desc_||'Crédito'):'—',p.met||'efectivo',fm(p.mon)];}),
+          startY:y,styles:{fontSize:8},
+          headStyles:{fillColor:[34,197,94]},
+          columnStyles:{4:{halign:'right'}},
+          alternateRowStyles:{fillColor:[248,255,248]}
+        });
+        y=doc.lastAutoTable.finalY+10;
+      } else {
+        doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(150);
+        doc.text('Sin cobros en este período.',mar,y);y+=10;doc.setTextColor(0);
+      }
+
+      // Préstamos del período desglosados por cliente
+      const prestOps=r.ops.filter(o=>!esVenta(o));
+      if(prestOps.length){
+        if(y>220){doc.addPage();y=16;}
+        doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(40,40,40);
+        doc.text(`Préstamos otorgados (${prestOps.length})`,mar,y);y+=5;
+        doc.autoTable({
+          head:[['Fecha','Cliente','Cuotas','Frecuencia','Capital']],
+          body:prestOps.map(o=>{const c=gC(o.cid);return[(o.fa||o.fv).split('-').reverse().join('/'),c?c.nom:'—',`${o.pag}/${o.cuo}`,o.frq,fm(o.mon)];}),
+          startY:y,styles:{fontSize:8},
+          headStyles:{fillColor:[239,68,68]},
+          columnStyles:{4:{halign:'right'}},
+          alternateRowStyles:{fillColor:[255,248,248]}
+        });
+        y=doc.lastAutoTable.finalY+10;
+      }
+
+      // Clientes morosos del período
+      const morososMes=Ops.filter(o=>stOp(o)==='atrasado').map(o=>{
+        const c=gC(o.cid);
+        const dias=Math.floor((new Date()-new Date(o.fv))/(86400000));
+        return{nom:c?c.nom:'?',saldo:fm(saldoOp(o)),dias};
+      }).sort((a,b)=>b.dias-a.dias);
+      if(morososMes.length){
+        if(y>220){doc.addPage();y=16;}
+        doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(40,40,40);
+        doc.text(`Clientes con mora (${morososMes.length})`,mar,y);y+=5;
+        doc.autoTable({
+          head:[['Cliente','Saldo pendiente','Días atraso']],
+          body:morososMes.map(m=>[m.nom,m.saldo,m.dias+'d']),
+          startY:y,styles:{fontSize:8},
+          headStyles:{fillColor:[245,158,11]},
+          columnStyles:{1:{halign:'right'},2:{halign:'right'}},
+          alternateRowStyles:{fillColor:[255,253,245]}
+        });
+      }
     }
-    // Gastos
-    if(r.gastos.length){
-      const y2=doc.lastAutoTable.finalY+8;
-      doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('Gastos',14,y2);
-      doc.autoTable({head:[['Fecha','Descripción','Monto']],body:r.gastos.map(g=>[g.fec,g.desc||'—',mon+g.mon.toLocaleString('es-AR')]),startY:y2+4,styles:{fontSize:8},headStyles:{fillColor:[239,68,68]},columnStyles:{2:{halign:'right'}}});
+
+    // Footer en cada página
+    const pTotal=doc.getNumberOfPages();
+    for(let i=1;i<=pTotal;i++){
+      doc.setPage(i);
+      doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(180);
+      doc.text(`CobroPRO · Reporte ${r.pLabel} · Pág ${i} de ${pTotal}`,W/2,290,{align:'center'});
     }
-    doc.save(`ReporteFinanciero-${r.pLabelFile}.pdf`);
+
+    doc.save(`Reporte-${r.pLabelFile}.pdf`);
     toast('✅ PDF exportado');
-  }catch(e){toast('Error al exportar: '+e.message,'error');}
+  }catch(e){console.error(e);toast('Error al exportar: '+e.message,'error');}
 }
 
 // ══ CONFETTI ══
