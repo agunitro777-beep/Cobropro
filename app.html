@@ -2571,34 +2571,43 @@ window.addEventListener('popstate',function(e){
     history.pushState({page:_lastPage},'',window.location.pathname+'#'+_lastPage);
     return;
   }
-  // 2. Si hay modal abierto, cerrarlo
-  const openModal=document.querySelector('.mo.open');
-  if(openModal){
-    const closingId=openModal.id;
-    const st=e.state||{};
-    openModal.classList.remove('open');
-    // Si venía de mver abierto (o había un cliente activo) y no estamos cerrando mver, reabrirlo
-    if(closingId!=='mver'&&st.mverCid){
+  const st=e.state||{};
+  // 2. Si el estado anterior tenía un modal, cerrarlo y ver si hay que reabrir mver
+  if(st.modal){
+    // Cerrar el modal indicado si está abierto
+    const modalEl=document.getElementById(st.modal);
+    if(modalEl&&modalEl.classList.contains('open')) modalEl.classList.remove('open');
+    // Si hay mverCid guardado y no estamos cerrando mver, reabrir el cliente
+    if(st.modal!=='mver'&&st.mverCid){
       setTimeout(()=>verCli(st.mverCid),60);
     } else {
       history.pushState({page:_lastPage},'',window.location.pathname+'#'+_lastPage);
     }
     return;
   }
-  // 3. Si el estado indica una página válida distinta, ir a ella
-  const state=e.state;
-  if(state?.page && state.page!==_lastPage){
-    _pageHistory.pop();
-    goPage(state.page,false);
+  // 3. Fallback: si hay algún modal abierto, cerrarlo
+  const openModal=document.querySelector('.mo.open');
+  if(openModal){
+    openModal.classList.remove('open');
+    if(_mverCid&&openModal.id!=='mver'){
+      setTimeout(()=>verCli(_mverCid),60);
+    } else {
+      history.pushState({page:_lastPage},'',window.location.pathname+'#'+_lastPage);
+    }
     return;
   }
-  // 4. Si estamos en inicio o el estado no indica cambio de página, no hacer nada
-  // (evita que cerrar modales por swipe/click dispare navegación no deseada)
-  if(_lastPage==='inicio'||!state?.page||state?.modal||state?.fab){
+  // 4. Si el estado indica una página válida distinta, ir a ella
+  if(st.page && st.page!==_lastPage){
+    _pageHistory.pop();
+    goPage(st.page,false);
+    return;
+  }
+  // 5. Evitar navegación no deseada
+  if(_lastPage==='inicio'||!st.page||st.fab){
     history.pushState({page:_lastPage},'',window.location.pathname+'#'+_lastPage);
     return;
   }
-  // 5. Volver a inicio
+  // 6. Volver a inicio
   _pageHistory.pop();
   goPage('inicio',false);
 });
