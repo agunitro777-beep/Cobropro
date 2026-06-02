@@ -4219,7 +4219,7 @@ function rClis(){
     $('cliCustomHint').style.display=_cliSort==='custom'?'block':'none';
   },0);
   let l=[...Cs];const q=($('srch').value||'').toLowerCase();if(q)l=l.filter(c=>c.nom.toLowerCase().includes(q));
-  if(flt==='activos')l=l.filter(c=>opsDeCli(c.id).some(o=>o.pag<o.cuo));
+  if(flt==='activos')l=l.filter(c=>opsDeCli(c.id).some(o=>o.pag<o.cuo)&&stCli(c.id)!=='atrasado');
   else if(flt==='atrasado')l=l.filter(c=>stCli(c.id)==='atrasado');
   else if(flt==='completo')l=l.filter(c=>opsDeCli(c.id).length>0&&opsDeCli(c.id).every(o=>o.pag>=o.cuo));
   _applySortClis(l);
