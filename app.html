@@ -4960,8 +4960,9 @@ function rFin(){
     const ps=Ps.filter(p=>p.fec&&p.fec.startsWith(m));
     const cob=ps.reduce((s,p)=>s+p.mon,0);
     const prest=Ops.filter(o=>!esVenta(o)&&(o.fa||'').startsWith(m)).reduce((s,o)=>s+o.mon,0);
+    const gan=ps.reduce((acc,p)=>{const op=gO(p.oid);if(!op||esVenta(op))return acc;const v=cvOp(op),pr=op.mon/op.cuo;return acc+Math.max(0,Math.min(p.mon,v)-pr);},0);
     const lbl=MC[parseInt(m.split('-')[1])-1].substring(0,3);
-    return{label:lbl,cobrado:cob,prestado:prest};
+    return{label:lbl,cobrado:cob,prestado:prest,ganancia:gan};
   });
 
   $('finHist').innerHTML=`
@@ -4970,7 +4971,8 @@ function rFin(){
         <span class="ct">📊 Últimos 6 meses</span>
         <div style="display:flex;gap:10px">
           <span style="font-size:9px;display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#22c55e;display:inline-block"></span>Cobrado</span>
-          <span style="font-size:9px;display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#ef4444;display:inline-block"></span>Prestado</span>
+          <span style="font-size:9px;display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#8b5cf6;display:inline-block"></span>Prestado</span>
+          <span style="font-size:9px;display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#22d3ee;display:inline-block"></span>Ganancia</span>
         </div>
       </div>
       <div style="position:relative;height:180px">
@@ -6885,7 +6887,7 @@ function drawLineChart(canvasId,datos,periodo){
   const TXT=isLight?'#888':'#6b7280';
   const padL=46,padR=10,padT=14,padB=32;
   const cW=W-padL-padR,cH=H-padT-padB;
-  const maxVal=Math.max(...data.flatMap(d=>[d.cobrado,d.prestado]),1)*1.2;
+  const maxVal=Math.max(...data.flatMap(d=>[d.cobrado,d.prestado,d.ganancia]),1)*1.2;
 
   // Grid + etiquetas Y
   for(let i=0;i<=4;i++){
@@ -6901,48 +6903,34 @@ function drawLineChart(canvasId,datos,periodo){
   }
 
   const groupW=cW/n;
-  const barW=Math.min(18,groupW*0.35);
-  const gap=3;
+  const barW=Math.min(14,groupW*0.26);
+  const gap=2;
 
   data.forEach((d,i)=>{
     const cx=padL+i*groupW+groupW/2;
-    const xCob=cx-barW-gap/2;
-    const xPrest=cx+gap/2;
     const isLast=i===n-1;
-
-    // Barra cobrado
-    if(d.cobrado>0){
-      const h=Math.max(4,(d.cobrado/maxVal)*cH);
+    const bars=[
+      {v:d.cobrado,  x:cx-barW-gap-barW/2, c1:'rgba(34,197,94,1)',   c2:'rgba(34,197,94,.2)'},
+      {v:d.prestado, x:cx-barW/2,           c1:'rgba(139,92,246,1)',  c2:'rgba(139,92,246,.2)'},
+      {v:d.ganancia, x:cx+barW/2+gap,       c1:'rgba(34,211,238,1)', c2:'rgba(34,211,238,.2)'},
+    ];
+    bars.forEach(b=>{
+      if(b.v<=0)return;
+      const h=Math.max(4,(b.v/maxVal)*cH);
       const y=padT+cH-h;
       const g=ctx.createLinearGradient(0,y,0,padT+cH);
-      g.addColorStop(0,isLast?'rgba(34,197,94,1)':'rgba(34,197,94,.75)');
-      g.addColorStop(1,isLast?'rgba(34,197,94,.4)':'rgba(34,197,94,.2)');
+      g.addColorStop(0,isLast?b.c1:b.c1.replace(',1)','.75)'));
+      g.addColorStop(1,isLast?b.c2:b.c2);
       ctx.fillStyle=g;
-      ctx.beginPath();ctx.roundRect(xCob,y,barW,h,[3,3,0,0]);ctx.fill();
-      // Valor encima
+      ctx.beginPath();ctx.roundRect(b.x,y,barW,h,[3,3,0,0]);ctx.fill();
       if(h>20){
-        const lbl=d.cobrado>=1000000?(d.cobrado/1000000).toFixed(1)+'M':d.cobrado>=1000?Math.round(d.cobrado/1000)+'k':'';
-        if(lbl){ctx.fillStyle=isLight?'rgba(0,0,0,.5)':'rgba(255,255,255,.6)';ctx.font=`bold 7px DM Sans,sans-serif`;ctx.textAlign='center';ctx.fillText(lbl,xCob+barW/2,y-3);}
+        const lbl=b.v>=1000000?(b.v/1000000).toFixed(1)+'M':b.v>=1000?Math.round(b.v/1000)+'k':'';
+        if(lbl){ctx.fillStyle=isLight?'rgba(0,0,0,.5)':'rgba(255,255,255,.6)';ctx.font=`bold 7px DM Sans,sans-serif`;ctx.textAlign='center';ctx.fillText(lbl,b.x+barW/2,y-3);}
       }
-    }
-
-    // Barra prestado
-    if(d.prestado>0){
-      const h=Math.max(4,(d.prestado/maxVal)*cH);
-      const y=padT+cH-h;
-      const g=ctx.createLinearGradient(0,y,0,padT+cH);
-      g.addColorStop(0,isLast?'rgba(239,68,68,1)':'rgba(239,68,68,.75)');
-      g.addColorStop(1,isLast?'rgba(239,68,68,.4)':'rgba(239,68,68,.2)');
-      ctx.fillStyle=g;
-      ctx.beginPath();ctx.roundRect(xPrest,y,barW,h,[3,3,0,0]);ctx.fill();
-      if(h>20){
-        const lbl=d.prestado>=1000000?(d.prestado/1000000).toFixed(1)+'M':d.prestado>=1000?Math.round(d.prestado/1000)+'k':'';
-        if(lbl){ctx.fillStyle=isLight?'rgba(0,0,0,.5)':'rgba(255,255,255,.6)';ctx.font=`bold 7px DM Sans,sans-serif`;ctx.textAlign='center';ctx.fillText(lbl,xPrest+barW/2,y-3);}
-      }
-    }
+    });
 
     // Label mes
-    ctx.fillStyle=isLast?(isLight?'#6c63ff':'#a78bfa'):TXT;
+    ctx.fillStyle=isLast?'#8b5cf6':TXT;
     ctx.font=isLast?`bold 10px DM Sans,sans-serif`:`10px DM Sans,sans-serif`;
     ctx.textAlign='center';
     ctx.fillText(d.label,cx,padT+cH+18);
@@ -6960,7 +6948,7 @@ function drawLineChart(canvasId,datos,periodo){
     const tMes=document.getElementById('finTipMes'),tCob=document.getElementById('finTipCob'),tPorCob=document.getElementById('finTipPorCob');
     if(tMes)tMes.textContent=d.label;
     if(tCob)tCob.textContent='● Cobrado: '+fmt(d.cobrado);
-    if(tPorCob)tPorCob.textContent='● Prestado: '+fmt(d.prestado);
+    if(tPorCob)tPorCob.textContent='● Prestado: '+fmt(d.prestado)+'  ● Ganancia: '+fmt(d.ganancia||0);
     const pct=(cl/(n-1||1))*100;
     tip.style.display='block';
     tip.style.left=pct>65?'auto':(pct<5?'0':pct+'%');
