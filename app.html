@@ -2572,28 +2572,23 @@ window.addEventListener('popstate',function(e){
     return;
   }
   const st=e.state||{};
-  // 2. Si el estado anterior tenía un modal, cerrarlo y ver si hay que reabrir mver
-  if(st.modal){
-    // Cerrar el modal indicado si está abierto
-    const modalEl=document.getElementById(st.modal);
-    if(modalEl&&modalEl.classList.contains('open')) modalEl.classList.remove('open');
-    // Si hay mverCid guardado y no estamos cerrando mver, reabrir el cliente
-    if(st.modal!=='mver'&&st.mverCid){
-      setTimeout(()=>verCli(st.mverCid),60);
+  // Resolver cid del cliente activo desde múltiples fuentes
+  const activeCid=st.mverCid||_mverCid||parseInt(sessionStorage.getItem('_mverCid')||'0')||0;
+  // 2. Si hay algún modal abierto, cerrarlo
+  const openModal=document.querySelector('.mo.open');
+  if(openModal){
+    const closingId=openModal.id;
+    openModal.classList.remove('open');
+    if(closingId!=='mver'&&activeCid){
+      setTimeout(()=>verCli(activeCid),60);
     } else {
       history.pushState({page:_lastPage},'',window.location.pathname+'#'+_lastPage);
     }
     return;
   }
-  // 3. Fallback: si hay algún modal abierto, cerrarlo
-  const openModal=document.querySelector('.mo.open');
-  if(openModal){
-    openModal.classList.remove('open');
-    if(_mverCid&&openModal.id!=='mver'){
-      setTimeout(()=>verCli(_mverCid),60);
-    } else {
-      history.pushState({page:_lastPage},'',window.location.pathname+'#'+_lastPage);
-    }
+  // 3. Si el state tiene modal, es que ya fue cerrado — si hay cid, reabrir cliente
+  if(st.modal&&st.modal!=='mver'&&activeCid){
+    setTimeout(()=>verCli(activeCid),60);
     return;
   }
   // 4. Si el estado indica una página válida distinta, ir a ella
@@ -3667,7 +3662,7 @@ async function guardarCfg(){
 }
 
 // ══ VER CLIENTE ══
-function verCli(cid){_mverCid=cid;
+function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
   const c=gC(cid);if(!c)return;
   const ops=opsDeCli(cid),r=rankCli(cid),saldoT=saldoTotalCli(cid),sTC=stCli(cid);
   const opsAct=ops.filter(o=>o.pag<o.cuo),opsComp=ops.filter(o=>o.pag>=o.cuo);
