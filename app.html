@@ -4953,28 +4953,27 @@ function rFin(){
       <div class="sc cy"><div class="sl">Por cobrar</div><div class="sv cy" style="font-size:14px">${fmt(porCob)}</div></div>
     </div>`;
 
-  // Preparar datos para gráfico: últimos 12 meses
-  const hm=[];
-  for(let i=11;i>=0;i--){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);hm.push(d.toISOString().substring(0,7));}
-  const todosGrafData=hm.map(m=>{
+  // ── Gráfico barras agrupadas últimos 6 meses ──
+  const hm6=[];
+  for(let i=5;i>=0;i--){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);hm6.push(d.toISOString().substring(0,7));}
+  const grafData6=hm6.map(m=>{
     const ps=Ps.filter(p=>p.fec&&p.fec.startsWith(m));
-    const tot=ps.reduce((s,p)=>s+p.mon,0);
-    const pCob=Ops.filter(o=>o.pag<o.cuo).reduce((s,o)=>s+saldoOp(o),0);
-    const lbl=MC[parseInt(m.split('-')[1])-1].substring(0,3)+' '+m.split('-')[0].substring(2);
-    return{label:lbl,cobrado:tot,porCobrar:pCob};
+    const cob=ps.reduce((s,p)=>s+p.mon,0);
+    const prest=Ops.filter(o=>!esVenta(o)&&(o.fa||'').startsWith(m)).reduce((s,o)=>s+o.mon,0);
+    const lbl=MC[parseInt(m.split('-')[1])-1].substring(0,3);
+    return{label:lbl,cobrado:cob,prestado:prest};
   });
 
   $('finHist').innerHTML=`
     <div class="card" style="margin-bottom:10px">
       <div class="ch" style="display:flex;justify-content:space-between;align-items:center">
-        <span class="ct">📊 Historial mensual</span>
-        <div class="fin-periodo-sel">
-          <button class="fin-periodo-btn" onclick="setFinGrafPeriodo(3,this)">3m</button>
-          <button class="fin-periodo-btn" onclick="setFinGrafPeriodo(6,this)">6m</button>
-          <button class="fin-periodo-btn active" onclick="setFinGrafPeriodo(12,this)">12m</button>
+        <span class="ct">📊 Últimos 6 meses</span>
+        <div style="display:flex;gap:10px">
+          <span style="font-size:9px;display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#22c55e;display:inline-block"></span>Cobrado</span>
+          <span style="font-size:9px;display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#ef4444;display:inline-block"></span>Prestado</span>
         </div>
       </div>
-      <div class="chart-wrap" style="height:160px;position:relative">
+      <div style="position:relative;height:180px">
         <canvas id="finChart"></canvas>
         <div class="fin-chart-tooltip" id="finChartTip">
           <div class="tip-month" id="finTipMes"></div>
@@ -4982,13 +4981,8 @@ function rFin(){
           <div class="tip-porcobrar" id="finTipPorCob"></div>
         </div>
       </div>
-      <div class="fin-month-labels" id="finMonthLabels"></div>
-      <div class="chart-legend" style="margin-top:10px">
-        <div class="chart-leg-item"><div class="chart-leg-dot" style="background:#22c55e"></div>Cobrado</div>
-        <div class="chart-leg-item"><div class="chart-leg-dot" style="background:#6c63ff"></div>Por cobrar</div>
-      </div>
     </div>
-  `+hm.map(m=>{
+  `+hm6.map(m=>{
     const ps=Ps.filter(p=>p.fec&&p.fec.startsWith(m));
     const tot=ps.reduce((s,p)=>s+p.mon,0);
     const int2=ps.reduce((acc,p)=>{const op=gO(p.oid);return op&&!esVenta(op)?acc+Math.max(0,cvOp(op)-op.mon/op.cuo):acc},0);
@@ -4996,8 +4990,8 @@ function rFin(){
     return`<div class="pi"><div><div style="font-size:11px;font-weight:600">${l}</div><div class="pd">Intereses: ${fmt(int2)}</div></div><div class="pm">${fmt(tot)}</div></div>`;
   }).join('');
 
-  window._finGrafData=todosGrafData;
-  requestAnimationFrame(()=>drawLineChart('finChart',todosGrafData,12));
+  window._finGrafData=grafData6;
+  requestAnimationFrame(()=>drawLineChart('finChart',grafData6,6));
 }
 function rFinProy(){
   const h=new Date();h.setHours(0,0,0,0);
@@ -6873,16 +6867,11 @@ function _updateFsizeBtns(active){
   });
 }
 
-// ══ GRÁFICO LÍNEAS FINANZAS ══
-function setFinGrafPeriodo(p,btn){
-  window._finGrafPeriodo=p;
-  document.querySelectorAll('.fin-periodo-btn').forEach(b=>b.classList.remove('active'));
-  if(btn)btn.classList.add('active');
-  if(window._finGrafData)drawLineChart('finChart',window._finGrafData,p);
-}
+// ══ GRÁFICO BARRAS AGRUPADAS FINANZAS ══
+function setFinGrafPeriodo(p,btn){}// legacy, no-op
 function drawLineChart(canvasId,datos,periodo){
   const canvas=document.getElementById(canvasId);if(!canvas)return;
-  const data=datos.slice(-periodo);
+  const data=datos.slice(-6);
   const n=data.length;if(n<1)return;
   const wrap=canvas.parentElement;
   const dpr=window.devicePixelRatio||1;
@@ -6893,97 +6882,93 @@ function drawLineChart(canvasId,datos,periodo){
   ctx.scale(dpr,dpr);ctx.clearRect(0,0,W,H);
   const isLight=document.body.classList.contains('light');
   const GRID=isLight?'rgba(0,0,0,.07)':'rgba(255,255,255,.07)';
-  const TXT=isLight?'#8888aa':'#6b7280';
-  const padL=44,padR=10,padT=12,padB=28;
+  const TXT=isLight?'#888':'#6b7280';
+  const padL=46,padR=10,padT=14,padB=32;
   const cW=W-padL-padR,cH=H-padT-padB;
-  const maxVal=Math.max(...data.map(d=>d.cobrado),1)*1.2||1;
-  const barW=Math.max(6,Math.floor(cW/n*0.55));
-  const gap=cW/n;
-  const xOf=i=>padL+i*gap+gap/2;
-  const yOf=v=>padT+cH-(v/maxVal)*cH;
+  const maxVal=Math.max(...data.flatMap(d=>[d.cobrado,d.prestado]),1)*1.2;
 
-  // Grid horizontal con etiquetas Y
-  const gridSteps=4;
-  for(let i=0;i<=gridSteps;i++){
-    const v=Math.round((i/gridSteps)*maxVal);
-    const y=padT+cH-(i/gridSteps)*cH;
+  // Grid + etiquetas Y
+  for(let i=0;i<=4;i++){
+    const v=(i/4)*maxVal;
+    const y=padT+cH-(i/4)*cH;
     ctx.beginPath();ctx.strokeStyle=GRID;ctx.lineWidth=1;ctx.setLineDash([3,5]);
     ctx.moveTo(padL,y);ctx.lineTo(padL+cW,y);ctx.stroke();ctx.setLineDash([]);
     if(i>0){
       ctx.fillStyle=TXT;ctx.font=`9px DM Sans,sans-serif`;ctx.textAlign='right';
-      const lbl=v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'k':v;
-      ctx.fillText(lbl,padL-5,y+3);
+      const lbl=v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?Math.round(v/1000)+'k':Math.round(v);
+      ctx.fillText(lbl,padL-4,y+3);
     }
   }
 
-  // Barras
-  for(let i=0;i<n;i++){
-    const v=data[i].cobrado;
-    const x=xOf(i);
-    const h=v>0?Math.max(4,(v/maxVal)*cH):0;
-    const y=padT+cH-h;
+  const groupW=cW/n;
+  const barW=Math.min(18,groupW*0.35);
+  const gap=3;
+
+  data.forEach((d,i)=>{
+    const cx=padL+i*groupW+groupW/2;
+    const xCob=cx-barW-gap/2;
+    const xPrest=cx+gap/2;
     const isLast=i===n-1;
-    if(h>0){
-      const grad=ctx.createLinearGradient(0,y,0,padT+cH);
-      grad.addColorStop(0,isLast?'rgba(34,197,94,.95)':'rgba(108,99,255,.85)');
-      grad.addColorStop(1,isLast?'rgba(34,197,94,.3)':'rgba(108,99,255,.25)');
-      ctx.fillStyle=grad;
-      ctx.beginPath();ctx.roundRect(x-barW/2,y,barW,h,[3,3,0,0]);ctx.fill();
+
+    // Barra cobrado
+    if(d.cobrado>0){
+      const h=Math.max(4,(d.cobrado/maxVal)*cH);
+      const y=padT+cH-h;
+      const g=ctx.createLinearGradient(0,y,0,padT+cH);
+      g.addColorStop(0,isLast?'rgba(34,197,94,1)':'rgba(34,197,94,.75)');
+      g.addColorStop(1,isLast?'rgba(34,197,94,.4)':'rgba(34,197,94,.2)');
+      ctx.fillStyle=g;
+      ctx.beginPath();ctx.roundRect(xCob,y,barW,h,[3,3,0,0]);ctx.fill();
+      // Valor encima
+      if(h>20){
+        const lbl=d.cobrado>=1000000?(d.cobrado/1000000).toFixed(1)+'M':d.cobrado>=1000?Math.round(d.cobrado/1000)+'k':'';
+        if(lbl){ctx.fillStyle=isLight?'rgba(0,0,0,.5)':'rgba(255,255,255,.6)';ctx.font=`bold 7px DM Sans,sans-serif`;ctx.textAlign='center';ctx.fillText(lbl,xCob+barW/2,y-3);}
+      }
     }
-    // Label X
-    ctx.fillStyle=isLast?'#22c55e':TXT;
-    ctx.font=isLast?`bold 9px DM Sans,sans-serif`:`9px DM Sans,sans-serif`;
+
+    // Barra prestado
+    if(d.prestado>0){
+      const h=Math.max(4,(d.prestado/maxVal)*cH);
+      const y=padT+cH-h;
+      const g=ctx.createLinearGradient(0,y,0,padT+cH);
+      g.addColorStop(0,isLast?'rgba(239,68,68,1)':'rgba(239,68,68,.75)');
+      g.addColorStop(1,isLast?'rgba(239,68,68,.4)':'rgba(239,68,68,.2)');
+      ctx.fillStyle=g;
+      ctx.beginPath();ctx.roundRect(xPrest,y,barW,h,[3,3,0,0]);ctx.fill();
+      if(h>20){
+        const lbl=d.prestado>=1000000?(d.prestado/1000000).toFixed(1)+'M':d.prestado>=1000?Math.round(d.prestado/1000)+'k':'';
+        if(lbl){ctx.fillStyle=isLight?'rgba(0,0,0,.5)':'rgba(255,255,255,.6)';ctx.font=`bold 7px DM Sans,sans-serif`;ctx.textAlign='center';ctx.fillText(lbl,xPrest+barW/2,y-3);}
+      }
+    }
+
+    // Label mes
+    ctx.fillStyle=isLast?(isLight?'#6c63ff':'#a78bfa'):TXT;
+    ctx.font=isLast?`bold 10px DM Sans,sans-serif`:`10px DM Sans,sans-serif`;
     ctx.textAlign='center';
-    ctx.fillText(data[i].label.split(' ')[0],x,padT+cH+16);
-    // Valor encima si hay espacio
-    if(h>18&&v>0){
-      const lbl=v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'k':Math.round(v);
-      ctx.fillStyle=isLight?'rgba(0,0,0,.5)':'rgba(255,255,255,.7)';
-      ctx.font=`bold 8px DM Sans,sans-serif`;ctx.textAlign='center';
-      ctx.fillText(lbl,x,y-4);
-    }
-  }
-
-  // Línea de tendencia suave
-  const nonZero=data.filter(d=>d.cobrado>0);
-  if(nonZero.length>=2){
-    ctx.beginPath();
-    let first=true;
-    data.forEach((d,i)=>{
-      if(d.cobrado===0)return;
-      const x=xOf(i),y=yOf(d.cobrado);
-      if(first){ctx.moveTo(x,y);first=false;}
-      else ctx.lineTo(x,y);
-    });
-    ctx.strokeStyle=isLight?'rgba(108,99,255,.4)':'rgba(167,139,250,.5)';
-    ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.stroke();ctx.setLineDash([]);
-  }
-
-  // Labels meses
-  const labEl=document.getElementById('finMonthLabels');
-  if(labEl)labEl.innerHTML='';
+    ctx.fillText(d.label,cx,padT+cH+18);
+  });
 
   // Tooltip
-  function handleFinTouch(e){
+  function handleTouch(e){
     const rect=canvas.getBoundingClientRect();
-    const cx=e.touches?e.touches[0].clientX:e.clientX;
-    const relX=(cx-rect.left)*(W/rect.width);
+    const cx2=e.touches?e.touches[0].clientX:e.clientX;
+    const relX=(cx2-rect.left)*(W/rect.width);
     let cl=0,minD=Infinity;
-    data.forEach((_,i)=>{const d=Math.abs(relX-xOf(i));if(d<minD){minD=d;cl=i;}});
+    data.forEach((_,i)=>{const d=Math.abs(relX-(padL+i*(cW/n)+(cW/n)/2));if(d<minD){minD=d;cl=i;}});
     const d=data[cl];
     const tip=document.getElementById('finChartTip');if(!tip)return;
     const tMes=document.getElementById('finTipMes'),tCob=document.getElementById('finTipCob'),tPorCob=document.getElementById('finTipPorCob');
     if(tMes)tMes.textContent=d.label;
     if(tCob)tCob.textContent='● Cobrado: '+fmt(d.cobrado);
-    if(tPorCob)tPorCob.textContent=d.porCobrar?'● Por cobrar: '+fmt(d.porCobrar):'';
+    if(tPorCob)tPorCob.textContent='● Prestado: '+fmt(d.prestado);
     const pct=(cl/(n-1||1))*100;
     tip.style.display='block';
-    tip.style.left=pct>65?'auto':(pct<10?'0':pct+'%');
+    tip.style.left=pct>65?'auto':(pct<5?'0':pct+'%');
     tip.style.right=pct>65?'0':'auto';
     tip.style.top='4px';
   }
-  canvas.ontouchstart=handleFinTouch;canvas.ontouchmove=handleFinTouch;
-  canvas.onmousemove=handleFinTouch;
+  canvas.ontouchstart=handleTouch;canvas.ontouchmove=handleTouch;
+  canvas.onmousemove=handleTouch;
   canvas.onmouseleave=()=>{const t=document.getElementById('finChartTip');if(t)t.style.display='none';};
 }
 
