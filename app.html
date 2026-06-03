@@ -5514,15 +5514,26 @@ async function comprobantePDFWA(oid,monPag,fec,par,flt){
 async function _compartirODescargarPDF(doc,fname,c){
   const pdfBlob=doc.output('blob');
   const file=new File([pdfBlob],fname,{type:'application/pdf'});
-  // Web Share API: abre menú nativo de compartir (funciona en mobile)
-  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+  // Intentar Web Share con archivo (Android Chrome, iOS Safari)
+  if(navigator.share){
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({files:[file],title:fname.replace('.pdf','')});
+        toast('📎 Comprobante compartido');return;
+      }catch(e){if(e.name==='AbortError')return;}
+    }
+    // Fallback: compartir como URL blob descargable
+    const blobUrl=URL.createObjectURL(pdfBlob);
     try{
-      await navigator.share({files:[file],title:fname.replace('.pdf','')});
-      toast('📎 Comprobante compartido');
-      return;
-    }catch(e){if(e.name==='AbortError')return;}
+      await navigator.share({url:blobUrl,title:fname.replace('.pdf',''),text:'Comprobante adjunto'});
+      toast('📎 Enlace compartido');
+      setTimeout(()=>URL.revokeObjectURL(blobUrl),30000);return;
+    }catch(e){
+      URL.revokeObjectURL(blobUrl);
+      if(e.name==='AbortError')return;
+    }
   }
-  // Fallback desktop: descargar + abrir WA
+  // Fallback desktop: descargar + ofrecer WA
   doc.save(fname);
   if(c&&c.tel){
     const tel=c.tel.replace(/[^0-9]/g,'');
