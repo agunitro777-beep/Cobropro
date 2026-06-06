@@ -1329,6 +1329,23 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <button class="btn bs" style="margin-top:7px" onclick="closeModal('mEditPago')">Cancelar</button>
   </div>
 </div>
+<div class="mo" id="mEditOpCanc">
+  <div class="modal">
+    <div class="mh"></div><div class="mt">✏️ Editar operación</div>
+    <input type="hidden" id="eoc_id">
+    <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:9px;margin-bottom:12px;font-size:11px;color:var(--yw)">⚠️ Estás editando una operación terminada. Podés corregir datos o reabrirla.</div>
+    <div class="ig"><label class="il">Descripción</label><input class="inp" id="eoc_desc" placeholder="Descripción del crédito"></div>
+    <div class="ig"><label class="il">Monto capital</label><input class="inp" id="eoc_mon" type="number" placeholder="0"></div>
+    <div class="ig"><label class="il">Cuotas totales</label><input class="inp" id="eoc_cuo" type="number" min="1" placeholder="1"></div>
+    <div class="ig"><label class="il">Cuotas pagadas</label><input class="inp" id="eoc_pag" type="number" min="0" placeholder="0"></div>
+    <div class="ig"><label class="il">Interés (%)</label><input class="inp" id="eoc_int" type="number" min="0" step="0.1" placeholder="0"></div>
+    <div class="ig"><label class="il">Cuota fija (opcional)</label><input class="inp" id="eoc_cf" type="number" min="0" placeholder="Dejar en 0 para calcular automático"></div>
+    <div class="ig"><label class="il">Notas</label><input class="inp" id="eoc_not" placeholder="Notas..."></div>
+    <button class="btn bgr" onclick="guardarEditOpCanc()">💾 Guardar cambios</button>
+    <button class="btn bp" style="margin-top:7px" onclick="reabrirOpCanc()">🔄 Reabrir operación</button>
+    <button class="btn bs" style="margin-top:7px" onclick="closeModal('mEditOpCanc')">Cancelar</button>
+  </div>
+</div>
 <div class="mo" id="mCambiarPlan">
   <div class="modal">
     <div class="mh"></div><div class="mt">🔄 Cambiar plan</div>
@@ -3583,6 +3600,62 @@ async function confirmarElimPago(){
     if($('page-clientes').classList.contains('active'))rClis();
   }catch(e){toast('Error: '+e.message,'error')}
 }
+// ══ EDITAR / REABRIR OPERACIÓN CANCELADA ══
+function abrirEditOpCanc(oid){
+  const op=gO(oid);if(!op)return;
+  $('eoc_id').value=oid;
+  $('eoc_desc').value=op.desc||op.prod||'';
+  $('eoc_mon').value=op.mon||0;
+  $('eoc_cuo').value=op.cuo||1;
+  $('eoc_pag').value=op.pag||0;
+  $('eoc_int').value=op.int_||op.int||0;
+  $('eoc_cf').value=op.cuota_fija||0;
+  $('eoc_not').value=op.not||op.desc_||'';
+  showModal('mEditOpCanc');
+}
+async function guardarEditOpCanc(){
+  if(_guardando){return;}_guardando=true;
+  const oid=parseInt($('eoc_id').value);
+  const op=gO(oid);if(!op){_guardando=false;return;}
+  const mon=parseFloat($('eoc_mon').value)||op.mon;
+  const cuo=parseInt($('eoc_cuo').value)||op.cuo;
+  const pag=Math.min(parseInt($('eoc_pag').value)||op.pag,cuo);
+  const int_=parseFloat($('eoc_int').value)||0;
+  const cuota_fija=parseFloat($('eoc_cf').value)||0;
+  const desc=$('eoc_desc').value.trim()||op.desc||op.prod||'';
+  const not=$('eoc_not').value.trim();
+  const d={mon,cuo,pag,int_,cuota_fija,desc,not_:not};
+  try{
+    await dbUpd('operaciones',oid,d);
+    Object.assign(op,d);
+    closeModal('mEditOpCanc');
+    toast('✅ Operación actualizada');
+    setTimeout(()=>refrescar(),0);
+    const mver=document.getElementById('mver');
+    if(mver&&mver.classList.contains('open'))verCli(op.cid);
+  }catch(e){toast('Error: '+e.message,'error')}
+  _guardando=false;
+}
+async function confirmarReabrirOpCanc(oid){
+  const op=gO(oid);if(!op)return;
+  const ok=await showConfirm('¿Reabrir operación?','El crédito volverá a estado activo. Podés ajustar las cuotas pagadas si es necesario.','🔄','Sí, reabrir','bp');
+  if(!ok)return;
+  try{
+    // Reabrir: si pag >= cuo, reducir pag en 1 para que quede activo
+    const nuevoPag=op.pag>=op.cuo?Math.max(0,op.cuo-1):op.pag;
+    await dbUpd('operaciones',oid,{pag:nuevoPag,cancelado:false});
+    op.pag=nuevoPag;op.cancelado=false;
+    toast('🔄 Operación reabierta y activa');
+    setTimeout(()=>refrescar(),0);
+    const mver=document.getElementById('mver');
+    if(mver&&mver.classList.contains('open'))verCli(op.cid);
+  }catch(e){toast('Error: '+e.message,'error')}
+}
+async function reabrirOpCanc(){
+  const oid=parseInt($('eoc_id').value);if(!oid)return;
+  closeModal('mEditOpCanc');
+  await confirmarReabrirOpCanc(oid);
+}
 function abrirGasto(id=null){$('gastoMT').textContent=id?'✏️ Editar gasto':'🧾 Registrar gasto';$('g_id').value=id||'';if(id){const g=Gs.find(x=>x.id===id);if(!g)return;$('g_des').value=g.des;$('g_mon').value=g.mon;$('g_cat').value=g.cat;$('g_fec').value=g.fec}else{$('g_des').value='';$('g_mon').value='';$('g_fec').value=hoy()}showModal('mgasto')}
 async function guardarGasto(){
   if(_guardando){return;}_guardando=true;
@@ -3761,7 +3834,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
       })()}
     </div>`;
   }).join('');
-  const opsCompHTML=opsComp.length?`<div style="margin-top:12px"><div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">✅ Terminados (${opsComp.length})</div>${opsComp.map(op=>{const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const tot=sv?op.precio:op.mon;const pagosOp=pagoDeOp(op.id);const totCobrado=pagosOp.reduce((s,p)=>s+p.mon,0);return`<div class="op-card" style="opacity:.7;border-left:3px solid var(--gr)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="op-tag" style="color:var(--gr)">${sv?'🛒':'💳'} ${sv?'VENTA':'CRÉDITO'}</div><div style="font-size:13px;font-weight:700">${lbl}</div><div style="font-size:9px;color:var(--tx2)">${op.pag}/${op.cuo} cuotas · ${op.frq}</div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:var(--gr)">${fmt(tot)}</div><span class="sb done">✅ ${op.pag}/${op.cuo} pagadas</span></div></div><div style="display:flex;gap:5px;margin-top:6px"><button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️ Editar</button><button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfCreditoNuevoWA(gO(${op.id}),gC(${cid}))">📲 PDF</button><button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button></div></div>`}).join('')}</div>`:'';
+  const opsCompHTML=opsComp.length?`<div style="margin-top:12px"><div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">✅ Terminados (${opsComp.length})</div>${opsComp.map(op=>{const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const tot=sv?op.precio:op.mon;const pagosOp=pagoDeOp(op.id);const totCobrado=pagosOp.reduce((s,p)=>s+p.mon,0);return`<div class="op-card" style="opacity:.7;border-left:3px solid var(--gr)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="op-tag" style="color:var(--gr)">${sv?'🛒':'💳'} ${sv?'VENTA':'CRÉDITO'}</div><div style="font-size:13px;font-weight:700">${lbl}</div><div style="font-size:9px;color:var(--tx2)">${op.pag}/${op.cuo} cuotas · ${op.frq}</div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:var(--gr)">${fmt(tot)}</div><span class="sb done">✅ ${op.pag}/${op.cuo} pagadas</span></div></div><div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap"><button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️ Editar</button><button class="btn bp bsm" style="background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.5);color:var(--yw)" onclick="abrirEditOpCanc(${op.id})">⚙️ Corregir</button><button class="btn bp bsm" style="background:rgba(108,99,255,.15);border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="confirmarReabrirOpCanc(${op.id})">🔄 Reabrir</button><button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfCreditoNuevoWA(gO(${op.id}),gC(${cid}))">📲 PDF</button><button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button></div></div>`}).join('')}</div>`:'';
   const notasHTML=c.not?`<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--tx2)"><span style="font-weight:600;color:var(--tx)">📝 Notas:</span> ${c.not}</div>`:'';
   $('verContent').innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
