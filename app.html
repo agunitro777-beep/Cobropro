@@ -1055,6 +1055,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
         </div>
       </div>
       <div id="intMensualBlock" style="display:none">
+        <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc_im" placeholder="Ej: Crédito personal..."></div>
         <div class="ig"><label class="il">Capital prestado *</label><input class="inp" id="op_mon_im" type="number" placeholder="0.00" oninput="syncIntMensual()"></div>
         <div class="ig"><label class="il" style="display:flex;justify-content:space-between"><span>Interés mensual (%)</span><span id="op_int_im_hint" style="font-size:10px;color:var(--ac2)"></span></label><input class="inp" id="op_int_im" type="number" placeholder="Ej: 30.2" step="0.1" oninput="syncIntMensual()"></div>
         <div style="background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:12px;margin-bottom:10px;font-size:11px;color:var(--tx2);line-height:1.6">
@@ -2222,6 +2223,11 @@ function toggleTipoInteres(forzar){
   const moraSec=$('op_mora')?.closest('.ig');
   [cuotasSec,frqSec,facrSec,moraSec].forEach(s=>{if(s)s.style.display=(esDiario||esMensual)?'none':'';});
   if(fvSec)fvSec.style.display=esDiario?'none':''; // para interes_mensual sí mostrar fecha 1° pago
+  // Ocultar Monto y Descripción del form normal cuando es interes_mensual
+  const monSec=$('op_mon')?.closest('.ig');
+  const descSec=$('op_desc')?.closest('.ig');
+  if(monSec)monSec.style.display=esMensual?'none':'';
+  if(descSec)descSec.style.display=esMensual?'none':'';
   if(esDiario&&$('op_facr_d'))$('op_facr_d').value=hoy();
   if(esMensual)syncIntMensual();
 }
@@ -2886,6 +2892,7 @@ function abrirOp(cidFijo=null,oid=null){
       });
       if(op.tip==='interes_mensual'){
         $('op_tip').value='interes_mensual';toggleTipoInteres('interes_mensual');
+        if($('op_desc_im'))$('op_desc_im').value=op.desc||'';
         if($('op_mon_im'))$('op_mon_im').value=Math.round(op.mon);
         if($('op_int_im'))$('op_int_im').value=parseFloat(op.int_)||0;
         syncIntMensual();
@@ -2926,7 +2933,7 @@ async function guardarOp(){
     if(!monIM){toast('Ingresá el capital prestado','error');_guardando=false;return;}
     if(!intIM){toast('Ingresá el interés mensual','error');_guardando=false;return;}
     const cuotaIM=Math.round(monIM*intIM/100);
-    const descIM=($('op_desc')?.value||'Crédito solo interés').trim();
+    const descIM=($('op_desc_im')?.value||$('op_desc')?.value||'Crédito solo interés').trim();
     const fvIM=$('op_fv').value||hoy();
     // 999 cuotas = abierto; cuota_fija = interés mensual; capital en mon
     Object.assign(d,{mon:monIM,int_:intIM,mora:0,tip:'interes_mensual',desc_:descIM,prod:'',costo:0,precio:0,cuo:999,pag:0,frq:'mensual',fv:fvIM,facr:$('op_facr')?.value||null,cuota_fija:cuotaIM});
