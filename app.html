@@ -1033,8 +1033,10 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <div class="ig"><label class="il">Moneda</label><select class="inp sel" id="op_moneda"><option value="$">$ (Peso)</option><option value="U$S">U$S (Dólar)</option><option value="R$">R$ (Real)</option><option value="€">€ (Euro)</option></select></div>
     <div id="opCamposP">
       <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc" placeholder="Ej: Crédito personal..."></div>
-      <div class="ig"><label class="il">Monto *</label><input class="inp" id="op_mon" type="number" placeholder="0.00" oninput="(function(){const v=parseFloat(document.getElementById('op_mon').value);const h=document.getElementById('op_mon_hint');if(v&&v!==Math.round(v)){h.textContent='⚠️ Se guardará como $'+Math.round(v).toLocaleString('es-AR');h.style.color='var(--yw)';}else{h.textContent='';} })()"><div id="op_mon_hint" style="font-size:10px;min-height:13px;margin-top:3px"></div></div>
+      <div class="ig"><label class="il">Monto *</label><input class="inp" id="op_mon" type="number" placeholder="0.00" oninput="(function(){const v=parseFloat(document.getElementById('op_mon').value);const h=document.getElementById('op_mon_hint');if(v&&v!==Math.round(v)){h.textContent='⚠️ Se guardará como $'+Math.round(v).toLocaleString('es-AR');h.style.color='var(--yw)';}else{h.textContent='';}actualizarPreview();})()"><div id="op_mon_hint" style="font-size:10px;min-height:13px;margin-top:3px"></div></div>
       <div class="ig"><label class="il">Tipo interés</label><select class="inp sel" id="op_tip" onchange="toggleTipoInteres()"><option value="simple">Simple</option><option value="compuesto">Compuesto</option><option value="cuota">Por cuota fija</option><option value="diario_abierto">📅 Interés diario (fecha abierta)</option><option value="interes_mensual">💰 Solo interés mensual (capital abierto)</option></select></div>
+      <!-- Panel explicativo por tipo -->
+      <div id="tipExplainer" style="border-radius:10px;padding:11px 13px;margin-bottom:8px;font-size:11px;line-height:1.6;display:none"></div>
       <div id="intNormalBlock">
         <div class="ig">
           <label class="il">Interés (%)</label>
@@ -1050,18 +1052,17 @@ body.light .mo{background:rgba(0,0,0,.5)}
         <div class="ig"><label class="il">Monto prestado *</label><input class="inp" id="op_mon_d" type="number" placeholder="0.00" oninput="syncIntDiario()"></div>
         <div class="ig"><label class="il" style="display:flex;justify-content:space-between"><span>Interés diario (%)</span><span id="op_int_d_hint" style="font-size:10px;color:var(--ac2)"></span></label><input class="inp" id="op_int_d" type="number" placeholder="Ej: 1" step="0.1" oninput="syncIntDiario()"></div>
         <div class="ig"><label class="il">Fecha inicio *</label><input class="inp" id="op_facr_d" type="date"></div>
-        <div style="background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:12px;margin-bottom:10px;font-size:11px;color:var(--tx2);line-height:1.6">
-          💡 <b>Ejemplo:</b> $100.000 al 1% diario × 11 días = <b>$111.000</b><br>Al cancelar, ingresás los días y la app calcula el total.
-        </div>
       </div>
       <div id="intMensualBlock" style="display:none">
         <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc_im" placeholder="Ej: Crédito personal..."></div>
         <div class="ig"><label class="il">Capital prestado *</label><input class="inp" id="op_mon_im" type="number" placeholder="0.00" oninput="syncIntMensual()"></div>
-        <div class="ig"><label class="il" style="display:flex;justify-content:space-between"><span>Interés mensual (%)</span><span id="op_int_im_hint" style="font-size:10px;color:var(--ac2)"></span></label><input class="inp" id="op_int_im" type="number" placeholder="Ej: 30.2" step="0.1" oninput="syncIntMensual()"></div>
-        <div style="background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:12px;margin-bottom:10px;font-size:11px;color:var(--tx2);line-height:1.6">
-          💡 El cliente paga <strong id="op_im_cuota_preview" style="color:var(--ac2)">—</strong> por mes. El capital no se reduce hasta que el cliente lo cancele.<br><br>Cuando cancele, usá el botón <strong>💰 Cancelar capital</strong> en su ficha.
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+          <div><div style="font-size:9px;color:var(--tx2);margin-bottom:3px">Interés mensual (%)</div><input class="inp" id="op_int_im" type="number" placeholder="Ej: 30.2" step="0.1" oninput="syncIntMensual()"></div>
+          <div><div style="font-size:9px;color:var(--tx2);margin-bottom:3px">O cuota fija ($)</div><input class="inp" id="op_cuota_im" type="number" placeholder="Ej: 200000" oninput="syncIntMensualCuota()" style="border-style:dashed"></div>
         </div>
       </div>
+      <!-- Preview dinámico unificado -->
+      <div id="opPreview" style="display:none;background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:13px;margin-bottom:10px"></div>
       <div class="ig">
         <label class="il" style="display:flex;justify-content:space-between;align-items:center">
           <span>Mora diaria (%)</span>
@@ -1092,7 +1093,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px">
         <div>
           <div style="font-size:9px;color:var(--tx2);margin-bottom:3px">Cantidad de cuotas *</div>
-          <input class="inp" id="op_cuo" type="number" placeholder="Ej: 12" oninput="syncInteresOp();syncCuotaFija()">
+          <input class="inp" id="op_cuo" type="number" placeholder="Ej: 12" oninput="syncInteresOp();syncCuotaFija();actualizarPreview()">
         </div>
         <div>
           <div style="font-size:9px;color:var(--tx2);margin-bottom:3px">Valor por cuota (opcional)</div>
@@ -2230,16 +2231,26 @@ function toggleTipoInteres(forzar){
   if(descSec)descSec.style.display=esMensual?'none':'';
   if(esDiario&&$('op_facr_d'))$('op_facr_d').value=hoy();
   if(esMensual)syncIntMensual();
+  actualizarTipExplainer();
+  actualizarPreview();
 }
 function syncIntMensual(){
   const mon=parseFloat($('op_mon_im')?.value)||0;
   const int_=parseFloat($('op_int_im')?.value)||0;
-  const hint=$('op_int_im_hint');
-  const preview=$('op_im_cuota_preview');
-  const cuota=Math.round(mon*int_/100);
-  if(hint&&mon&&int_){hint.textContent=`$${cuota.toLocaleString('es-AR')}/mes`;}
-  else if(hint){hint.textContent='';}
-  if(preview){preview.textContent=mon&&int_?'$'+cuota.toLocaleString('es-AR'):'—';}
+  const cuotaFijaIM=parseFloat($('op_cuota_im')?.value)||0;
+  // Si pusieron cuota fija, calcular el % automáticamente
+  if(cuotaFijaIM>0&&mon>0){
+    const intCalc=(cuotaFijaIM/mon*100);
+    const intEl=$('op_int_im');
+    if(intEl&&!intEl._editing)intEl.value=intCalc.toFixed(2);
+  }
+  actualizarPreview();
+}
+function syncIntMensualCuota(){
+  // Al escribir cuota fija, limpiar % para que no choquen
+  const intEl=$('op_int_im');
+  if(intEl)intEl.value='';
+  syncIntMensual();
 }
 function syncIntDiario(){
   const mon=parseFloat($('op_mon_d')?.value)||0;
@@ -2345,18 +2356,117 @@ function setIntModo(modo){
   }
   syncInteresOp();
 }
+// ── Descripciones por tipo de interés ──
+const TIP_INFO={
+  simple:{
+    icon:'📐',color:'rgba(108,99,255,.12)',border:'rgba(108,99,255,.3)',
+    titulo:'Interés simple',
+    desc:'El interés se calcula siempre sobre el capital original. Cada cuota tiene el mismo monto. Ideal para créditos cortos y fáciles de entender.',
+    ejemplo:'$100.000 al 10% en 6 cuotas → cuota fija de $18.333'
+  },
+  compuesto:{
+    icon:'📈',color:'rgba(6,182,212,.1)',border:'rgba(6,182,212,.3)',
+    titulo:'Interés compuesto',
+    desc:'El interés se calcula sobre el saldo pendiente. Las primeras cuotas tienen más interés y menos capital. Muy usado en préstamos financieros formales.',
+    ejemplo:'$100.000 al 5% compuesto en 6 cuotas → cuota fija de $19.702'
+  },
+  cuota:{
+    icon:'🔒',color:'rgba(34,197,94,.1)',border:'rgba(34,197,94,.3)',
+    titulo:'Cuota fija',
+    desc:'Definís directamente cuánto paga el cliente por cuota, sin calcular porcentaje. Lo más simple para acordar con el cliente de antemano.',
+    ejemplo:'12 cuotas de $5.000 → el sistema calcula el capital automáticamente'
+  },
+  diario_abierto:{
+    icon:'📅',color:'rgba(245,158,11,.1)',border:'rgba(245,158,11,.3)',
+    titulo:'Interés diario (fecha abierta)',
+    desc:'No tiene cuotas fijas. El cliente cancela cuando quiere y paga por los días que tuvo el dinero. Ideal para préstamos cortos o informales.',
+    ejemplo:'$100.000 al 1% diario × 15 días = $115.000 al cancelar'
+  },
+  interes_mensual:{
+    icon:'💰',color:'rgba(168,85,247,.1)',border:'rgba(168,85,247,.3)',
+    titulo:'Solo interés mensual (capital abierto)',
+    desc:'El cliente paga solo el interés cada mes. El capital no se reduce. Cuando quiera cancelar, devuelve el capital completo. Ideal para préstamos indefinidos.',
+    ejemplo:'$650.000 al 30.2% → paga $196.300/mes; devuelve $650.000 al cancelar'
+  }
+};
+function actualizarTipExplainer(){
+  const tip=$('op_tip')?.value||'simple';
+  const info=TIP_INFO[tip];
+  const el=$('tipExplainer');
+  if(!el||!info)return;
+  el.style.display='block';
+  el.style.background=info.color;
+  el.style.border='1px solid '+info.border;
+  el.innerHTML=`<div style="font-weight:700;font-size:12px;margin-bottom:4px">${info.icon} ${info.titulo}</div><div style="color:var(--tx2)">${info.desc}</div><div style="margin-top:6px;padding:6px 8px;background:rgba(0,0,0,.2);border-radius:6px;font-size:10px;color:var(--tx2)">💡 ${info.ejemplo}</div>`;
+}
+function actualizarPreview(){
+  const tip=$('op_tip')?.value||'simple';
+  const mon=tip==='interes_mensual'?parseFloat($('op_mon_im')?.value)||0:parseFloat($('op_mon')?.value)||0;
+  const cuo=parseInt($('op_cuo')?.value)||0;
+  const int_=tip==='interes_mensual'?parseFloat($('op_int_im')?.value)||0:parseFloat($('op_int')?.value)||0;
+  const cuotaFija=parseFloat($('op_cuo_fixed')?.value)||0;
+  const cuotaFijaIM=parseFloat($('op_cuota_im')?.value)||0;
+  const frq=$('op_frq')?.value||'mensual';
+  const mon_=(CFG.moneda||'$');
+  const pr=$('opPreview');
+  if(!pr)return;
+  let html='';
+  if(tip==='interes_mensual'){
+    const cuota=cuotaFijaIM>0?cuotaFijaIM:(mon&&int_?Math.round(mon*int_/100):0);
+    if(!mon&&!cuota){pr.style.display='none';return;}
+    html=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Resumen del crédito</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Capital</div><div style="font-weight:800;font-size:14px">${mon_}${Math.round(mon).toLocaleString('es-AR')}</div></div>
+  <div style="background:rgba(168,85,247,.15);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Paga por mes</div><div style="font-weight:800;font-size:14px;color:#a855f7">${cuota?mon_+cuota.toLocaleString('es-AR'):'—'}</div></div>
+</div>
+<div style="margin-top:8px;font-size:10px;color:var(--tx2);line-height:1.6">El capital de <strong style="color:var(--tx)">${mon_}${Math.round(mon).toLocaleString('es-AR')}</strong> se devuelve cuando el cliente cancele. Mientras tanto paga <strong style="color:var(--tx)">${cuota?mon_+cuota.toLocaleString('es-AR'):'—'}</strong> cada mes.</div>`;
+  } else if(tip==='diario_abierto'){
+    const monD=parseFloat($('op_mon_d')?.value)||0;
+    const intD=parseFloat($('op_int_d')?.value)||0;
+    if(!monD||!intD){pr.style.display='none';return;}
+    const ej7=Math.round(monD*(1+intD/100*7)),ej15=Math.round(monD*(1+intD/100*15)),ej30=Math.round(monD*(1+intD/100*30));
+    html=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Ejemplos según días</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:7px;text-align:center"><div style="font-size:9px;color:var(--tx2)">7 días</div><div style="font-weight:800;font-size:12px">${mon_}${ej7.toLocaleString('es-AR')}</div></div>
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:7px;text-align:center"><div style="font-size:9px;color:var(--tx2)">15 días</div><div style="font-weight:800;font-size:12px">${mon_}${ej15.toLocaleString('es-AR')}</div></div>
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:7px;text-align:center"><div style="font-size:9px;color:var(--tx2)">30 días</div><div style="font-weight:800;font-size:12px">${mon_}${ej30.toLocaleString('es-AR')}</div></div>
+</div>
+<div style="margin-top:6px;font-size:10px;color:var(--tx2)">${mon_}${monD.toLocaleString('es-AR')} al ${intD}% diario · ${(intD*30).toFixed(1)}% mensual</div>`;
+  } else {
+    if(!mon||!cuo){pr.style.display='none';return;}
+    // calcular cuota
+    const intPC=(tip==='interes_mensual'?int_:intMostradoAGuardar(int_,cuo))/100;
+    let cuota=cuotaFija>0?cuotaFija:0;
+    if(!cuota){
+      if(tip==='simple')cuota=Math.round(mon*(1+intPC*cuo)/cuo);
+      else if(tip==='compuesto')cuota=intPC===0?Math.round(mon/cuo):Math.round(mon*(intPC*Math.pow(1+intPC,cuo))/(Math.pow(1+intPC,cuo)-1));
+      else cuota=Math.round(mon/cuo*(1+intPC));
+    }
+    const total=cuota*cuo;
+    const intTotal=total-mon;
+    const frqLabel={diario:'días',semanal:'semanas',quincenal:'quincenas',mensual:'meses'}[frq]||'cuotas';
+    html=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Resumen del crédito</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Cuota</div><div style="font-weight:800;font-size:14px;color:var(--ac)">${mon_}${cuota.toLocaleString('es-AR')}</div></div>
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Total a pagar</div><div style="font-weight:800;font-size:14px">${mon_}${total.toLocaleString('es-AR')}</div></div>
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Capital</div><div style="font-weight:800;font-size:13px">${mon_}${Math.round(mon).toLocaleString('es-AR')}</div></div>
+  <div style="background:rgba(34,197,94,.12);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Tu ganancia</div><div style="font-weight:800;font-size:13px;color:var(--gr)">${mon_}${intTotal.toLocaleString('es-AR')}</div></div>
+</div>
+<div style="margin-top:6px;font-size:10px;color:var(--tx2)">${cuo} ${frqLabel} de ${mon_}${cuota.toLocaleString('es-AR')} · ${int_?int_+'% interés':''}</div>`;
+  }
+  pr.style.display='block';
+  pr.innerHTML=html;
+}
 function syncInteresOp(){
   const v=parseFloat($('op_int').value)||0;
   const cuotas=parseInt($('op_cuo').value)||1;
   const hint=$('op_int_hint');
-  if(!hint)return;
-  if(!v){hint.textContent='';return}
-  if(_intModo==='mensual'){
-    hint.textContent=`→ Total interés: ${(v*cuotas).toFixed(2)}% (${v}% × ${cuotas} cuotas)`;
-  } else {
-    const porCuota=cuotas>0?(v/cuotas).toFixed(2):v;
-    hint.textContent=`→ ${porCuota}% por cuota (${v}% ÷ ${cuotas} cuotas)`;
+  if(hint){
+    if(!v){hint.textContent='';}
+    else if(_intModo==='mensual'){hint.textContent=`→ Total interés: ${(v*cuotas).toFixed(2)}% (${v}% × ${cuotas} cuotas)`;}
+    else{const pc=cuotas>0?(v/cuotas).toFixed(2):v;hint.textContent=`→ ${pc}% por cuota (${v}% ÷ ${cuotas} cuotas)`;}
   }
+  actualizarPreview();
 }
 function syncCuotaFija(){
   const cuo=parseInt($('op_cuo').value)||0;
@@ -2375,7 +2485,7 @@ function syncCuotaFija(){
       else if(tip==='simple'){capitalEst=total/(1+intPC*cuo);}
       else{capitalEst=total/(1+intPC);}
     }
-    hint.innerHTML=`<span style="color:var(--gr)">✅ ${cuo} cuotas × ${(CFG.moneda||'$')}${cuotaFija.toLocaleString('es-AR')} = <strong>Total: ${(CFG.moneda||'$')}${total.toLocaleString('es-AR')}</strong></span>`;
+    hint.innerHTML=`<span style="color:var(--gr)">✅ ${cuo} cuotas × ${(CFG.moneda||'$')}${cuotaFija.toLocaleString('es-AR')} = <strong>Total: ${(CFG.moneda||'$')}${total.toLocaleString('es-AR')}</strong></span>`;actualizarPreview();
     const monField=$('op_mon');
     if(monField&&(!monField.value||monField.dataset.autofilled==='1')){
       const capRedon=Math.round(capitalEst);
@@ -2895,6 +3005,7 @@ function abrirOp(cidFijo=null,oid=null){
         if($('op_desc_im'))$('op_desc_im').value=op.desc||'';
         if($('op_mon_im'))$('op_mon_im').value=Math.round(op.mon);
         if($('op_int_im'))$('op_int_im').value=parseFloat(op.int_)||0;
+        if($('op_cuota_im'))$('op_cuota_im').value='';
         syncIntMensual();
       } else {
         $('op_tip').value=op.tip||'simple';syncInteresOp();
@@ -2906,7 +3017,7 @@ function abrirOp(cidFijo=null,oid=null){
     if($('op_mora_check'))$('op_mora_check').checked=false;
     $('op_fv').value=hoy();$('op_frq').value='quincenal';$('op_tipo').value='prestamo';$('op_moneda').value=CFG.moneda||'$';if($('op_facr'))$('op_facr').value=hoy();autoFechaOp();
     _intModo='mensual';setIntModo('mensual');toggleOpTipo();
-    if($('op_tip')){$('op_tip').value='simple';toggleTipoInteres('simple');}
+    if($('op_tip')){$('op_tip').value='simple';toggleTipoInteres('simple');}actualizarTipExplainer();actualizarPreview();
   }
   showModal('mop');
 }
@@ -2932,11 +3043,13 @@ async function guardarOp(){
     const intIM=parseFloat($('op_int_im')?.value)||0;
     if(!monIM){toast('Ingresá el capital prestado','error');_guardando=false;return;}
     if(!intIM){toast('Ingresá el interés mensual','error');_guardando=false;return;}
-    const cuotaIM=Math.round(monIM*intIM/100);
+    const cuotaFijaIMg=parseFloat($('op_cuota_im')?.value)||0;
+    const cuotaIM=cuotaFijaIMg>0?Math.round(cuotaFijaIMg):Math.round(monIM*intIM/100);
+    const intIMfinal=cuotaFijaIMg>0?(cuotaIM/monIM*100):intIM;
     const descIM=($('op_desc_im')?.value||$('op_desc')?.value||'Crédito solo interés').trim();
     const fvIM=$('op_fv').value||hoy();
     // 999 cuotas = abierto; cuota_fija = interés mensual; capital en mon
-    Object.assign(d,{mon:monIM,int_:intIM,mora:0,tip:'interes_mensual',desc_:descIM,prod:'',costo:0,precio:0,cuo:999,pag:0,frq:'mensual',fv:fvIM,facr:$('op_facr')?.value||null,cuota_fija:cuotaIM});
+    Object.assign(d,{mon:monIM,int_:intIMfinal,mora:0,tip:'interes_mensual',desc_:descIM,prod:'',costo:0,precio:0,cuo:999,pag:0,frq:'mensual',fv:fvIM,facr:$('op_facr')?.value||null,cuota_fija:cuotaIM});
   } else if(tipo==='venta'){const precio=parseFloat($('op_precio').value);if(!precio){toast('Ingresá el precio','error');_guardando=false;return}Object.assign(d,{prod:$('op_prod').value.trim(),costo:parseFloat($('op_costo').value)||0,precio,mon:0,int_:0,mora:0,tip:'cuota',desc_:''})}
   else{
     const cuotaFija=parseFloat($('op_cuo_fixed').value)||0;
