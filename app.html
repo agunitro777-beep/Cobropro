@@ -1034,7 +1034,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <div id="opCamposP">
       <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc" placeholder="Ej: Crédito personal..."></div>
       <div class="ig"><label class="il">Monto *</label><input class="inp" id="op_mon" type="number" placeholder="0.00" oninput="(function(){const v=parseFloat(document.getElementById('op_mon').value);const h=document.getElementById('op_mon_hint');if(v&&v!==Math.round(v)){h.textContent='⚠️ Se guardará como $'+Math.round(v).toLocaleString('es-AR');h.style.color='var(--yw)';}else{h.textContent='';} })()"><div id="op_mon_hint" style="font-size:10px;min-height:13px;margin-top:3px"></div></div>
-      <div class="ig"><label class="il">Tipo interés</label><select class="inp sel" id="op_tip" onchange="toggleTipoInteres()"><option value="simple">Simple</option><option value="compuesto">Compuesto</option><option value="cuota">Por cuota fija</option><option value="diario_abierto">📅 Interés diario (fecha abierta)</option></select></div>
+      <div class="ig"><label class="il">Tipo interés</label><select class="inp sel" id="op_tip" onchange="toggleTipoInteres()"><option value="simple">Simple</option><option value="compuesto">Compuesto</option><option value="cuota">Por cuota fija</option><option value="diario_abierto">📅 Interés diario (fecha abierta)</option><option value="interes_mensual">💰 Solo interés mensual (capital abierto)</option></select></div>
       <div id="intNormalBlock">
         <div class="ig">
           <label class="il">Interés (%)</label>
@@ -1052,6 +1052,13 @@ body.light .mo{background:rgba(0,0,0,.5)}
         <div class="ig"><label class="il">Fecha inicio *</label><input class="inp" id="op_facr_d" type="date"></div>
         <div style="background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:12px;margin-bottom:10px;font-size:11px;color:var(--tx2);line-height:1.6">
           💡 <b>Ejemplo:</b> $100.000 al 1% diario × 11 días = <b>$111.000</b><br>Al cancelar, ingresás los días y la app calcula el total.
+        </div>
+      </div>
+      <div id="intMensualBlock" style="display:none">
+        <div class="ig"><label class="il">Capital prestado *</label><input class="inp" id="op_mon_im" type="number" placeholder="0.00" oninput="syncIntMensual()"></div>
+        <div class="ig"><label class="il" style="display:flex;justify-content:space-between"><span>Interés mensual (%)</span><span id="op_int_im_hint" style="font-size:10px;color:var(--ac2)"></span></label><input class="inp" id="op_int_im" type="number" placeholder="Ej: 30.2" step="0.1" oninput="syncIntMensual()"></div>
+        <div style="background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:12px;margin-bottom:10px;font-size:11px;color:var(--tx2);line-height:1.6">
+          💡 El cliente paga <strong id="op_im_cuota_preview" style="color:var(--ac2)">—</strong> por mes. El capital no se reduce hasta que el cliente lo cancele.<br><br>Cuando cancele, usá el botón <strong>💰 Cancelar capital</strong> en su ficha.
         </div>
       </div>
       <div class="ig">
@@ -1691,7 +1698,7 @@ function cvOp(op){
   if(op.tip==='compuesto'){if(i===0)return Math.round(m/n);return Math.round(m*(i*Math.pow(1+i,n))/(Math.pow(1+i,n)-1))}
   return Math.round(m/n*(1+i));
 }
-function saldoOp(op){const base=Math.round(cvOp(op)*Math.max(0,(parseInt(op.cuo)||1)-(parseInt(op.pag)||0)));const parPago=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);const yaAbonado=parPago?Math.max(0,Math.round(cvOp(op)-parPago.flt)):0;return Math.max(0,base-yaAbonado);}
+function saldoOp(op){if(op.tip==='interes_mensual'){const parPago=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);const yaAbonado=parPago?Math.max(0,Math.round(cvOp(op)-parPago.flt)):0;return Math.max(0,op.mon-yaAbonado);}const base=Math.round(cvOp(op)*Math.max(0,(parseInt(op.cuo)||1)-(parseInt(op.pag)||0)));const parPago=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);const yaAbonado=parPago?Math.max(0,Math.round(cvOp(op)-parPago.flt)):0;return Math.max(0,base-yaAbonado);}
 function proxFechaOp(op){
   const n=parseInt(op.pag)||0;
   const fc=op.fechas_custom||{};
@@ -1800,7 +1807,7 @@ function proxFechaOpNatural(op){
 }
 function stOp(op){
   const h=new Date();h.setHours(0,0,0,0);
-  if(op.pag>=op.cuo)return'completado';
+  if(op.pag>=op.cuo&&op.tip!=='interes_mensual')return'completado';
   const vNat=proxFechaOpNatural(op); // fecha original del calendario (sin custom)
   if(isNaN(vNat.getTime()))return'aldía'; // fecha inválida: no bloquear la app, tratar como al día
   const dfNat=Math.floor((vNat-h)/86400000);
@@ -2202,17 +2209,31 @@ function toggleOpTipo(){
 function toggleTipoInteres(forzar){
   const tip=forzar||($('op_tip')?$('op_tip').value:'simple');
   const esDiario=tip==='diario_abierto';
-  const nb=$('intNormalBlock'),db=$('intDiarioBlock');
-  if(nb)nb.style.display=esDiario?'none':'block';
+  const esMensual=tip==='interes_mensual';
+  const nb=$('intNormalBlock'),db=$('intDiarioBlock'),mb=$('intMensualBlock');
+  if(nb)nb.style.display=(esDiario||esMensual)?'none':'block';
   if(db)db.style.display=esDiario?'block':'none';
-  // Ocultar cuotas/frecuencia/fecha para diario_abierto
+  if(mb)mb.style.display=esMensual?'block':'none';
+  // Ocultar cuotas/frecuencia/fecha para diario_abierto e interes_mensual
   const cuotasSec=$('op_cuo')?.closest('.ig');
   const frqSec=$('op_frq')?.closest('.ig');
   const fvSec=$('op_fv')?.closest('.ig');
   const facrSec=$('op_facr')?.closest('.ig');
   const moraSec=$('op_mora')?.closest('.ig');
-  [cuotasSec,frqSec,fvSec,facrSec,moraSec].forEach(s=>{if(s)s.style.display=esDiario?'none':'';});
+  [cuotasSec,frqSec,facrSec,moraSec].forEach(s=>{if(s)s.style.display=(esDiario||esMensual)?'none':'';});
+  if(fvSec)fvSec.style.display=esDiario?'none':''; // para interes_mensual sí mostrar fecha 1° pago
   if(esDiario&&$('op_facr_d'))$('op_facr_d').value=hoy();
+  if(esMensual)syncIntMensual();
+}
+function syncIntMensual(){
+  const mon=parseFloat($('op_mon_im')?.value)||0;
+  const int_=parseFloat($('op_int_im')?.value)||0;
+  const hint=$('op_int_im_hint');
+  const preview=$('op_im_cuota_preview');
+  const cuota=Math.round(mon*int_/100);
+  if(hint&&mon&&int_){hint.textContent=`$${cuota.toLocaleString('es-AR')}/mes`;}
+  else if(hint){hint.textContent='';}
+  if(preview){preview.textContent=mon&&int_?'$'+cuota.toLocaleString('es-AR'):'—';}
 }
 function syncIntDiario(){
   const mon=parseFloat($('op_mon_d')?.value)||0;
@@ -2260,6 +2281,50 @@ function cancelarDiarioAbierto(oid){
     toast('✅ Crédito cancelado · '+monLabel+total.toLocaleString('es-AR')+' cobrados');
   };
 }
+function cancelarCapitalMensual(oid){
+  const op=gO(oid);const c=op?gC(op.cid):null;if(!op||!c)return;
+  const capital=op.mon;const monLabel=(op.moneda||CFG.moneda||'$');
+  const cuotaInt=Math.round(parseFloat(op.cuota_fija)||capital*(parseFloat(op.int_)||0)/100);
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  modal.innerHTML=`<div style="background:var(--bg2);border-radius:16px;padding:20px;width:100%;max-width:380px">
+    <div style="font-size:15px;font-weight:800;margin-bottom:4px">💰 Cancelar capital</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:16px">${c.nom} · Capital: ${monLabel}${Math.round(capital).toLocaleString('es-AR')} · Cuota interés: ${monLabel}${cuotaInt.toLocaleString('es-AR')}/mes</div>
+    <div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="font-size:10px;color:var(--tx2);margin-bottom:4px">Capital a devolver</div>
+      <div style="font-size:26px;font-weight:800;color:var(--gr)">${monLabel}${Math.round(capital).toLocaleString('es-AR')}</div>
+    </div>
+    <div class="ig" style="margin-bottom:12px">
+      <label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:5px">¿El cliente también paga interés de este período?</label>
+      <div style="display:flex;gap:8px">
+        <button id="btnConInt" onclick="document.getElementById('ccm_conint').value='1';this.style.background='var(--ac)';this.style.color='#fff';document.getElementById('btnSinInt').style.background='var(--card2)';document.getElementById('btnSinInt').style.color='var(--tx2)'" style="flex:1;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--ac);background:var(--ac);color:#fff">Sí, incluir interés</button>
+        <button id="btnSinInt" onclick="document.getElementById('ccm_conint').value='0';this.style.background='var(--ac)';this.style.color='#fff';document.getElementById('btnConInt').style.background='var(--card2)';document.getElementById('btnConInt').style.color='var(--tx2)'" style="flex:1;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card2);color:var(--tx2)">No, solo capital</button>
+      </div>
+      <input type="hidden" id="ccm_conint" value="1">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="this.closest('[style*=fixed]').remove()" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--tx);border-radius:10px;padding:11px;font-size:13px;cursor:pointer">Cancelar</button>
+      <button id="btnConfCancelCap" style="flex:2;background:var(--gr);border:none;color:#fff;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">✅ Confirmar cancelación</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  modal.querySelector('#btnConfCancelCap').onclick=async()=>{
+    const conInt=modal.querySelector('#ccm_conint').value==='1';
+    const totalPago=conInt?capital+cuotaInt:capital;
+    modal.remove();
+    // Registrar pago de capital como pago normal y marcar op como cancelada
+    await registrarPago(oid,totalPago,hoy(),'efectivo',false,0,`Cancelación de capital${conInt?' + interés del período':''}`);
+    // Marcar como completada: pag = cuo para que pase a Terminados
+    try{
+      await dbUpd('operaciones',oid,{pag:999,tip:'interes_mensual_cancelado'});
+      const op2=gO(oid);if(op2){op2.pag=999;op2.tip='interes_mensual_cancelado';}
+    }catch(e){}
+    toast(`✅ Capital cancelado · ${(op.moneda||CFG.moneda||'$')}${totalPago.toLocaleString('es-AR')} cobrados`,'success');
+    setTimeout(()=>refrescar(),100);
+  };
+}
+
 let _intModo='mensual'; // 'mensual' = % por cuota, 'total' = % sobre el total
 function setIntModo(modo){
   _intModo=modo;
@@ -2848,6 +2913,16 @@ async function guardarOp(){
     const facrD=$('op_facr_d')?.value||hoy();
     const descD=($('op_desc')?.value||'Interés diario').trim();
     Object.assign(d,{mon:monD,int_:intD,mora:0,tip:'diario',desc_:descD,prod:'',costo:0,precio:0,cuo:1,pag:0,frq:'diario',fv:facrD,facr:facrD,cuota_fija:0});
+  } else if(tipInt==='interes_mensual'){
+    const monIM=parseFloat($('op_mon_im')?.value)||0;
+    const intIM=parseFloat($('op_int_im')?.value)||0;
+    if(!monIM){toast('Ingresá el capital prestado','error');_guardando=false;return;}
+    if(!intIM){toast('Ingresá el interés mensual','error');_guardando=false;return;}
+    const cuotaIM=Math.round(monIM*intIM/100);
+    const descIM=($('op_desc')?.value||'Crédito solo interés').trim();
+    const fvIM=$('op_fv').value||hoy();
+    // 999 cuotas = abierto; cuota_fija = interés mensual; capital en mon
+    Object.assign(d,{mon:monIM,int_:intIM,mora:0,tip:'interes_mensual',desc_:descIM,prod:'',costo:0,precio:0,cuo:999,pag:0,frq:'mensual',fv:fvIM,facr:$('op_facr')?.value||null,cuota_fija:cuotaIM});
   } else if(tipo==='venta'){const precio=parseFloat($('op_precio').value);if(!precio){toast('Ingresá el precio','error');_guardando=false;return}Object.assign(d,{prod:$('op_prod').value.trim(),costo:parseFloat($('op_costo').value)||0,precio,mon:0,int_:0,mora:0,tip:'cuota',desc_:''})}
   else{
     const cuotaFija=parseFloat($('op_cuo_fixed').value)||0;
@@ -3740,7 +3815,7 @@ async function guardarCfg(){
 function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
   const c=gC(cid);if(!c)return;
   const ops=opsDeCli(cid),r=rankCli(cid),saldoT=saldoTotalCli(cid),sTC=stCli(cid);
-  const opsAct=ops.filter(o=>o.pag<o.cuo),opsComp=ops.filter(o=>o.pag>=o.cuo);
+  const opsAct=ops.filter(o=>o.pag<o.cuo||o.tip==='interes_mensual'),opsComp=ops.filter(o=>o.pag>=o.cuo&&o.tip!=='interes_mensual');
   const totInt=ops.reduce((s,o)=>s+intOp(o),0);
   const bmap={atrasado:'<span class="sb late">⚠ Atrasado</span>',porVencer:'<span class="sb due">Por vencer</span>',aldía:'<span class="sb ok">Al día</span>',completo:'<span class="sb done">✅</span>',reprogramado:'<span class="sb due" style="background:rgba(251,191,36,.15);border-color:rgba(251,191,36,.4);color:var(--yw)">⏸ Reprogramado</span>'};
   const opsHTML=opsAct.map(op=>{
@@ -3749,10 +3824,12 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
     const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito '+fmtOp(op.mon,op));
     const pp=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);
     const mTag=op.moneda&&op.moneda!==(CFG.moneda||'$')?`<span style="font-size:8px;background:rgba(6,182,212,.15);color:var(--cy);padding:1px 5px;border-radius:4px;margin-left:4px">${op.moneda}</span>`:'';
+    const esIntMens=op.tip==='interes_mensual';
+    const metaLabel=esIntMens?`Capital: ${fmtOp(op.mon,op)} · Interés: ${fmtOp(cuota,op)}/mes · vence ${fD(op.fv)}`:`${op.pag}/${op.cuo} · ${op.frq} · vence ${fD(op.fv)}${op.facr?` · acreditado ${fD(op.facr)}`:''}`;
     return`<div class="op-card ${sv?'vc':'pc'}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-        <div><div class="op-tag ${sv?'v':'p'}">${sv?'🛒 VENTA':'💳 CRÉDITO'}${mTag}</div><div class="op-name">${lbl}</div>
-        <div class="op-meta">${op.pag}/${op.cuo} · ${op.frq} · vence ${fD(op.fv)}${op.facr?` · acreditado ${fD(op.facr)}`:''}</div>
+        <div><div class="op-tag ${sv?'v':'p'}">${sv?'🛒 VENTA':esIntMens?'💰 INTERÉS MENSUAL':'💳 CRÉDITO'}${mTag}</div><div class="op-name">${lbl}</div>
+        <div class="op-meta">${metaLabel}</div>
         ${pp?`<span class="pb" style="margin-top:3px;display:inline-block">Falta ${fmtOp(pp.flt,op)}</span>`:''}</div>
         <div style="text-align:right"><div class="op-saldo" style="color:${col}">${fmtOp(sm,op)}</div>
         <div style="font-size:9px;color:var(--tx2)">cuota: ${fmtOp(cuota,op)}</div>
@@ -3762,7 +3839,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
       <div class="op-pt"><div class="op-pf" style="width:${pct}%;background:${col}"></div></div>
       ${sv?`<div style="font-size:9px;color:var(--tx2);margin-top:4px">Precio: ${fmtOp(op.precio,op)} · Costo: ${fmtOp(op.costo,op)} · Gan: <span style="color:var(--gr)">${fmtOp(op.precio-op.costo,op)}</span></div>`:''}
       <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
-        ${op.tipo==='diario_abierto'?`<button class="btn bp bsm" style="background:var(--gr)" onclick="cancelarDiarioAbierto(${op.id})">💰 Cancelar</button>`:`<button class="btn bp bsm" onclick="abrirPagoParaOp(${op.id})">💵 Pago</button>`}
+        ${op.tipo==='diario_abierto'?`<button class="btn bp bsm" style="background:var(--gr)" onclick="cancelarDiarioAbierto(${op.id})">💰 Cancelar</button>`:op.tip==='interes_mensual'?`<button class="btn bp bsm" onclick="abrirPagoParaOp(${op.id})">💵 Interés</button><button class="btn bp bsm" style="background:var(--gr);margin-left:0" onclick="cancelarCapitalMensual(${op.id})">💰 Cancelar capital</button>`:`<button class="btn bp bsm" onclick="abrirPagoParaOp(${op.id})">💵 Pago</button>`}
         ${pp?`<button class="btn byw bsm" onclick="completarPar(${op.id})">⚠ Parcial</button>`:''}
         <button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️</button>
         <button class="btn bs bsm" onclick="abrirCamFecha(${op.id})">📅</button>
