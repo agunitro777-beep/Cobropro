@@ -2884,7 +2884,14 @@ function abrirOp(cidFijo=null,oid=null){
         op.mora=isNaN(moraDB)?0:moraDB;
         syncInteresOp();
       });
-      $('op_tip').value=op.tip||'simple';syncInteresOp();
+      if(op.tip==='interes_mensual'){
+        $('op_tip').value='interes_mensual';toggleTipoInteres('interes_mensual');
+        if($('op_mon_im'))$('op_mon_im').value=Math.round(op.mon);
+        if($('op_int_im'))$('op_int_im').value=parseFloat(op.int_)||0;
+        syncIntMensual();
+      } else {
+        $('op_tip').value=op.tip||'simple';syncInteresOp();
+      }
     }
   } else {
     ['op_desc','op_mon','op_int','op_cuo','op_cuo_fixed','op_not','op_prod','op_costo','op_precio'].forEach(f=>{const el=document.getElementById(f);if(el){el.value='';el.dataset.autofilled='';el.style.borderColor='';}});
