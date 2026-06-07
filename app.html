@@ -3145,7 +3145,7 @@ async function guardarCli(){
     const uploaded=await subirFotoCli(uid,_fotoCliBlob);
     if(uploaded)fotoUrl=uploaded;
   }
-  const d={nom, tel:$('c_tel').value.trim()||null, cumple:$('c_cumple').value||null, not_:$('c_not').value.trim()||null, foto:fotoUrl, docs:[], dir, lat, lng, limite:limiteVal};
+  const d={nom, tel:$('c_tel').value.trim()||null, cumple:$('c_cumple').value||null, not_:$('c_not').value.trim()||null, foto:fotoUrl||null, dir, lat, lng, limite:limiteVal};
   setBtnLoading('cliSaveBtn',true);
   try{
     if(id){
