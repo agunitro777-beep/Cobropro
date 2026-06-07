@@ -717,7 +717,6 @@ body.light .mo{background:rgba(0,0,0,.5)}
   <div class="sw"><span class="si">🔍</span><input class="inp" id="srch" placeholder="Buscar cliente..." oninput="debSearch()" type="search"></div>
   <div class="tabs" id="cliTabs">
     <div class="tab active" onclick="setF('activos',this)">Activos<span class="tab-badge" id="cnt-activos"></span></div>
-    <div class="tab" onclick="setF('todos',this)">Todos<span class="tab-badge" id="cnt-todos"></span></div>
     <div class="tab" onclick="setF('atrasado',this)">Mora<span class="tab-badge danger" id="cnt-atrasado"></span></div>
     <div class="tab" onclick="setF('completo',this)">Saldados<span class="tab-badge" id="cnt-completo"></span></div>
     <div class="tab" id="tabCobradores" onclick="setF('cobradores',this)" style="display:none">👥 Cobradores</div>
@@ -1009,25 +1008,13 @@ body.light .mo{background:rgba(0,0,0,.5)}
       <div id="c_gps_label" style="font-size:9px;color:var(--gr);margin-top:2px;min-height:12px"></div>
     </div>
     <div class="ig"><label class="il">Notas</label><textarea class="inp" id="c_not" rows="3" placeholder="Observaciones, recordatorios..."></textarea></div>
-    <!-- FOTO CLIENTE -->
-    <div class="ig">
-      <label class="il">📷 Foto del cliente (opcional)</label>
-      <div style="display:flex;align-items:center;gap:12px">
-        <div id="c_foto_preview" style="width:64px;height:64px;border-radius:50%;background:var(--card2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;overflow:hidden">👤</div>
-        <div style="flex:1">
-          <label for="c_foto_input" style="display:block;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:var(--tx2)">📷 Seleccionar foto</label>
-          <input type="file" id="c_foto_input" accept="image/*" style="display:none" onchange="previewFotoCli(this)">
-          <button type="button" id="c_foto_clear" onclick="limpiarFotoCli()" style="display:none;width:100%;margin-top:5px;background:transparent;border:1px solid var(--rd);color:var(--rd);border-radius:8px;padding:5px;font-size:11px;cursor:pointer">🗑️ Quitar foto</button>
-        </div>
-      </div>
-    </div>
     <div class="ig"><label class="il">🔒 Límite de crédito máximo (opcional)</label><input class="inp" id="c_limite" type="number" placeholder="Ej: 500000 — dejar vacío para sin límite"></div>
     <!-- CONSENTIMIENTO -->
     <div style="background:rgba(108,99,255,.07);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:11px;margin-bottom:12px" id="consentBox">
       <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer" id="consentLabel">
         <input type="checkbox" id="c_consent" style="accent-color:var(--ac);margin-top:2px;flex-shrink:0">
         <span style="font-size:10px;color:var(--tx2);line-height:1.6">
-          Confirmo que el cliente prestó su consentimiento para el almacenamiento de sus datos personales (nombre, teléfono, dirección y <strong style="color:var(--tx)">fotografía</strong>) con fines de gestión de cobros, de acuerdo a la Ley 25.326 de Protección de Datos Personales. <strong style="color:var(--tx)">Soy el único responsable de obtener y registrar dicho consentimiento antes de cargar estos datos.</strong>
+          Confirmo que el cliente prestó su consentimiento para el almacenamiento de sus datos personales (nombre, teléfono, dirección) con fines de gestión de cobros, de acuerdo a la Ley 25.326. <strong style="color:var(--tx)">El usuario que carga este cliente es el único responsable de obtener dicho consentimiento.</strong>
         </span>
       </label>
     </div>
@@ -3029,57 +3016,6 @@ function toggleOcul(){ocul=!ocul;try{localStorage.setItem('cobro_ocul',ocul?'1':
 try{if(localStorage.getItem('cobro_ocul')==='1'){ocul=true;}}catch(e){}
 
 // ══ CRUD CLIENTE ══
-// ── FOTO CLIENTE ──
-let _fotoCliBlob=null;
-let _fotoCliUrl=null; // URL actual (al editar)
-
-function previewFotoCli(input){
-  const file=input.files[0];if(!file)return;
-  _fotoCliBlob=file;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const prev=$('c_foto_preview');
-    prev.innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-    const clearBtn=$('c_foto_clear');
-    if(clearBtn)clearBtn.style.display='block';
-  };
-  reader.readAsDataURL(file);
-}
-
-function limpiarFotoCli(){
-  _fotoCliBlob=null;
-  _fotoCliUrl=null;
-  const prev=$('c_foto_preview');
-  if(prev)prev.innerHTML='👤';
-  const input=$('c_foto_input');
-  if(input)input.value='';
-  const clearBtn=$('c_foto_clear');
-  if(clearBtn)clearBtn.style.display='none';
-}
-
-async function subirFotoCli(uid,blob){
-  try{
-    const ext=blob.type.includes('png')?'png':'jpg';
-    const path=`${uid}/foto_${Date.now()}.${ext}`;
-    const {data,error}=await SB.storage.from('fotos-clientes').upload(path,blob,{upsert:true,contentType:blob.type});
-    if(error){toast('❌ Foto: '+error.message,'error');return null;}
-    const {data:urlData}=SB.storage.from('fotos-clientes').getPublicUrl(path);
-    return urlData?.publicUrl||null;
-  }catch(e){
-    toast('❌ Foto error: '+(e.message||e),'error');
-    return null;
-  }
-}
-
-function fotoCliHTML(c,size=40){
-  if(c&&c.foto){
-    return`<img src="${c.foto}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0" onerror="this.parentNode.innerHTML='<div style=\"width:${size}px;height:${size}px;border-radius:50%;background:var(--ac);display:flex;align-items:center;justify-content:center;font-size:${Math.round(size*.4)}px;font-weight:700;color:#fff;flex-shrink:0\">${(c.nom||'?')[0].toUpperCase()}</div>'">`
-  }
-  const ini=(c?.nom||'?')[0].toUpperCase();
-  const col=['#6C63FF','#00d68f','#f59e0b','#ef4444','#06b6d4','#8b5cf6'][ini.charCodeAt(0)%6];
-  return`<div style="width:${size}px;height:${size}px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:${Math.round(size*.4)}px;font-weight:700;color:#fff;flex-shrink:0">${ini}</div>`;
-}
-
 function abrirCli(id=null){
   $('cliMT').textContent=id?'✏️ Editar cliente':'👤 Nuevo cliente';
   $('c_id').value=id||'';
@@ -3094,9 +3030,6 @@ function abrirCli(id=null){
     $('c_lat').value=c.lat||'';
     $('c_lng').value=c.lng||'';
     $('c_gps_label').textContent=c.lat&&c.lng?`✅ GPS guardado (${parseFloat(c.lat).toFixed(4)}, ${parseFloat(c.lng).toFixed(4)})`:'';
-    _fotoCliBlob=null;_fotoCliUrl=c.foto||null;
-    const prevE=$('c_foto_preview');if(prevE){prevE.innerHTML=c.foto?`<img src="${c.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:'👤';}
-    const clearBtnE=$('c_foto_clear');if(clearBtnE)clearBtnE.style.display=c.foto?'block':'none';
     $('c_consent').checked=true; // al editar ya se dio consentimiento
     // Bloquear el checkbox al editar — el consentimiento ya fue otorgado
     $('c_consent').disabled=true;
@@ -3106,7 +3039,6 @@ function abrirCli(id=null){
     if($('c_maps_paste'))$('c_maps_paste').value='';
   } else {
     ['c_nom','c_tel','c_cumple','c_not','c_dir','c_lat','c_lng','c_limite'].forEach(f=>$(f).value='');
-    limpiarFotoCli();
     $('c_gps_label').textContent='';
     $('c_consent').checked=false;
     $('c_consent').disabled=false;
@@ -3138,20 +3070,7 @@ async function guardarCli(){
   const lng=lngEl.value||lngEl.getAttribute('data-val')||null;
   const dir=$('c_dir').value.trim()||null;
   const limiteVal=parseFloat($('c_limite').value)||null;
-  // Subir foto si hay una nueva
-  let fotoUrl=_fotoCliUrl||'';
-  if(_fotoCliBlob){
-    try{
-      const uid=UID();
-      const uploaded=await subirFotoCli(uid,_fotoCliBlob);
-      if(uploaded)fotoUrl=uploaded;
-    }catch(e){
-      console.error('Error foto:',e);
-      // Continuar sin foto si falla el upload
-    }
-  }
-  const d={nom, tel:$('c_tel').value.trim()||null, cumple:$('c_cumple').value||null, not_:$('c_not').value.trim()||null, dir, lat, lng, limite:limiteVal};
-  if(fotoUrl)d.foto=fotoUrl;
+  const d={nom, tel:$('c_tel').value.trim()||null, cumple:$('c_cumple').value||null, not_:$('c_not').value.trim()||null, foto:'', docs:[], dir, lat, lng, limite:limiteVal};
   setBtnLoading('cliSaveBtn',true);
   try{
     if(id){
@@ -3161,7 +3080,7 @@ async function guardarCli(){
       toast(`✅ ${nom} actualizado`);
     } else {
       const r=await dbIns('clientes',d);
-      Cs.push({...r,not:r.not_||''});
+      Cs.push({...r,not:r.not_||'',docs:[]});
       rebuildMaps();
       toast(`✅ ${nom} agregado`);
     }
@@ -4298,7 +4217,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
   const notasHTML=c.not?`<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--tx2)"><span style="font-weight:600;color:var(--tx)">📝 Notas:</span> ${c.not}</div>`:'';
   $('verContent').innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-      <div class="av" style="width:48px;height:48px;font-size:16px;background:${aCol(c.nom)}22;color:${aCol(c.nom)};border:2px solid ${aCol(c.nom)}44;overflow:hidden;padding:0">${c.foto?`<img src="${c.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:ini(c.nom)}</div>
+      <div class="av" style="width:48px;height:48px;font-size:16px;background:${aCol(c.nom)}22;color:${aCol(c.nom)};border:2px solid ${aCol(c.nom)}44">${ini(c.nom)}</div>
       <div style="flex:1"><div style="font-family:Syne,sans-serif;font-size:17px;font-weight:800">${c.nom}</div>
       <div style="font-size:11px;color:var(--tx2)">${c.tel||'Sin teléfono'} ${c.cumple?'· 🎂 '+fD(c.cumple):''}</div>
       <span class="${r.cl}">${r.ic} ${r.lb}</span></div>
@@ -4732,9 +4651,7 @@ function rClis(){
   const cntActivos=Cs.filter(c=>opsDeCli(c.id).some(o=>o.pag<o.cuo)).length;
   const cntAtrasado=Cs.filter(c=>stCli(c.id)==='atrasado').length;
   const cntCompleto=Cs.filter(c=>opsDeCli(c.id).length>0&&opsDeCli(c.id).every(o=>o.pag>=o.cuo)).length;
-  const cntTodos=Cs.length;
-  const bTodos=$('cnt-todos'),bAct=$('cnt-activos'),bAtr=$('cnt-atrasado'),bComp=$('cnt-completo');
-  if(bTodos)bTodos.textContent=cntTodos||'';
+  const bAct=$('cnt-activos'),bAtr=$('cnt-atrasado'),bComp=$('cnt-completo');
   if(bAct)bAct.textContent=cntActivos||'';
   if(bAtr){bAtr.textContent=cntAtrasado||'';bAtr.style.display=cntAtrasado?'inline-flex':'none';}
   if(bComp)bComp.textContent=cntCompleto||'';
