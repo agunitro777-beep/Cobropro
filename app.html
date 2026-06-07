@@ -3141,9 +3141,14 @@ async function guardarCli(){
   // Subir foto si hay una nueva
   let fotoUrl=_fotoCliUrl||'';
   if(_fotoCliBlob){
-    const uid=USER_ID||'anon';
-    const uploaded=await subirFotoCli(uid,_fotoCliBlob);
-    if(uploaded)fotoUrl=uploaded;
+    try{
+      const uid=USER_ID||'anon';
+      const uploaded=await subirFotoCli(uid,_fotoCliBlob);
+      if(uploaded)fotoUrl=uploaded;
+    }catch(e){
+      console.error('Error foto:',e);
+      // Continuar sin foto si falla el upload
+    }
   }
   const d={nom, tel:$('c_tel').value.trim()||null, cumple:$('c_cumple').value||null, not_:$('c_not').value.trim()||null, foto:fotoUrl||null, dir, lat, lng, limite:limiteVal};
   setBtnLoading('cliSaveBtn',true);
@@ -3155,7 +3160,7 @@ async function guardarCli(){
       toast(`✅ ${nom} actualizado`);
     } else {
       const r=await dbIns('clientes',d);
-      Cs.push({...r,not:r.not_||'',docs:[]});
+      Cs.push({...r,not:r.not_||''});
       rebuildMaps();
       toast(`✅ ${nom} agregado`);
     }
