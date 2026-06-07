@@ -3057,16 +3057,15 @@ function limpiarFotoCli(){
 }
 
 async function subirFotoCli(uid,blob){
-  // Subir a Supabase Storage bucket "fotos-clientes"
   try{
     const ext=blob.type.includes('png')?'png':'jpg';
     const path=`${uid}/foto_${Date.now()}.${ext}`;
     const {data,error}=await SB.storage.from('fotos-clientes').upload(path,blob,{upsert:true,contentType:blob.type});
-    if(error)throw error;
+    if(error){toast('❌ Foto: '+error.message,'error');return null;}
     const {data:urlData}=SB.storage.from('fotos-clientes').getPublicUrl(path);
     return urlData?.publicUrl||null;
   }catch(e){
-    console.error('Error subiendo foto:',e);
+    toast('❌ Foto error: '+(e.message||e),'error');
     return null;
   }
 }
