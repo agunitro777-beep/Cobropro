@@ -3061,9 +3061,9 @@ async function subirFotoCli(uid,blob){
   try{
     const ext=blob.type.includes('png')?'png':'jpg';
     const path=`${uid}/foto_${Date.now()}.${ext}`;
-    const {data,error}=await _supabase.storage.from('fotos-clientes').upload(path,blob,{upsert:true,contentType:blob.type});
+    const {data,error}=await SB.storage.from('fotos-clientes').upload(path,blob,{upsert:true,contentType:blob.type});
     if(error)throw error;
-    const {data:urlData}=_supabase.storage.from('fotos-clientes').getPublicUrl(path);
+    const {data:urlData}=SB.storage.from('fotos-clientes').getPublicUrl(path);
     return urlData?.publicUrl||null;
   }catch(e){
     console.error('Error subiendo foto:',e);
