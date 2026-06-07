@@ -1034,33 +1034,67 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <div id="opCamposP">
       <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc" placeholder="Ej: Crédito personal..."></div>
       <div class="ig"><label class="il">Monto *</label><input class="inp" id="op_mon" type="number" placeholder="0.00" oninput="(function(){const v=parseFloat(document.getElementById('op_mon').value);const h=document.getElementById('op_mon_hint');if(v&&v!==Math.round(v)){h.textContent='⚠️ Se guardará como $'+Math.round(v).toLocaleString('es-AR');h.style.color='var(--yw)';}else{h.textContent='';}actualizarPreview();})()"><div id="op_mon_hint" style="font-size:10px;min-height:13px;margin-top:3px"></div></div>
-      <div class="ig"><label class="il">Tipo interés</label><select class="inp sel" id="op_tip" onchange="toggleTipoInteres()"><option value="simple">Simple</option><option value="compuesto">Compuesto</option><option value="cuota">Por cuota fija</option><option value="diario_abierto">📅 Interés diario (fecha abierta)</option><option value="interes_mensual">💰 Solo interés mensual (capital abierto)</option></select></div>
-      <!-- Panel explicativo por tipo -->
+      <div class="ig"><label class="il">Tipo de crédito</label><select class="inp sel" id="op_tip" onchange="toggleTipoInteres()">
+        <option value="simple">📐 Simple</option>
+        <option value="compuesto">📈 Compuesto</option>
+        <option value="cuota">🔒 Cuota fija</option>
+        <option value="diario_abierto">📅 Diario (fecha abierta)</option>
+        <option value="interes_mensual">💰 Solo interés mensual</option>
+      </select></div>
+      <!-- Explicación del tipo seleccionado -->
       <div id="tipExplainer" style="border-radius:10px;padding:11px 13px;margin-bottom:8px;font-size:11px;line-height:1.6;display:none"></div>
+
+      <!-- BLOQUE: simple / compuesto -->
       <div id="intNormalBlock">
         <div class="ig">
-          <label class="il">Interés (%)</label>
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+          <label class="il" style="display:flex;justify-content:space-between;align-items:center">
+            <span>Interés (%)</span>
+            <span id="intModoLabel" style="font-size:10px;color:var(--tx2)"></span>
+          </label>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
             <button type="button" id="intModoMens" onclick="setIntModo('mensual')" style="flex:1;padding:6px 4px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--ac);background:var(--ac);color:#fff;transition:.2s">% por cuota</button>
             <button type="button" id="intModoTotal" onclick="setIntModo('total')" style="flex:1;padding:6px 4px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card2);color:var(--tx2);transition:.2s">% total</button>
           </div>
-          <input class="inp" id="op_int" type="number" placeholder="Ej: 10" oninput="syncInteresOp()">
+          <div id="intModoExplain" style="font-size:10px;color:var(--tx2);margin-bottom:6px;padding:6px 8px;background:rgba(0,0,0,.15);border-radius:6px;display:none"></div>
+          <input class="inp" id="op_int" type="number" placeholder="Ej: 10" step="0.1" oninput="syncInteresOp()">
           <div id="op_int_hint" style="font-size:10px;color:var(--ac2);margin-top:3px;min-height:14px"></div>
         </div>
       </div>
+
+      <!-- BLOQUE: cuota fija -->
+      <div id="intCuotaBlock" style="display:none">
+        <div class="ig">
+          <label class="il">Valor de cuota *</label>
+          <input class="inp" id="op_cuo_fixed_cf" type="number" placeholder="Ej: 5000" oninput="syncCuotaFijaDirecta()">
+          <div id="op_cf_hint" style="font-size:10px;color:var(--ac2);margin-top:3px;min-height:14px"></div>
+        </div>
+      </div>
+
+      <!-- BLOQUE: diario abierto -->
       <div id="intDiarioBlock" style="display:none">
         <div class="ig"><label class="il">Monto prestado *</label><input class="inp" id="op_mon_d" type="number" placeholder="0.00" oninput="syncIntDiario()"></div>
-        <div class="ig"><label class="il" style="display:flex;justify-content:space-between"><span>Interés diario (%)</span><span id="op_int_d_hint" style="font-size:10px;color:var(--ac2)"></span></label><input class="inp" id="op_int_d" type="number" placeholder="Ej: 1" step="0.1" oninput="syncIntDiario()"></div>
+        <div class="ig">
+          <label class="il" style="display:flex;justify-content:space-between"><span>Interés diario (%)</span><span id="op_int_d_hint" style="font-size:10px;color:var(--ac2)"></span></label>
+          <input class="inp" id="op_int_d" type="number" placeholder="Ej: 1" step="0.1" oninput="syncIntDiario()">
+        </div>
         <div class="ig"><label class="il">Fecha inicio *</label><input class="inp" id="op_facr_d" type="date"></div>
       </div>
+
+      <!-- BLOQUE: solo interés mensual -->
       <div id="intMensualBlock" style="display:none">
         <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc_im" placeholder="Ej: Crédito personal..."></div>
         <div class="ig"><label class="il">Capital prestado *</label><input class="inp" id="op_mon_im" type="number" placeholder="0.00" oninput="syncIntMensual()"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
-          <div><div style="font-size:9px;color:var(--tx2);margin-bottom:3px">Interés mensual (%)</div><input class="inp" id="op_int_im" type="number" placeholder="Ej: 30.2" step="0.1" oninput="syncIntMensual()"></div>
-          <div><div style="font-size:9px;color:var(--tx2);margin-bottom:3px">O cuota fija ($)</div><input class="inp" id="op_cuota_im" type="number" placeholder="Ej: 200000" oninput="syncIntMensualCuota()" style="border-style:dashed"></div>
+        <div class="ig" id="intPctBlock_im">
+          <label class="il">Interés mensual (%)</label>
+          <input class="inp" id="op_int_im" type="number" placeholder="Ej: 30.2" step="0.1" oninput="syncIntMensual()">
         </div>
+        <div class="ig" id="cuotaFijaBlock_im" style="display:none">
+          <label class="il">Cuota mensual ($)</label>
+          <input class="inp" id="op_cuota_im" type="number" placeholder="Ej: 200000" oninput="syncIntMensualCuota()">
+        </div>
+        <button type="button" id="btnToggleCuotaIM" onclick="toggleCuotaFijaIM()" style="font-size:11px;background:transparent;border:1px dashed var(--border);color:var(--tx2);border-radius:8px;padding:6px 12px;cursor:pointer;width:100%;margin-bottom:8px">Ingresar cuota fija en $ en vez de %</button>
       </div>
+
       <!-- Preview dinámico unificado -->
       <div id="opPreview" style="display:none;background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:13px;margin-bottom:10px"></div>
       <div class="ig">
@@ -2210,29 +2244,35 @@ function toggleOpTipo(){
 }
 function toggleTipoInteres(forzar){
   const tip=forzar||($('op_tip')?$('op_tip').value:'simple');
-  const esDiario=tip==='diario_abierto';
-  const esMensual=tip==='interes_mensual';
-  const nb=$('intNormalBlock'),db=$('intDiarioBlock'),mb=$('intMensualBlock');
-  if(nb)nb.style.display=(esDiario||esMensual)?'none':'block';
-  if(db)db.style.display=esDiario?'block':'none';
-  if(mb)mb.style.display=esMensual?'block':'none';
-  // Ocultar cuotas/frecuencia/fecha para diario_abierto e interes_mensual
-  const cuotasSec=$('op_cuo')?.closest('.ig');
-  const frqSec=$('op_frq')?.closest('.ig');
-  const fvSec=$('op_fv')?.closest('.ig');
-  const facrSec=$('op_facr')?.closest('.ig');
-  const moraSec=$('op_mora')?.closest('.ig');
-  [cuotasSec,frqSec,facrSec,moraSec].forEach(s=>{if(s)s.style.display=(esDiario||esMensual)?'none':'';});
-  if(fvSec)fvSec.style.display=esDiario?'none':''; // para interes_mensual sí mostrar fecha 1° pago
-  // Ocultar Monto y Descripción del form normal cuando es interes_mensual
-  const monSec=$('op_mon')?.closest('.ig');
-  const descSec=$('op_desc')?.closest('.ig');
-  if(monSec)monSec.style.display=esMensual?'none':'';
-  if(descSec)descSec.style.display=esMensual?'none':'';
+  const esDiario  = tip==='diario_abierto';
+  const esMensual = tip==='interes_mensual';
+  const esCuota   = tip==='cuota';
+  const show=(el,v)=>{if(el)el.style.display=v?'':'none';};
+  show($('intNormalBlock'), !esDiario&&!esMensual&&!esCuota);
+  show($('intCuotaBlock'),  esCuota);
+  show($('intDiarioBlock'), esDiario);
+  show($('intMensualBlock'),esMensual);
+  show($('op_mon')?.closest('.ig'),  !esDiario&&!esMensual);
+  show($('op_desc')?.closest('.ig'), !esDiario&&!esMensual);
+  show($('op_cuo')?.closest('.ig'),  !esDiario&&!esMensual&&!esCuota);
+  show($('op_frq')?.closest('.ig'),  !esDiario&&!esMensual);
+  show($('op_fv')?.closest('.ig'),   !esDiario);
+  show($('op_facr')?.closest('.ig'), !esDiario&&!esMensual);
+  show($('op_mora')?.closest('.ig'), !esDiario&&!esMensual);
   if(esDiario&&$('op_facr_d'))$('op_facr_d').value=hoy();
   if(esMensual)syncIntMensual();
   actualizarTipExplainer();
   actualizarPreview();
+}
+function toggleCuotaFijaIM(){
+  const showingPct=$('intPctBlock_im')&&$('intPctBlock_im').style.display!=='none';
+  if($('intPctBlock_im'))$('intPctBlock_im').style.display=showingPct?'none':'';
+  if($('cuotaFijaBlock_im'))$('cuotaFijaBlock_im').style.display=showingPct?'':'none';
+  if($('op_int_im'))$('op_int_im').value='';
+  if($('op_cuota_im'))$('op_cuota_im').value='';
+  const btn=$('btnToggleCuotaIM');
+  if(btn)btn.textContent=showingPct?'Ingresar % de interés en vez de cuota':'Ingresar cuota fija en $ en vez de %';
+  syncIntMensual();
 }
 function syncIntMensual(){
   const mon=parseFloat($('op_mon_im')?.value)||0;
@@ -2354,9 +2394,16 @@ function setIntModo(modo){
     btnT.style.background='var(--ac)';btnT.style.color='#fff';btnT.style.borderColor='var(--ac)';
     btnM.style.background='var(--card2)';btnM.style.color='var(--tx2)';btnM.style.borderColor='var(--border)';
   }
+  const expl=$('intModoExplain');
+  if(expl){expl.style.display='block';expl.innerHTML=INT_MODO_INFO[modo]||'';}
   syncInteresOp();
 }
 // ── Descripciones por tipo de interés ──
+// Explicación de modos %
+const INT_MODO_INFO={
+  mensual:'📌 <b>% por cuota:</b> el porcentaje se aplica sobre el capital en cada cuota.<br>Ej: $100.000 al 10% en 6 cuotas → cuota = $100.000 × 10% + capital = $16.667',
+  total:'📌 <b>% total:</b> el porcentaje es sobre el total del crédito y se reparte en las cuotas.<br>Ej: $100.000 al 60% total en 6 cuotas → 60%÷6 = 10% por cuota'
+};
 const TIP_INFO={
   simple:{
     icon:'📐',color:'rgba(108,99,255,.12)',border:'rgba(108,99,255,.3)',
@@ -2465,6 +2512,23 @@ function syncInteresOp(){
     if(!v){hint.textContent='';}
     else if(_intModo==='mensual'){hint.textContent=`→ Total interés: ${(v*cuotas).toFixed(2)}% (${v}% × ${cuotas} cuotas)`;}
     else{const pc=cuotas>0?(v/cuotas).toFixed(2):v;hint.textContent=`→ ${pc}% por cuota (${v}% ÷ ${cuotas} cuotas)`;}
+  }
+  actualizarPreview();
+}
+function syncCuotaFijaDirecta(){
+  const cuotaFija=parseFloat($('op_cuo_fixed_cf')?.value)||0;
+  const cuo=parseInt($('op_cuo')?.value)||0;
+  const hint=$('op_cf_hint');
+  if(cuotaFija>0){
+    // Si hay cuotas definidas, mostrar total
+    if(cuo>0){
+      const total=cuotaFija*cuo;
+      if(hint)hint.innerHTML=`<span style="color:var(--gr)">✅ ${cuo} cuotas de ${(CFG.moneda||'$')}${cuotaFija.toLocaleString('es-AR')} = Total ${(CFG.moneda||'$')}${total.toLocaleString('es-AR')}</span>`;
+    } else {
+      if(hint)hint.innerHTML=`<span style="color:var(--ac2)">Agregá cantidad de cuotas abajo</span>`;
+    }
+  } else {
+    if(hint)hint.textContent='';
   }
   actualizarPreview();
 }
@@ -3050,6 +3114,14 @@ async function guardarOp(){
     const fvIM=$('op_fv').value||hoy();
     // 999 cuotas = abierto; cuota_fija = interés mensual; capital en mon
     Object.assign(d,{mon:monIM,int_:intIMfinal,mora:0,tip:'interes_mensual',desc_:descIM,prod:'',costo:0,precio:0,cuo:999,pag:0,frq:'mensual',fv:fvIM,facr:$('op_facr')?.value||null,cuota_fija:cuotaIM});
+  } else if(tipInt==='cuota'){
+    // cuota fija directa
+    const cuotaCF=parseFloat($('op_cuo_fixed_cf')?.value)||0;
+    const cuoCF=parseInt($('op_cuo')?.value)||0;
+    if(!cuotaCF){toast('Ingresá el valor de cuota','error');_guardando=false;return;}
+    if(!cuoCF){toast('Ingresá la cantidad de cuotas','error');_guardando=false;return;}
+    d.cuota_fija=cuotaCF;
+    if(!d.mon||!parseFloat(d.mon))d.mon=cuotaCF*cuoCF;
   } else if(tipo==='venta'){const precio=parseFloat($('op_precio').value);if(!precio){toast('Ingresá el precio','error');_guardando=false;return}Object.assign(d,{prod:$('op_prod').value.trim(),costo:parseFloat($('op_costo').value)||0,precio,mon:0,int_:0,mora:0,tip:'cuota',desc_:''})}
   else{
     const cuotaFija=parseFloat($('op_cuo_fixed').value)||0;
