@@ -1734,7 +1734,26 @@ function cvOp(op){
   if(op.tip==='compuesto'){if(i===0)return Math.round(m/n);return Math.round(m*(i*Math.pow(1+i,n))/(Math.pow(1+i,n)-1))}
   return Math.round(m/n*(1+i));
 }
-function saldoOp(op){if(op.tip==='interes_mensual'){const parPago=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);const yaAbonado=parPago?Math.max(0,Math.round(cvOp(op)-parPago.flt)):0;return Math.max(0,op.mon-yaAbonado);}const base=Math.round(cvOp(op)*Math.max(0,(parseInt(op.cuo)||1)-(parseInt(op.pag)||0)));const parPago=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);const yaAbonado=parPago?Math.max(0,Math.round(cvOp(op)-parPago.flt)):0;return Math.max(0,base-yaAbonado);}
+function saldoOp(op){
+  if(op.tip==='interes_mensual'){
+    // Para capital abierto: saldo = capital fijo (nunca se reduce por pagos de interés)
+    return Math.round(op.mon);
+  }
+  const base=Math.round(cvOp(op)*Math.max(0,(parseInt(op.cuo)||1)-(parseInt(op.pag)||0)));
+  const parPago=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);
+  const yaAbonado=parPago?Math.max(0,Math.round(cvOp(op)-parPago.flt)):0;
+  return Math.max(0,base-yaAbonado);
+}
+// Para tarjeta cliente: cuánto debe AHORA (cuota pendiente, no capital)
+function deudaActualOp(op){
+  if(op.tip==='interes_mensual'){
+    const parPago=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);
+    return parPago?Math.round(parPago.flt):Math.round(cvOp(op));
+  }
+  const parPago=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);
+  const cuota=cvOp(op);
+  return parPago?Math.round(parPago.flt):cuota;
+}
 function proxFechaOp(op){
   const n=parseInt(op.pag)||0;
   const fc=op.fechas_custom||{};
@@ -1844,6 +1863,23 @@ function proxFechaOpNatural(op){
 function stOp(op){
   const h=new Date();h.setHours(0,0,0,0);
   if(op.pag>=op.cuo&&op.tip!=='interes_mensual')return'completado';
+  if(op.tip==='interes_mensual'){
+    // Al día si el último pago de interés fue en el mes actual o si la fecha de vencimiento es futura
+    const fv=new Date(op.fv+'T00:00:00');
+    const parPago=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);
+    if(parPago)return'atrasado'; // hay parcial pendiente
+    const hoy2=hoy();
+    // buscar último pago de interés (no cancelación de capital)
+    const ultPago=Ps.filter(p=>p.oid===op.id&&!p.par).sort((a,b)=>b.fec.localeCompare(a.fec))[0];
+    if(ultPago){
+      const fecP=new Date(ultPago.fec+'T00:00:00');
+      // Si el último pago fue en el mes actual → al día
+      if(fecP.getFullYear()===h.getFullYear()&&fecP.getMonth()===h.getMonth())return'aldía';
+    }
+    // si fv es futura → al día
+    if(fv>=h)return'aldía';
+    return'atrasado';
+  }
   const vNat=proxFechaOpNatural(op); // fecha original del calendario (sin custom)
   if(isNaN(vNat.getTime()))return'aldía'; // fecha inválida: no bloquear la app, tratar como al día
   const dfNat=Math.floor((vNat-h)/86400000);
@@ -2257,7 +2293,7 @@ function toggleTipoInteres(forzar){
   show($('op_cuo')?.closest('.ig'),  !esDiario&&!esMensual&&!esCuota);
   show($('op_frq')?.closest('.ig'),  !esDiario&&!esMensual);
   show($('op_fv')?.closest('.ig'),   !esDiario);
-  show($('op_facr')?.closest('.ig'), !esDiario&&!esMensual);
+  show($('op_facr')?.closest('.ig'), !esDiario);
   show($('op_mora')?.closest('.ig'), !esDiario&&!esMensual);
   if(esDiario&&$('op_facr_d'))$('op_facr_d').value=hoy();
   if(esMensual)syncIntMensual();
@@ -2340,45 +2376,109 @@ function cancelarDiarioAbierto(oid){
 }
 function cancelarCapitalMensual(oid){
   const op=gO(oid);const c=op?gC(op.cid):null;if(!op||!c)return;
-  const capital=op.mon;const monLabel=(op.moneda||CFG.moneda||'$');
-  const cuotaInt=Math.round(parseFloat(op.cuota_fija)||capital*(parseFloat(op.int_)||0)/100);
+  const monLabel=(op.moneda||CFG.moneda||'$');
+  const cuotaInt=Math.round(parseFloat(op.cuota_fija)||op.mon*(parseFloat(op.int_)||0)/100);
   const modal=document.createElement('div');
-  modal.style.cssText='position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
-  modal.innerHTML=`<div style="background:var(--bg2);border-radius:16px;padding:20px;width:100%;max-width:380px">
-    <div style="font-size:15px;font-weight:800;margin-bottom:4px">💰 Cancelar capital</div>
-    <div style="font-size:11px;color:var(--tx2);margin-bottom:16px">${c.nom} · Capital: ${monLabel}${Math.round(capital).toLocaleString('es-AR')} · Cuota interés: ${monLabel}${cuotaInt.toLocaleString('es-AR')}/mes</div>
-    <div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:12px;margin-bottom:12px">
-      <div style="font-size:10px;color:var(--tx2);margin-bottom:4px">Capital a devolver</div>
-      <div style="font-size:26px;font-weight:800;color:var(--gr)">${monLabel}${Math.round(capital).toLocaleString('es-AR')}</div>
+  modal.style.cssText='position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+  modal.innerHTML=`<div style="background:var(--bg2);border-radius:16px;padding:20px;width:100%;max-width:380px;margin:auto">
+    <div style="font-size:15px;font-weight:800;margin-bottom:4px">⚙️ Modificar capital</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:14px">${c.nom} · Capital actual: <strong style="color:var(--tx)">${monLabel}${Math.round(op.mon).toLocaleString('es-AR')}</strong> · Cuota: <strong style="color:var(--ac2)">${monLabel}${cuotaInt.toLocaleString('es-AR')}/mes</strong></div>
+
+    <!-- Opciones -->
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+      <!-- Cancelar capital -->
+      <div id="ccm_opt_cancel" onclick="ccmSelect('cancel')" style="border:2px solid var(--ac);border-radius:12px;padding:12px;cursor:pointer;background:rgba(108,99,255,.1)">
+        <div style="font-weight:700;font-size:13px;margin-bottom:2px">✅ El cliente cancela el capital</div>
+        <div style="font-size:10px;color:var(--tx2)">Cobra ${monLabel}${Math.round(op.mon).toLocaleString('es-AR')} y cerrás la operación</div>
+      </div>
+      <div id="ccm_opt_subir" onclick="ccmSelect('subir')" style="border:1px solid var(--border);border-radius:12px;padding:12px;cursor:pointer">
+        <div style="font-weight:700;font-size:13px;margin-bottom:2px">⬆️ Subir capital</div>
+        <div style="font-size:10px;color:var(--tx2)">El cliente pide más plata — aumentá el capital y se recalcula la cuota</div>
+      </div>
+      <div id="ccm_opt_quitar" onclick="ccmSelect('quitar')" style="border:1px solid var(--border);border-radius:12px;padding:12px;cursor:pointer">
+        <div style="font-weight:700;font-size:13px;margin-bottom:2px">⬇️ Quitar capital</div>
+        <div style="font-size:10px;color:var(--tx2)">El cliente devolvió un parcial — reducí el capital y se recalcula la cuota</div>
+      </div>
     </div>
-    <div class="ig" style="margin-bottom:12px">
-      <label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:5px">¿El cliente también paga interés de este período?</label>
-      <div style="display:flex;gap:8px">
-        <button id="btnConInt" onclick="document.getElementById('ccm_conint').value='1';this.style.background='var(--ac)';this.style.color='#fff';document.getElementById('btnSinInt').style.background='var(--card2)';document.getElementById('btnSinInt').style.color='var(--tx2)'" style="flex:1;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--ac);background:var(--ac);color:#fff">Sí, incluir interés</button>
-        <button id="btnSinInt" onclick="document.getElementById('ccm_conint').value='0';this.style.background='var(--ac)';this.style.color='#fff';document.getElementById('btnConInt').style.background='var(--card2)';document.getElementById('btnConInt').style.color='var(--tx2)'" style="flex:1;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card2);color:var(--tx2)">No, solo capital</button>
+
+    <!-- Subpanel cancelar -->
+    <div id="ccm_panel_cancel" style="">
+      <div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:12px;margin-bottom:10px;text-align:center">
+        <div style="font-size:10px;color:var(--tx2);margin-bottom:2px">Capital a cobrar</div>
+        <div style="font-size:24px;font-weight:800;color:var(--gr)">${monLabel}${Math.round(op.mon).toLocaleString('es-AR')}</div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <button id="ccm_c_conInt" onclick="ccmToggleInt(true)" style="flex:1;padding:8px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--ac);background:var(--ac);color:#fff">+ interés del período</button>
+        <button id="ccm_c_sinInt" onclick="ccmToggleInt(false)" style="flex:1;padding:8px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card2);color:var(--tx2)">Solo capital</button>
       </div>
       <input type="hidden" id="ccm_conint" value="1">
     </div>
-    <div style="display:flex;gap:8px">
+    <!-- Subpanel subir/quitar capital -->
+    <div id="ccm_panel_mod" style="display:none">
+      <div class="ig" style="margin-bottom:8px">
+        <label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:5px">Nuevo capital total <span id="ccm_mod_label" style="color:var(--ac2)"></span></label>
+        <input id="ccm_nuevo_cap" type="number" class="inp" placeholder="${Math.round(op.mon)}" oninput="ccmPreviewMod(${op.mon},${cuotaInt},${parseFloat(op.int_)||0},'${monLabel}')">
+        <div id="ccm_mod_preview" style="font-size:10px;color:var(--ac2);margin-top:4px;min-height:14px"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:4px">
       <button onclick="this.closest('[style*=fixed]').remove()" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--tx);border-radius:10px;padding:11px;font-size:13px;cursor:pointer">Cancelar</button>
-      <button id="btnConfCancelCap" style="flex:2;background:var(--gr);border:none;color:#fff;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">✅ Confirmar cancelación</button>
+      <button id="ccm_btnConf" style="flex:2;background:var(--ac);border:none;color:#fff;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">Confirmar</button>
     </div>
   </div>`;
   document.body.appendChild(modal);
   modal.onclick=e=>{if(e.target===modal)modal.remove();};
-  modal.querySelector('#btnConfCancelCap').onclick=async()=>{
-    const conInt=modal.querySelector('#ccm_conint').value==='1';
-    const totalPago=conInt?capital+cuotaInt:capital;
-    modal.remove();
-    // Registrar pago de capital como pago normal y marcar op como cancelada
-    await registrarPago(oid,totalPago,hoy(),'efectivo',false,0,`Cancelación de capital${conInt?' + interés del período':''}`);
-    // Marcar como completada: pag = cuo para que pase a Terminados
-    try{
-      await dbUpd('operaciones',oid,{pag:999,tip:'interes_mensual_cancelado'});
-      const op2=gO(oid);if(op2){op2.pag=999;op2.tip='interes_mensual_cancelado';}
-    }catch(e){}
-    toast(`✅ Capital cancelado · ${(op.moneda||CFG.moneda||'$')}${totalPago.toLocaleString('es-AR')} cobrados`,'success');
+  let _ccmMode='cancel';
+  window.ccmSelect=mode=>{
+    _ccmMode=mode;
+    ['cancel','subir','quitar'].forEach(m=>{
+      const el=modal.querySelector('#ccm_opt_'+m);
+      if(el){el.style.border=m===mode?'2px solid var(--ac)':'1px solid var(--border)';el.style.background=m===mode?'rgba(108,99,255,.1)':'transparent';}
+    });
+    modal.querySelector('#ccm_panel_cancel').style.display=mode==='cancel'?'':'none';
+    modal.querySelector('#ccm_panel_mod').style.display=mode!=='cancel'?'':'none';
+    if(mode!=='cancel'){
+      const lbl=modal.querySelector('#ccm_mod_label');
+      if(lbl)lbl.textContent=mode==='subir'?'(mayor al actual)':'(menor al actual)';
+    }
+  };
+  window.ccmToggleInt=(con)=>{
+    modal.querySelector('#ccm_conint').value=con?'1':'0';
+    modal.querySelector('#ccm_c_conInt').style.background=con?'var(--ac)':'var(--card2)';
+    modal.querySelector('#ccm_c_conInt').style.color=con?'#fff':'var(--tx2)';
+    modal.querySelector('#ccm_c_sinInt').style.background=con?'var(--card2)':'var(--ac)';
+    modal.querySelector('#ccm_c_sinInt').style.color=con?'var(--tx2)':'#fff';
+  };
+  window.ccmPreviewMod=(capActual,cuotaActual,intPct,monLabel)=>{
+    const nuevo=parseFloat(modal.querySelector('#ccm_nuevo_cap').value)||0;
+    const nuevaCuota=intPct>0?Math.round(nuevo*intPct/100):Math.round(nuevo/capActual*cuotaActual);
+    const preview=modal.querySelector('#ccm_mod_preview');
+    if(nuevo&&preview)preview.innerHTML=`Nueva cuota: <strong style="color:var(--ac)">${monLabel}${nuevaCuota.toLocaleString('es-AR')}/mes</strong>`;
+    else if(preview)preview.textContent='';
+  };
+  modal.querySelector('#ccm_btnConf').onclick=async()=>{
+    if(_ccmMode==='cancel'){
+      const conInt=modal.querySelector('#ccm_conint').value==='1';
+      const totalPago=conInt?op.mon+cuotaInt:op.mon;
+      modal.remove();
+      await registrarPago(oid,totalPago,hoy(),'efectivo',false,0,`Cancelación de capital${conInt?' + interés del período':''}`);
+      try{await dbUpd('operaciones',oid,{pag:999,tip:'interes_mensual_cancelado'});const op2=gO(oid);if(op2){op2.pag=999;op2.tip='interes_mensual_cancelado';}}catch(e){}
+      toast(`✅ Capital cancelado · ${monLabel}${totalPago.toLocaleString('es-AR')} cobrados`,'success');
+    } else {
+      const nuevoCap=parseFloat(modal.querySelector('#ccm_nuevo_cap').value)||0;
+      if(!nuevoCap){toast('Ingresá el nuevo capital','error');return;}
+      const nuevaCuota=parseFloat(op.int_)>0?Math.round(nuevoCap*parseFloat(op.int_)/100):Math.round(nuevoCap/op.mon*cuotaInt);
+      modal.remove();
+      try{
+        await dbUpd('operaciones',oid,{mon:nuevoCap,cuota_fija:nuevaCuota});
+        const op2=gO(oid);if(op2){op2.mon=nuevoCap;op2.cuota_fija=nuevaCuota;}
+        toast(`✅ Capital actualizado a ${monLabel}${Math.round(nuevoCap).toLocaleString('es-AR')} · nueva cuota ${monLabel}${nuevaCuota.toLocaleString('es-AR')}/mes`,'success');
+      }catch(e){toast('Error: '+e.message,'error');}
+    }
     setTimeout(()=>refrescar(),100);
+    const mver=document.getElementById('mver');
+    if(mver&&mver.classList.contains('open'))verCli(op.cid);
   };
 }
 
@@ -3583,15 +3683,19 @@ function ofrecerWaCreditoNuevo(op,c){
   const mon=op.moneda||CFG.moneda||'$';
   // Calcular fechas de cuotas
   let fechasStr='';
-  for(let i=0;i<Math.min(op.cuo,6);i++){
-    const f=new Date(op.fv+'T00:00:00');
-    if(op.frq==='mensual')f.setMonth(f.getMonth()+i);
-    else if(op.frq==='quincenal')f.setDate(f.getDate()+i*15);
-    else if(op.frq==='semanal')f.setDate(f.getDate()+i*7);
-    else f.setDate(f.getDate()+i);
-    fechasStr+=`  • Cuota ${i+1}: ${f.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}\n`;
+  if(op.tip==='interes_mensual'){
+    fechasStr=`  • Paga ${(op.moneda||CFG.moneda||'$')}${Math.round(op.cuota_fija||0).toLocaleString('es-AR')} de interés por mes\n  • Capital de ${(op.moneda||CFG.moneda||'$')}${Math.round(op.mon).toLocaleString('es-AR')} a devolver al cancelar\n`;
+  } else {
+    for(let i=0;i<Math.min(op.cuo,6);i++){
+      const f=new Date(op.fv+'T00:00:00');
+      if(op.frq==='mensual')f.setMonth(f.getMonth()+i);
+      else if(op.frq==='quincenal')f.setDate(f.getDate()+i*15);
+      else if(op.frq==='semanal')f.setDate(f.getDate()+i*7);
+      else f.setDate(f.getDate()+i);
+      fechasStr+=`  • Cuota ${i+1}: ${f.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}\n`;
+    }
+    if(op.cuo>6)fechasStr+=`  • ... y ${op.cuo-6} cuota${op.cuo-6!==1?'s':''} más\n`;
   }
-  if(op.cuo>6)fechasStr+=`  • ... y ${op.cuo-6} cuota${op.cuo-6!==1?'s':''} más\n`;
   const msg=`Hola ${c.nom}! 👋\n\nTe confirmamos los detalles de tu crédito:\n\n📋 *${op.cuo} cuotas de ${mon}${Math.round(cuota).toLocaleString('es-AR')}* por ${frqLabel}\n\n📅 *Fechas de pago:*\n${fechasStr}\n✅ Cualquier consulta, escribinos.\n¡Muchas gracias!`;
   const tel=c.tel.replace(/\D/g,'');
   const waUrl=`https://wa.me/${tel.startsWith('54')?tel:'54'+tel}?text=${encodeURIComponent(msg)}`;
@@ -3624,7 +3728,7 @@ function abrirPago(fixId=null){
       const c=gC(op.cid);$('p_waWrap').style.display=c&&c.tel?'block':'none';
       // Ocultar botón solo interés para ventas
       const btn=$('p_btnSoloInt');
-      if(btn)btn.style.display=esVenta(op)?'none':'';
+      if(btn)btn.style.display=(esVenta(op)||op.tip==='cuota'||op.tip==='interes_mensual')?'none':'';
     }
   } else {$('p_waWrap').style.display='none';}
   showModal('mpago');
@@ -4038,7 +4142,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
       <div class="op-pt"><div class="op-pf" style="width:${pct}%;background:${col}"></div></div>
       ${sv?`<div style="font-size:9px;color:var(--tx2);margin-top:4px">Precio: ${fmtOp(op.precio,op)} · Costo: ${fmtOp(op.costo,op)} · Gan: <span style="color:var(--gr)">${fmtOp(op.precio-op.costo,op)}</span></div>`:''}
       <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
-        ${op.tipo==='diario_abierto'?`<button class="btn bp bsm" style="background:var(--gr)" onclick="cancelarDiarioAbierto(${op.id})">💰 Cancelar</button>`:op.tip==='interes_mensual'?`<button class="btn bp bsm" onclick="abrirPagoParaOp(${op.id})">💵 Interés</button><button class="btn bp bsm" style="background:var(--gr);margin-left:0" onclick="cancelarCapitalMensual(${op.id})">💰 Cancelar capital</button>`:`<button class="btn bp bsm" onclick="abrirPagoParaOp(${op.id})">💵 Pago</button>`}
+        ${op.tipo==='diario_abierto'?`<button class="btn bp bsm" style="background:var(--gr)" onclick="cancelarDiarioAbierto(${op.id})">💰 Cancelar</button>`:op.tip==='interes_mensual'?`<button class="btn bp bsm" onclick="abrirPagoParaOp(${op.id})">💵 Interés</button><button class="btn bp bsm" style="background:var(--gr);margin-left:0" onclick="cancelarCapitalMensual(${op.id})">⚙️ Capital</button>`:`<button class="btn bp bsm" onclick="abrirPagoParaOp(${op.id})">💵 Pago</button>`}
         ${pp?`<button class="btn byw bsm" onclick="completarPar(${op.id})">⚠ Parcial</button>`:''}
         <button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️</button>
         <button class="btn bs bsm" onclick="abrirCamFecha(${op.id})">📅</button>
@@ -4613,7 +4717,7 @@ function rClis(){
     </div>`;
   }
   el.innerHTML=prefixHTML+l.map((c,i)=>{
-    const ops=opsDeCli(c.id),opsAct=ops.filter(o=>o.pag<o.cuo),saldoT=saldoTotalCli(c.id),sTC=stCli(c.id),r=rankCli(c.id);
+    const ops=opsDeCli(c.id),opsAct=ops.filter(o=>o.pag<o.cuo||o.tip==='interes_mensual'),saldoT=opsAct.reduce((s,o)=>s+deudaActualOp(o),0),sTC=stCli(c.id),r=rankCli(c.id);
     const nP=opsAct.filter(o=>!esVenta(o)).length,nV=opsAct.filter(o=>esVenta(o)).length;
     const colSt={atrasado:'var(--rd)',porVencer:'var(--yw)',aldía:'var(--gr)',completo:'var(--tx2)',reprogramado:'var(--yw)'};
     const lblSt={atrasado:'⚠️ Mora',porVencer:'⏰ Vence pronto',aldía:'✅ Al día',completo:'✅ Saldado',reprogramado:'⏸ Reprogramado'};
