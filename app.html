@@ -3098,11 +3098,11 @@ function abrirCli(id=null){
     const prevE=$('c_foto_preview');if(prevE){prevE.innerHTML=c.foto?`<img src="${c.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:'👤';}
     const clearBtnE=$('c_foto_clear');if(clearBtnE)clearBtnE.style.display=c.foto?'block':'none';
     $('c_consent').checked=true; // al editar ya se dio consentimiento
-    // Bloquear el checkbox al editar — el consentimiento ya fue otorgado
-    $('c_consent').disabled=true;
-    $('c_consent').style.opacity='.5';
-    const lbl=$('consentLabel');if(lbl)lbl.style.cursor='default';
-    const box=$('consentBox');if(box)box.style.opacity='.65';
+    // Permitir editar el consentimiento
+    $('c_consent').disabled=false;
+    $('c_consent').style.opacity='1';
+    const lbl=$('consentLabel');if(lbl)lbl.style.cursor='pointer';
+    const box=$('consentBox');if(box)box.style.opacity='1';
     if($('c_maps_paste'))$('c_maps_paste').value='';
   } else {
     ['c_nom','c_tel','c_cumple','c_not','c_dir','c_lat','c_lng','c_limite'].forEach(f=>$(f).value='');
