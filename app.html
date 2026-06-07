@@ -716,8 +716,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
 <div class="pg" id="page-clientes">
   <div class="sw"><span class="si">🔍</span><input class="inp" id="srch" placeholder="Buscar cliente..." oninput="debSearch()" type="search"></div>
   <div class="tabs" id="cliTabs">
-    <div class="tab active" onclick="setF('todos',this)">Todos<span class="tab-badge" id="cnt-todos"></span></div>
-    <div class="tab" onclick="setF('activos',this)">Activos<span class="tab-badge" id="cnt-activos"></span></div>
+    <div class="tab active" onclick="setF('activos',this)">Activos<span class="tab-badge" id="cnt-activos"></span></div>
     <div class="tab" onclick="setF('atrasado',this)">Mora<span class="tab-badge danger" id="cnt-atrasado"></span></div>
     <div class="tab" onclick="setF('completo',this)">Saldados<span class="tab-badge" id="cnt-completo"></span></div>
     <div class="tab" id="tabCobradores" onclick="setF('cobradores',this)" style="display:none">👥 Cobradores</div>
@@ -821,7 +820,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
 </div>
 
 <!-- REPORTES -->
-<div class="pg" id="page-rep">
+<div class="pg" id="page-rep" style="padding-bottom:80px">
   <div class="stit">📈 Resumen financiero</div>
   <div class="rg" id="repGrid"></div>
   <div class="card" style="margin-top:10px"><div class="ch"><span class="ct">🎯 Morosidad</span><span class="iatag">🧠 IA</span></div><div style="display:flex;align-items:center;gap:14px"><div class="ring"><svg width="70" height="70" viewBox="0 0 70 70"><circle class="rbg" cx="35" cy="35" r="27"/><circle class="rfil" id="mRing" cx="35" cy="35" r="27" stroke-dasharray="170" stroke-dashoffset="170"/></svg><div class="rl"><span class="rp" id="mPct">0%</span><span class="rs2">mora</span></div></div><div style="flex:1;font-size:10px;color:var(--tx2);line-height:1.6" id="mAnal">—</div></div></div>
@@ -1434,7 +1433,7 @@ function requierePro(feat){return requierePlan(feat,'pro');}
 let SB = null, currentUser = null;
 let CFG = {nombre:'',moneda:'$',alertaDias:3,redondeo:0,telPropio:'',msgWa:'Hola {nombre}, recordatorio: cuota de {cuota} vence {fecha}. ¡Gracias!',msgMora:'Hola {nombre}, tenés {dias} días de atraso. Tu cuota es de {cuota}. Por favor regularizá. ¡Gracias!'};
 let Cs=[], Ops=[], Ps=[], Gs=[], EVs=[];
-let flt='todos', cajP='todo', finP='semana';
+let flt='activos', cajP='todo', finP='semana';
 let calM=new Date().getMonth(), calA=new Date().getFullYear(), calDia='';
 let ocul=false, fotoTemp='', docsTemp=[];
 const M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -4148,7 +4147,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
         <button class="btn bs bsm" onclick="abrirCamFecha(${op.id})">📅</button>
         <button class="btn bs bsm" title="Fechas por cuota" onclick="abrirFechasCuotas(${op.id})">📆 Cuotas</button>
         ${c.tel?`<a href="${waLinkOp(op)}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm">💬 WA</button></a>`:''}
-        <button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfCreditoNuevoWA(gO(${op.id}),gC(${cid}))">📲 PDF</button>
+        <button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfResumenCliWA(${cid})">📲 PDF</button>
         ${(s==='atrasado'||s==='reprogramado')&&c.tel?`<a href="${waMoraLink(op)}" target="_blank" rel="noopener noreferrer"><button class="btn brd bsm">🔴 Mora</button></a>`:''}
         <button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button>
       </div>
@@ -4652,8 +4651,7 @@ function rClis(){
   const cntActivos=Cs.filter(c=>opsDeCli(c.id).some(o=>o.pag<o.cuo)).length;
   const cntAtrasado=Cs.filter(c=>stCli(c.id)==='atrasado').length;
   const cntCompleto=Cs.filter(c=>opsDeCli(c.id).length>0&&opsDeCli(c.id).every(o=>o.pag>=o.cuo)).length;
-  const bTodos=$('cnt-todos'),bAct=$('cnt-activos'),bAtr=$('cnt-atrasado'),bComp=$('cnt-completo');
-  if(bTodos)bTodos.textContent=cntTodos||'';
+  const bAct=$('cnt-activos'),bAtr=$('cnt-atrasado'),bComp=$('cnt-completo');
   if(bAct)bAct.textContent=cntActivos||'';
   if(bAtr){bAtr.textContent=cntAtrasado||'';bAtr.style.display=cntAtrasado?'inline-flex':'none';}
   if(bComp)bComp.textContent=cntCompleto||'';
