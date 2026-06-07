@@ -1008,13 +1008,24 @@ body.light .mo{background:rgba(0,0,0,.5)}
       <div id="c_gps_label" style="font-size:9px;color:var(--gr);margin-top:2px;min-height:12px"></div>
     </div>
     <div class="ig"><label class="il">Notas</label><textarea class="inp" id="c_not" rows="3" placeholder="Observaciones, recordatorios..."></textarea></div>
+    <div class="ig">
+      <label class="il">📷 Foto del cliente (opcional)</label>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="c_foto_preview" style="width:64px;height:64px;border-radius:50%;background:var(--card2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;overflow:hidden">👤</div>
+        <div style="flex:1">
+          <label for="c_foto_input" style="display:block;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:var(--tx2)">📷 Seleccionar foto</label>
+          <input type="file" id="c_foto_input" accept="image/*" style="display:none" onchange="previewFotoCli(this)">
+          <button type="button" id="c_foto_clear" onclick="limpiarFotoCli()" style="display:none;width:100%;margin-top:5px;background:transparent;border:1px solid var(--rd);color:var(--rd);border-radius:8px;padding:5px;font-size:11px;cursor:pointer">🗑️ Quitar foto</button>
+        </div>
+      </div>
+    </div>
     <div class="ig"><label class="il">🔒 Límite de crédito máximo (opcional)</label><input class="inp" id="c_limite" type="number" placeholder="Ej: 500000 — dejar vacío para sin límite"></div>
     <!-- CONSENTIMIENTO -->
     <div style="background:rgba(108,99,255,.07);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:11px;margin-bottom:12px" id="consentBox">
       <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer" id="consentLabel">
         <input type="checkbox" id="c_consent" style="accent-color:var(--ac);margin-top:2px;flex-shrink:0">
         <span style="font-size:10px;color:var(--tx2);line-height:1.6">
-          Confirmo que el cliente prestó su consentimiento para el almacenamiento de sus datos personales (nombre, teléfono, dirección) con fines de gestión de cobros, de acuerdo a la Ley 25.326. <strong style="color:var(--tx)">El usuario que carga este cliente es el único responsable de obtener dicho consentimiento.</strong>
+          Confirmo que el cliente prestó su consentimiento para el almacenamiento de sus datos personales (nombre, teléfono, dirección y fotografía) con fines de gestión de cobros, de acuerdo a la Ley 25.326 de Protección de Datos Personales. <strong style="color:var(--tx)">El usuario que carga este cliente es el único responsable de obtener dicho consentimiento.</strong>
         </span>
       </label>
     </div>
@@ -3030,6 +3041,12 @@ function abrirCli(id=null){
     $('c_lat').value=c.lat||'';
     $('c_lng').value=c.lng||'';
     $('c_gps_label').textContent=c.lat&&c.lng?`✅ GPS guardado (${parseFloat(c.lat).toFixed(4)}, ${parseFloat(c.lng).toFixed(4)})`:'';
+    // Foto
+    const _prevE=document.getElementById('c_foto_preview');
+    if(_prevE){_prevE.innerHTML=c.foto?'<img src="'+c.foto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':'👤';}
+    const _clearE=document.getElementById('c_foto_clear');
+    if(_clearE)_clearE.style.display=c.foto?'block':'none';
+    window._fotoCliBlob=null;window._fotoCliUrl=c.foto||'';
     $('c_consent').checked=true; // al editar ya se dio consentimiento
     // Bloquear el checkbox al editar — el consentimiento ya fue otorgado
     $('c_consent').disabled=true;
@@ -3039,6 +3056,10 @@ function abrirCli(id=null){
     if($('c_maps_paste'))$('c_maps_paste').value='';
   } else {
     ['c_nom','c_tel','c_cumple','c_not','c_dir','c_lat','c_lng','c_limite'].forEach(f=>$(f).value='');
+    window._fotoCliBlob=null;window._fotoCliUrl='';
+    const _prevN=document.getElementById('c_foto_preview');if(_prevN)_prevN.innerHTML='👤';
+    const _clearN=document.getElementById('c_foto_clear');if(_clearN)_clearN.style.display='none';
+    const _inputN=document.getElementById('c_foto_input');if(_inputN)_inputN.value='';
     $('c_gps_label').textContent='';
     $('c_consent').checked=false;
     $('c_consent').disabled=false;
@@ -3070,7 +3091,19 @@ async function guardarCli(){
   const lng=lngEl.value||lngEl.getAttribute('data-val')||null;
   const dir=$('c_dir').value.trim()||null;
   const limiteVal=parseFloat($('c_limite').value)||null;
-  const d={nom, tel:$('c_tel').value.trim()||null, cumple:$('c_cumple').value||null, not_:$('c_not').value.trim()||null, foto:'', docs:[], dir, lat, lng, limite:limiteVal};
+  // Upload foto si hay nueva
+  let _fotoUrl=window._fotoCliUrl||'';
+  if(window._fotoCliBlob){
+    try{
+      const _ext=window._fotoCliBlob.type.includes('png')?'png':'jpg';
+      const _path=UID()+'/foto_'+Date.now()+'.'+_ext;
+      const {data:_fd,error:_fe}=await SB.storage.from('fotos-clientes').upload(_path,window._fotoCliBlob,{upsert:true,contentType:window._fotoCliBlob.type});
+      if(_fe){toast('⚠️ Foto no guardada: '+_fe.message,'warn');}
+      else{const {data:_pu}=SB.storage.from('fotos-clientes').getPublicUrl(_path);_fotoUrl=_pu?.publicUrl||'';}
+    }catch(_fe2){toast('⚠️ Error foto: '+(_fe2.message||''),'warn');}
+  }
+  const d={nom, tel:$('c_tel').value.trim()||null, cumple:$('c_cumple').value||null, not_:$('c_not').value.trim()||null, dir, lat, lng, limite:limiteVal};
+  if(_fotoUrl)d.foto=_fotoUrl;
   setBtnLoading('cliSaveBtn',true);
   try{
     if(id){
@@ -4033,6 +4066,24 @@ async function reabrirOpCanc(){
   closeModal('mEditOpCanc');
   await confirmarReabrirOpCanc(oid);
 }
+function previewFotoCli(input){
+  const file=input.files[0];if(!file)return;
+  window._fotoCliBlob=file;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const prev=document.getElementById('c_foto_preview');
+    if(prev)prev.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    const btn=document.getElementById('c_foto_clear');
+    if(btn)btn.style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+function limpiarFotoCli(){
+  window._fotoCliBlob=null;window._fotoCliUrl='';
+  const prev=document.getElementById('c_foto_preview');if(prev)prev.innerHTML='👤';
+  const input=document.getElementById('c_foto_input');if(input)input.value='';
+  const btn=document.getElementById('c_foto_clear');if(btn)btn.style.display='none';
+}
 function abrirGasto(id=null){$('gastoMT').textContent=id?'✏️ Editar gasto':'🧾 Registrar gasto';$('g_id').value=id||'';if(id){const g=Gs.find(x=>x.id===id);if(!g)return;$('g_des').value=g.des;$('g_mon').value=g.mon;$('g_cat').value=g.cat;$('g_fec').value=g.fec}else{$('g_des').value='';$('g_mon').value='';$('g_fec').value=hoy()}showModal('mgasto')}
 async function guardarGasto(){
   if(_guardando){return;}_guardando=true;
@@ -4217,7 +4268,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
   const notasHTML=c.not?`<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--tx2)"><span style="font-weight:600;color:var(--tx)">📝 Notas:</span> ${c.not}</div>`:'';
   $('verContent').innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-      <div class="av" style="width:48px;height:48px;font-size:16px;background:${aCol(c.nom)}22;color:${aCol(c.nom)};border:2px solid ${aCol(c.nom)}44">${ini(c.nom)}</div>
+      <div class="av" style="width:48px;height:48px;font-size:16px;background:${aCol(c.nom)}22;color:${aCol(c.nom)};border:2px solid ${aCol(c.nom)}44;overflow:hidden;padding:${c.foto?'0':''}">${c.foto?`<img src="${c.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:ini(c.nom)}</div>
       <div style="flex:1"><div style="font-family:Syne,sans-serif;font-size:17px;font-weight:800">${c.nom}</div>
       <div style="font-size:11px;color:var(--tx2)">${c.tel||'Sin teléfono'} ${c.cumple?'· 🎂 '+fD(c.cumple):''}</div>
       <span class="${r.cl}">${r.ic} ${r.lb}</span></div>
