@@ -717,6 +717,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
   <div class="sw"><span class="si">🔍</span><input class="inp" id="srch" placeholder="Buscar cliente..." oninput="debSearch()" type="search"></div>
   <div class="tabs" id="cliTabs">
     <div class="tab active" onclick="setF('activos',this)">Activos<span class="tab-badge" id="cnt-activos"></span></div>
+    <div class="tab" onclick="setF('todos',this)">Todos<span class="tab-badge" id="cnt-todos"></span></div>
     <div class="tab" onclick="setF('atrasado',this)">Mora<span class="tab-badge danger" id="cnt-atrasado"></span></div>
     <div class="tab" onclick="setF('completo',this)">Saldados<span class="tab-badge" id="cnt-completo"></span></div>
     <div class="tab" id="tabCobradores" onclick="setF('cobradores',this)" style="display:none">👥 Cobradores</div>
@@ -4731,7 +4732,9 @@ function rClis(){
   const cntActivos=Cs.filter(c=>opsDeCli(c.id).some(o=>o.pag<o.cuo)).length;
   const cntAtrasado=Cs.filter(c=>stCli(c.id)==='atrasado').length;
   const cntCompleto=Cs.filter(c=>opsDeCli(c.id).length>0&&opsDeCli(c.id).every(o=>o.pag>=o.cuo)).length;
-  const bAct=$('cnt-activos'),bAtr=$('cnt-atrasado'),bComp=$('cnt-completo');
+  const cntTodos=Cs.length;
+  const bTodos=$('cnt-todos'),bAct=$('cnt-activos'),bAtr=$('cnt-atrasado'),bComp=$('cnt-completo');
+  if(bTodos)bTodos.textContent=cntTodos||'';
   if(bAct)bAct.textContent=cntActivos||'';
   if(bAtr){bAtr.textContent=cntAtrasado||'';bAtr.style.display=cntAtrasado?'inline-flex':'none';}
   if(bComp)bComp.textContent=cntCompleto||'';
