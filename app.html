@@ -3141,7 +3141,7 @@ async function guardarCli(){
   let fotoUrl=_fotoCliUrl||'';
   if(_fotoCliBlob){
     try{
-      const uid=USER_ID||'anon';
+      const uid=UID();
       const uploaded=await subirFotoCli(uid,_fotoCliBlob);
       if(uploaded)fotoUrl=uploaded;
     }catch(e){
