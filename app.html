@@ -4307,7 +4307,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
   const notasHTML=c.not?`<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--tx2)"><span style="font-weight:600;color:var(--tx)">📝 Notas:</span> ${c.not}</div>`:'';
   $('verContent').innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-      <div class="av" style="width:48px;height:48px;font-size:16px;background:${aCol(c.nom)}22;color:${aCol(c.nom)};border:2px solid ${aCol(c.nom)}44;overflow:hidden;padding:${c.foto?'0':''}">${c.foto?`<img src="${c.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:ini(c.nom)}</div>
+      <div class="av" style="width:72px;height:72px;font-size:22px;flex-shrink:0;background:${aCol(c.nom)}22;color:${aCol(c.nom)};border:3px solid ${aCol(c.nom)}66;overflow:hidden;padding:${c.foto?'0':''};cursor:${c.foto?'pointer':'default'}" ${c.foto?`onclick="window.open('${c.foto}','_blank')" title="Ver foto completa"`:""} >${c.foto?`<img src="${c.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:ini(c.nom)}</div>
       <div style="flex:1"><div style="font-family:Syne,sans-serif;font-size:17px;font-weight:800">${c.nom}</div>
       <div style="font-size:11px;color:var(--tx2)">${c.tel||'Sin teléfono'} ${c.cumple?'· 🎂 '+fD(c.cumple):''}</div>
       <span class="${r.cl}">${r.ic} ${r.lb}</span></div>
