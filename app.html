@@ -2724,6 +2724,9 @@ const _navOrder=['inicio','clientes','caja','agenda','cal','fin','rep','admin'];
 function goPage(id,pushState=true){
   if(id==='agenda'&&!esPremium()){requierePlan('Ruta diaria','premium');return;}
   if(id===_lastPage)return;
+  // Cerrar ficha de cliente si está abierta
+  const mver=document.getElementById('mver');
+  if(mver&&mver.classList.contains('open'))closeModal('mver');
   const oldPage=document.getElementById('page-'+_lastPage);
   const newPage=document.getElementById('page-'+id);
   if(!newPage)return;
