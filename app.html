@@ -3134,7 +3134,7 @@ async function guardarCli(){
       }
     }catch(_fe2){toast('⚠️ Error foto: '+(_fe2.message||'desconocido'),'warn');}
   }
-  const d={nom, tel:$('c_tel').value.trim()||null, cumple:$('c_cumple').value||null, not_:$('c_not').value.trim()||null, dir, lat, lng, limite:limiteVal, foto:_fotoUrl||null};
+  const d={nom, tel:$('c_tel').value.trim()||null, cumple:$('c_cumple').value||null, not_:$('c_not').value.trim()||null, dir, lat, lng, limite:limiteVal, foto:_fotoUrl||''};
   setBtnLoading('cliSaveBtn',true);
   try{
     if(id){
