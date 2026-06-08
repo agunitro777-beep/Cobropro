@@ -1014,7 +1014,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
         <div id="c_foto_preview" style="width:64px;height:64px;border-radius:50%;background:var(--card2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;overflow:hidden">👤</div>
         <div style="flex:1">
           <label for="c_foto_input" style="display:block;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:var(--tx2)">📷 Seleccionar foto</label>
-          <input type="file" id="c_foto_input" accept="image/*" style="display:none" onchange="previewFotoCli(this)">
+          <input type="file" id="c_foto_input" accept="image/*" capture="environment" style="display:none">
           <button type="button" id="c_foto_clear" onclick="limpiarFotoCli()" style="display:none;width:100%;margin-top:5px;background:transparent;border:1px solid var(--rd);color:var(--rd);border-radius:8px;padding:5px;font-size:11px;cursor:pointer">🗑️ Quitar foto</button>
         </div>
       </div>
@@ -3047,6 +3047,7 @@ function abrirCli(id=null){
     const _clearE=document.getElementById('c_foto_clear');
     if(_clearE)_clearE.style.display=c.foto?'block':'none';
     window._fotoCliBlob=null;window._fotoCliUrl=c.foto||'';
+    initFotoCliListener();
     $('c_consent').checked=true; // al editar ya se dio consentimiento
     // Bloquear el checkbox al editar — el consentimiento ya fue otorgado
     $('c_consent').disabled=true;
@@ -3060,6 +3061,7 @@ function abrirCli(id=null){
     const _prevN=document.getElementById('c_foto_preview');if(_prevN)_prevN.innerHTML='👤';
     const _clearN=document.getElementById('c_foto_clear');if(_clearN)_clearN.style.display='none';
     const _inputN=document.getElementById('c_foto_input');if(_inputN)_inputN.value='';
+    initFotoCliListener();
     $('c_gps_label').textContent='';
     $('c_consent').checked=false;
     $('c_consent').disabled=false;
@@ -4078,6 +4080,15 @@ function previewFotoCli(input){
     if(btn)btn.style.display='block';
   };
   reader.readAsDataURL(file);
+}
+function initFotoCliListener(){
+  const input=document.getElementById('c_foto_input');
+  if(input){
+    // Remover listeners viejos clonando el nodo
+    const newInput=input.cloneNode(true);
+    input.parentNode.replaceChild(newInput,input);
+    newInput.addEventListener('change',function(){previewFotoCli(this);});
+  }
 }
 function limpiarFotoCli(){
   window._fotoCliBlob=null;window._fotoCliUrl='';
