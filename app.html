@@ -909,12 +909,13 @@ body.light .mo{background:rgba(0,0,0,.5)}
         <span class="toggle-slider"></span>
       </label>
     </div>
-    <div class="ig"><label class="il">Nombre del negocio</label><input class="inp" id="cfg_n" placeholder="Mi negocio"></div>
-    <div class="ig"><label class="il">Moneda</label><select class="inp sel" id="cfg_m"><option value="$">$ (Peso)</option><option value="U$S">U$S</option><option value="R$">R$</option></select></div>
-    <div class="ig"><label class="il">Días de alerta anticipada</label><input class="inp" id="cfg_d" type="number" min="1" max="30"></div>
-    <div class="ig"><label class="il">🔢 Redondeo de cobros</label><select class="inp sel" id="cfg_red"><option value="0">Sin redondeo</option><option value="50">Redondear a $50</option><option value="100">Redondear a $100</option><option value="500">Redondear a $500</option><option value="1000">Redondear a $1000</option></select></div>
-    <div class="ig"><label class="il">Mensaje recordatorio WhatsApp</label><textarea class="inp" id="cfg_w" rows="3"></textarea><div style="font-size:9px;color:var(--tx2);margin-top:2px">Variables: {nombre} {cuota} {fecha}</div></div>
-    <div class="ig"><label class="il">Mensaje morosos</label><textarea class="inp" id="cfg_mm" rows="3"></textarea><div style="font-size:9px;color:var(--tx2);margin-top:2px">Variables: {nombre} {dias} {cuota} {deuda}</div></div>
+    <div class="ig"><label class="il" id="lbl_nombre_negocio">Nombre del negocio</label><input class="inp" id="cfg_n" placeholder="Mi negocio"></div>
+    <div class="ig"><label class="il" id="lbl_moneda">Moneda</label><select class="inp sel" id="cfg_m"><option value="$">$ (Peso)</option><option value="U$S">U$S</option><option value="R$">R$</option><option value="A$">A$ (AUD)</option></select></div>
+    <div class="ig"><label class="il">Idioma / Language</label><select class="inp sel" id="cfg_lang" onchange="aplicarIdioma(this.value)"><option value="es">Español</option><option value="en">English</option></select></div>
+    <div class="ig"><label class="il" id="lbl_dias_alerta">Días de alerta anticipada</label><input class="inp" id="cfg_d" type="number" min="1" max="30"></div>
+    <div class="ig"><label class="il" id="lbl_redondeo">🔢 Redondeo de cobros</label><select class="inp sel" id="cfg_red"><option value="0">Sin redondeo</option><option value="50">Redondear a $50</option><option value="100">Redondear a $100</option><option value="500">Redondear a $500</option><option value="1000">Redondear a $1000</option></select></div>
+    <div class="ig"><label class="il" id="lbl_msg_wa">Mensaje recordatorio WhatsApp</label><textarea class="inp" id="cfg_w" rows="3"></textarea><div style="font-size:9px;color:var(--tx2);margin-top:2px">Variables: {nombre} {cuota} {fecha}</div></div>
+    <div class="ig"><label class="il" id="lbl_msg_mora">Mensaje morosos</label><textarea class="inp" id="cfg_mm" rows="3"></textarea><div style="font-size:9px;color:var(--tx2);margin-top:2px">Variables: {nombre} {dias} {cuota} {deuda}</div></div>
     <div class="ig">
       <label class="il">🔤 Tamaño de letra</label>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -1039,10 +1040,10 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <input type="hidden" id="op_id"><input type="hidden" id="op_cidFijo">
     <div class="ig" id="op_cliGrp"><label class="il">Cliente *</label><select class="inp sel" id="op_cli"></select></div>
     <div class="ig"><label class="il">Tipo</label><select class="inp sel" id="op_tipo" onchange="toggleOpTipo()"><option value="prestamo">💳 Crédito / Préstamo</option><option value="venta">🛒 Venta de producto</option></select></div>
-    <div class="ig"><label class="il">Moneda</label><select class="inp sel" id="op_moneda"><option value="$">$ (Peso)</option><option value="U$S">U$S (Dólar)</option><option value="R$">R$ (Real)</option><option value="€">€ (Euro)</option></select></div>
+    <div class="ig"><label class="il">Moneda</label><select class="inp sel" id="op_moneda"><option value="$">$ (Peso)</option><option value="U$S">U$S (Dólar)</option><option value="R$">R$ (Real)</option><option value="€">€ (Euro)</option><option value="A$">A$ (AUD)</option></select></div>
     <div id="opCamposP">
       <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc" placeholder="Ej: Crédito personal..."></div>
-      <div class="ig"><label class="il">Monto *</label><input class="inp" id="op_mon" type="number" placeholder="0.00" oninput="(function(){const v=parseFloat(document.getElementById('op_mon').value);const h=document.getElementById('op_mon_hint');if(v&&v!==Math.round(v)){h.textContent='⚠️ Se guardará como $'+Math.round(v).toLocaleString('es-AR');h.style.color='var(--yw)';}else{h.textContent='';}actualizarPreview();})()"><div id="op_mon_hint" style="font-size:10px;min-height:13px;margin-top:3px"></div></div>
+      <div class="ig"><label class="il">Monto *</label><input class="inp" id="op_mon" type="number" placeholder="0.00" oninput="(function(){const v=parseFloat(document.getElementById('op_mon').value);const h=document.getElementById('op_mon_hint');if(v&&v!==Math.round(v)){h.textContent='⚠️ Se guardará como $'+Math.round(v).toLocaleString(LOCALE());h.style.color='var(--yw)';}else{h.textContent='';}actualizarPreview();})()"><div id="op_mon_hint" style="font-size:10px;min-height:13px;margin-top:3px"></div></div>
       <div class="ig"><label class="il">Tipo de crédito</label><select class="inp sel" id="op_tip" onchange="toggleTipoInteres()">
         <option value="simple">📐 Simple</option>
         <option value="compuesto">📈 Compuesto</option>
@@ -1441,7 +1442,8 @@ function requierePlan(feat, planMin='pro'){
 }
 function requierePro(feat){return requierePlan(feat,'pro');}
 let SB = null, currentUser = null;
-let CFG = {nombre:'',moneda:'$',alertaDias:3,redondeo:0,telPropio:'',msgWa:'Hola {nombre}, recordatorio: cuota de {cuota} vence {fecha}. ¡Gracias!',msgMora:'Hola {nombre}, tenés {dias} días de atraso. Tu cuota es de {cuota}. Por favor regularizá. ¡Gracias!'};
+let CFG = {nombre:'',moneda:'$',alertaDias:3,redondeo:0,telPropio:'',lang:'es',msgWa:'Hola {nombre}, recordatorio: cuota de {cuota} vence {fecha}. ¡Gracias!',msgMora:'Hola {nombre}, tenés {dias} días de atraso. Tu cuota es de {cuota}. Por favor regularizá. ¡Gracias!'};
+const LOCALE=()=>CFG.lang==='en'?'en-AU':'es-AR';
 let Cs=[], Ops=[], Ps=[], Gs=[], EVs=[];
 let flt='activos', cajP='todo', finP='semana';
 let calM=new Date().getMonth(), calA=new Date().getFullYear(), calDia='';
@@ -1512,7 +1514,7 @@ async function handleAuth(){
           if(vence&&vence<new Date()){
             await SB.auth.signOut();
             const wspMsg=encodeURIComponent('Hola! Mi acceso en CobroAlDía venció. Quiero renovar.');
-            $('authMsg').innerHTML='⏳ Tu acceso venció el '+vence.toLocaleDateString('es-AR')+'.<br><a href="https://wa.me/'+WSP_ADMIN+'?text='+wspMsg+'" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:8px;background:#25d366;color:#fff;padding:7px 12px;border-radius:8px;text-decoration:none;font-weight:700">💬 Contactar soporte</a>';
+            $('authMsg').innerHTML='⏳ Tu acceso venció el '+vence.toLocaleDateString(LOCALE())+'.<br><a href="https://wa.me/'+WSP_ADMIN+'?text='+wspMsg+'" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:8px;background:#25d366;color:#fff;padding:7px 12px;border-radius:8px;text-decoration:none;font-weight:700">💬 Contactar soporte</a>';
             $('authMsg').className='auth-msg err';$('authMsg').style.display='block';
             resetBtn();return;
           }
@@ -1709,6 +1711,7 @@ async function cargarTodo(){
   try{const local=localStorage.getItem('cobro_cfg');if(local){const parsed=JSON.parse(local);if(parsed&&parsed.nombre!==undefined)CFG={...CFG,...parsed};}}catch(e){}
   // Luego override con Supabase (fuente de verdad)
   try{const {data}=await SB.from('config').select('*').eq('user_id',UID()).maybeSingle();if(data){CFG={...CFG,...data};try{localStorage.setItem('cobro_cfg',JSON.stringify(CFG));}catch(e){}}}catch(e){console.warn('No se pudo cargar config:',e);}
+  if(CFG.lang)aplicarIdioma(CFG.lang);
   rebuildMaps();
 }
 async function saveCfgDB(){
@@ -1719,8 +1722,8 @@ async function saveCfgDB(){
 
 // ══ HELPERS ══
 const $=id=>document.getElementById(id);
-const fmt=n=>{if(ocul)return'••••';const mon=(CFG.moneda||'$');const abs=Math.abs(n);const decimals=abs>0&&Math.abs(n-Math.round(n))>0.005?2:0;return mon+n.toLocaleString('es-AR',{minimumFractionDigits:decimals,maximumFractionDigits:decimals})};
-const fmtOp=(n,op)=>{if(ocul)return'••••';const mon=op&&op.moneda?op.moneda:(CFG.moneda||'$');const abs=Math.abs(n);const decimals=abs>0&&Math.abs(n-Math.round(n))>0.005?2:0;return mon+n.toLocaleString('es-AR',{minimumFractionDigits:decimals,maximumFractionDigits:decimals})};
+const fmt=n=>{if(ocul)return'••••';const mon=(CFG.moneda||'$');const abs=Math.abs(n);const decimals=abs>0&&Math.abs(n-Math.round(n))>0.005?2:0;return mon+n.toLocaleString(LOCALE(),{minimumFractionDigits:decimals,maximumFractionDigits:decimals})};
+const fmtOp=(n,op)=>{if(ocul)return'••••';const mon=op&&op.moneda?op.moneda:(CFG.moneda||'$');const abs=Math.abs(n);const decimals=abs>0&&Math.abs(n-Math.round(n))>0.005?2:0;return mon+n.toLocaleString(LOCALE(),{minimumFractionDigits:decimals,maximumFractionDigits:decimals})};
 const fD=d=>{if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`};
 const hoy=()=>{const d=new Date();const pad=n=>String(n).padStart(2,'0');return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
 const man=()=>{const d=new Date();d.setDate(d.getDate()+1);const pad=n=>String(n).padStart(2,'0');return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
@@ -2042,7 +2045,7 @@ function _buildPdfResumenCli(cid){
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   const mon=CFG.moneda||'$';
-  const fm=n=>mon+Math.round(n).toLocaleString('es-AR');
+  const fm=n=>mon+Math.round(n).toLocaleString(LOCALE());
   const fd=d=>{if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`};
   const hoy2=new Date();hoy2.setHours(0,0,0,0);
 
@@ -2051,7 +2054,7 @@ function _buildPdfResumenCli(cid){
   doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
   doc.text('ESTADO DE CUENTA',105,13,{align:'center'});
   doc.setFontSize(9);doc.setFont('helvetica','normal');
-  doc.text((CFG.nombre||'CobroAlDía')+' · Generado el '+new Date().toLocaleDateString('es-AR'),105,21,{align:'center'});
+  doc.text((CFG.nombre||'CobroAlDía')+' · Generado el '+new Date().toLocaleDateString(LOCALE()),105,21,{align:'center'});
 
   // ── Datos cliente ──
   doc.setFillColor(245,245,255);doc.setDrawColor(200,200,220);
@@ -2341,7 +2344,7 @@ function syncIntDiario(){
   const mon=parseFloat($('op_mon_d')?.value)||0;
   const int=parseFloat($('op_int_d')?.value)||0;
   const hint=$('op_int_d_hint');
-  if(hint&&mon&&int){hint.textContent=`$${Math.round(mon*int/100).toLocaleString('es-AR')}/día`;}
+  if(hint&&mon&&int){hint.textContent=`$${Math.round(mon*int/100).toLocaleString(LOCALE())}/día`;}
   else if(hint){hint.textContent='';}
 }
 // Cancelar crédito diario abierto
@@ -2355,15 +2358,15 @@ function cancelarDiarioAbierto(oid){
   const monLabel=(op.moneda||CFG.moneda||'$');
   modal.innerHTML=`<div style="background:var(--bg2);border-radius:16px;padding:20px;width:100%;max-width:380px">
     <div style="font-size:15px;font-weight:800;margin-bottom:4px">💰 Cancelar crédito diario</div>
-    <div style="font-size:11px;color:var(--tx2);margin-bottom:16px">${c.nom} · ${monLabel}${Math.round(mon).toLocaleString('es-AR')} al ${intDia}% diario</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:16px">${c.nom} · ${monLabel}${Math.round(mon).toLocaleString(LOCALE())} al ${intDia}% diario</div>
     <div class="ig" style="margin-bottom:12px">
       <label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:5px">Días transcurridos desde el inicio</label>
-      <input id="dDias" class="inp" type="number" min="1" value="${diasBase}" oninput="(()=>{const d=parseInt(this.value)||0;const tot=${mon}*(1+${intDia}/100*d);document.getElementById('dTotal').textContent='${monLabel}'+Math.round(tot).toLocaleString('es-AR');document.getElementById('dGan').textContent='Interés: ${monLabel}'+Math.round(tot-${mon}).toLocaleString('es-AR')+'  ('+d+' días × ${intDia}%)';})()">
+      <input id="dDias" class="inp" type="number" min="1" value="${diasBase}" oninput="(()=>{const d=parseInt(this.value)||0;const tot=${mon}*(1+${intDia}/100*d);document.getElementById('dTotal').textContent='${monLabel}'+Math.round(tot).toLocaleString(LOCALE());document.getElementById('dGan').textContent='Interés: ${monLabel}'+Math.round(tot-${mon}).toLocaleString(LOCALE())+'  ('+d+' días × ${intDia}%)';})()">
     </div>
     <div style="background:rgba(108,99,255,.1);border-radius:10px;padding:12px;margin-bottom:16px;text-align:center">
       <div style="font-size:11px;color:var(--tx2);margin-bottom:4px">Total a cobrar</div>
-      <div id="dTotal" style="font-size:26px;font-weight:800;color:var(--gr)">${monLabel}${Math.round(mon*(1+intDia/100*diasBase)).toLocaleString('es-AR')}</div>
-      <div id="dGan" style="font-size:10px;color:var(--tx2);margin-top:3px">Interés: ${monLabel}${Math.round(mon*intDia/100*diasBase).toLocaleString('es-AR')}  (${diasBase} días × ${intDia}%)</div>
+      <div id="dTotal" style="font-size:26px;font-weight:800;color:var(--gr)">${monLabel}${Math.round(mon*(1+intDia/100*diasBase)).toLocaleString(LOCALE())}</div>
+      <div id="dGan" style="font-size:10px;color:var(--tx2);margin-top:3px">Interés: ${monLabel}${Math.round(mon*intDia/100*diasBase).toLocaleString(LOCALE())}  (${diasBase} días × ${intDia}%)</div>
     </div>
     <div style="display:flex;gap:8px">
       <button onclick="this.closest('[style*=fixed]').remove()" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--tx);border-radius:10px;padding:11px;font-size:13px;cursor:pointer">Cancelar</button>
@@ -2380,7 +2383,7 @@ function cancelarDiarioAbierto(oid){
     // Registrar como pago único y marcar completado
     const fecHoy=hoy();
     await registrarPago(oid,total,fecHoy,'efectivo',false,0,`Cancelación a ${dias} días · ${intDia}%/día`);
-    toast('✅ Crédito cancelado · '+monLabel+total.toLocaleString('es-AR')+' cobrados');
+    toast('✅ Crédito cancelado · '+monLabel+total.toLocaleString(LOCALE())+' cobrados');
   };
 }
 function cancelarCapitalMensual(oid){
@@ -2391,14 +2394,14 @@ function cancelarCapitalMensual(oid){
   modal.style.cssText='position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
   modal.innerHTML=`<div style="background:var(--bg2);border-radius:16px;padding:20px;width:100%;max-width:380px;margin:auto">
     <div style="font-size:15px;font-weight:800;margin-bottom:4px">⚙️ Modificar capital</div>
-    <div style="font-size:11px;color:var(--tx2);margin-bottom:14px">${c.nom} · Capital actual: <strong style="color:var(--tx)">${monLabel}${Math.round(op.mon).toLocaleString('es-AR')}</strong> · Cuota: <strong style="color:var(--ac2)">${monLabel}${cuotaInt.toLocaleString('es-AR')}/mes</strong></div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:14px">${c.nom} · Capital actual: <strong style="color:var(--tx)">${monLabel}${Math.round(op.mon).toLocaleString(LOCALE())}</strong> · Cuota: <strong style="color:var(--ac2)">${monLabel}${cuotaInt.toLocaleString(LOCALE())}/mes</strong></div>
 
     <!-- Opciones -->
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
       <!-- Cancelar capital -->
       <div id="ccm_opt_cancel" onclick="ccmSelect('cancel')" style="border:2px solid var(--ac);border-radius:12px;padding:12px;cursor:pointer;background:rgba(108,99,255,.1)">
         <div style="font-weight:700;font-size:13px;margin-bottom:2px">✅ El cliente cancela el capital</div>
-        <div style="font-size:10px;color:var(--tx2)">Cobra ${monLabel}${Math.round(op.mon).toLocaleString('es-AR')} y cerrás la operación</div>
+        <div style="font-size:10px;color:var(--tx2)">Cobra ${monLabel}${Math.round(op.mon).toLocaleString(LOCALE())} y cerrás la operación</div>
       </div>
       <div id="ccm_opt_subir" onclick="ccmSelect('subir')" style="border:1px solid var(--border);border-radius:12px;padding:12px;cursor:pointer">
         <div style="font-weight:700;font-size:13px;margin-bottom:2px">⬆️ Subir capital</div>
@@ -2414,7 +2417,7 @@ function cancelarCapitalMensual(oid){
     <div id="ccm_panel_cancel" style="">
       <div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:12px;margin-bottom:10px;text-align:center">
         <div style="font-size:10px;color:var(--tx2);margin-bottom:2px">Capital a cobrar</div>
-        <div style="font-size:24px;font-weight:800;color:var(--gr)">${monLabel}${Math.round(op.mon).toLocaleString('es-AR')}</div>
+        <div style="font-size:24px;font-weight:800;color:var(--gr)">${monLabel}${Math.round(op.mon).toLocaleString(LOCALE())}</div>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:6px">
         <button id="ccm_c_conInt" onclick="ccmToggleInt(true)" style="flex:1;padding:8px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--ac);background:var(--ac);color:#fff">+ interés del período</button>
@@ -2463,7 +2466,7 @@ function cancelarCapitalMensual(oid){
     const nuevo=parseFloat(modal.querySelector('#ccm_nuevo_cap').value)||0;
     const nuevaCuota=intPct>0?Math.round(nuevo*intPct/100):Math.round(nuevo/capActual*cuotaActual);
     const preview=modal.querySelector('#ccm_mod_preview');
-    if(nuevo&&preview)preview.innerHTML=`Nueva cuota: <strong style="color:var(--ac)">${monLabel}${nuevaCuota.toLocaleString('es-AR')}/mes</strong>`;
+    if(nuevo&&preview)preview.innerHTML=`Nueva cuota: <strong style="color:var(--ac)">${monLabel}${nuevaCuota.toLocaleString(LOCALE())}/mes</strong>`;
     else if(preview)preview.textContent='';
   };
   modal.querySelector('#ccm_btnConf').onclick=async()=>{
@@ -2473,7 +2476,7 @@ function cancelarCapitalMensual(oid){
       modal.remove();
       await registrarPago(oid,totalPago,hoy(),'efectivo',false,0,`Cancelación de capital${conInt?' + interés del período':''}`);
       try{await dbUpd('operaciones',oid,{pag:999,tip:'interes_mensual_cancelado'});const op2=gO(oid);if(op2){op2.pag=999;op2.tip='interes_mensual_cancelado';}}catch(e){}
-      toast(`✅ Capital cancelado · ${monLabel}${totalPago.toLocaleString('es-AR')} cobrados`,'success');
+      toast(`✅ Capital cancelado · ${monLabel}${totalPago.toLocaleString(LOCALE())} cobrados`,'success');
     } else {
       const nuevoCap=parseFloat(modal.querySelector('#ccm_nuevo_cap').value)||0;
       if(!nuevoCap){toast('Ingresá el nuevo capital','error');return;}
@@ -2482,7 +2485,7 @@ function cancelarCapitalMensual(oid){
       try{
         await dbUpd('operaciones',oid,{mon:nuevoCap,cuota_fija:nuevaCuota});
         const op2=gO(oid);if(op2){op2.mon=nuevoCap;op2.cuota_fija=nuevaCuota;}
-        toast(`✅ Capital actualizado a ${monLabel}${Math.round(nuevoCap).toLocaleString('es-AR')} · nueva cuota ${monLabel}${nuevaCuota.toLocaleString('es-AR')}/mes`,'success');
+        toast(`✅ Capital actualizado a ${monLabel}${Math.round(nuevoCap).toLocaleString(LOCALE())} · nueva cuota ${monLabel}${nuevaCuota.toLocaleString(LOCALE())}/mes`,'success');
       }catch(e){toast('Error: '+e.message,'error');}
     }
     setTimeout(()=>refrescar(),100);
@@ -2593,10 +2596,10 @@ function actualizarPreview(){
     if(!mon&&!cuota){pr.style.display='none';return;}
     html=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Resumen del crédito</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Capital</div><div style="font-weight:800;font-size:14px">${mon_}${Math.round(mon).toLocaleString('es-AR')}</div></div>
-  <div style="background:rgba(168,85,247,.15);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Paga por mes</div><div style="font-weight:800;font-size:14px;color:#a855f7">${cuota?mon_+cuota.toLocaleString('es-AR'):'—'}</div></div>
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Capital</div><div style="font-weight:800;font-size:14px">${mon_}${Math.round(mon).toLocaleString(LOCALE())}</div></div>
+  <div style="background:rgba(168,85,247,.15);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Paga por mes</div><div style="font-weight:800;font-size:14px;color:#a855f7">${cuota?mon_+cuota.toLocaleString(LOCALE()):'—'}</div></div>
 </div>
-<div style="margin-top:8px;font-size:10px;color:var(--tx2);line-height:1.6">El capital de <strong style="color:var(--tx)">${mon_}${Math.round(mon).toLocaleString('es-AR')}</strong> se devuelve cuando el cliente cancele. Mientras tanto paga <strong style="color:var(--tx)">${cuota?mon_+cuota.toLocaleString('es-AR'):'—'}</strong> cada mes.</div>`;
+<div style="margin-top:8px;font-size:10px;color:var(--tx2);line-height:1.6">El capital de <strong style="color:var(--tx)">${mon_}${Math.round(mon).toLocaleString(LOCALE())}</strong> se devuelve cuando el cliente cancele. Mientras tanto paga <strong style="color:var(--tx)">${cuota?mon_+cuota.toLocaleString(LOCALE()):'—'}</strong> cada mes.</div>`;
   } else if(tip==='diario_abierto'){
     const monD=parseFloat($('op_mon_d')?.value)||0;
     const intD=parseFloat($('op_int_d')?.value)||0;
@@ -2604,11 +2607,11 @@ function actualizarPreview(){
     const ej7=Math.round(monD*(1+intD/100*7)),ej15=Math.round(monD*(1+intD/100*15)),ej30=Math.round(monD*(1+intD/100*30));
     html=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Ejemplos según días</div>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
-  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:7px;text-align:center"><div style="font-size:9px;color:var(--tx2)">7 días</div><div style="font-weight:800;font-size:12px">${mon_}${ej7.toLocaleString('es-AR')}</div></div>
-  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:7px;text-align:center"><div style="font-size:9px;color:var(--tx2)">15 días</div><div style="font-weight:800;font-size:12px">${mon_}${ej15.toLocaleString('es-AR')}</div></div>
-  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:7px;text-align:center"><div style="font-size:9px;color:var(--tx2)">30 días</div><div style="font-weight:800;font-size:12px">${mon_}${ej30.toLocaleString('es-AR')}</div></div>
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:7px;text-align:center"><div style="font-size:9px;color:var(--tx2)">7 días</div><div style="font-weight:800;font-size:12px">${mon_}${ej7.toLocaleString(LOCALE())}</div></div>
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:7px;text-align:center"><div style="font-size:9px;color:var(--tx2)">15 días</div><div style="font-weight:800;font-size:12px">${mon_}${ej15.toLocaleString(LOCALE())}</div></div>
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:7px;text-align:center"><div style="font-size:9px;color:var(--tx2)">30 días</div><div style="font-weight:800;font-size:12px">${mon_}${ej30.toLocaleString(LOCALE())}</div></div>
 </div>
-<div style="margin-top:6px;font-size:10px;color:var(--tx2)">${mon_}${monD.toLocaleString('es-AR')} al ${intD}% diario · ${(intD*30).toFixed(1)}% mensual</div>`;
+<div style="margin-top:6px;font-size:10px;color:var(--tx2)">${mon_}${monD.toLocaleString(LOCALE())} al ${intD}% diario · ${(intD*30).toFixed(1)}% mensual</div>`;
   } else {
     if(!mon||!cuo){pr.style.display='none';return;}
     // calcular cuota
@@ -2624,12 +2627,12 @@ function actualizarPreview(){
     const frqLabel={diario:'días',semanal:'semanas',quincenal:'quincenas',mensual:'meses'}[frq]||'cuotas';
     html=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Resumen del crédito</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Cuota</div><div style="font-weight:800;font-size:14px;color:var(--ac)">${mon_}${cuota.toLocaleString('es-AR')}</div></div>
-  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Total a pagar</div><div style="font-weight:800;font-size:14px">${mon_}${total.toLocaleString('es-AR')}</div></div>
-  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Capital</div><div style="font-weight:800;font-size:13px">${mon_}${Math.round(mon).toLocaleString('es-AR')}</div></div>
-  <div style="background:rgba(34,197,94,.12);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Tu ganancia</div><div style="font-weight:800;font-size:13px;color:var(--gr)">${mon_}${intTotal.toLocaleString('es-AR')}</div></div>
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Cuota</div><div style="font-weight:800;font-size:14px;color:var(--ac)">${mon_}${cuota.toLocaleString(LOCALE())}</div></div>
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Total a pagar</div><div style="font-weight:800;font-size:14px">${mon_}${total.toLocaleString(LOCALE())}</div></div>
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Capital</div><div style="font-weight:800;font-size:13px">${mon_}${Math.round(mon).toLocaleString(LOCALE())}</div></div>
+  <div style="background:rgba(34,197,94,.12);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Tu ganancia</div><div style="font-weight:800;font-size:13px;color:var(--gr)">${mon_}${intTotal.toLocaleString(LOCALE())}</div></div>
 </div>
-<div style="margin-top:6px;font-size:10px;color:var(--tx2)">${cuo} ${frqLabel} de ${mon_}${cuota.toLocaleString('es-AR')} · ${int_?int_+'% interés':''}</div>`;
+<div style="margin-top:6px;font-size:10px;color:var(--tx2)">${cuo} ${frqLabel} de ${mon_}${cuota.toLocaleString(LOCALE())} · ${int_?int_+'% interés':''}</div>`;
   }
   pr.style.display='block';
   pr.innerHTML=html;
@@ -2653,7 +2656,7 @@ function syncCuotaFijaDirecta(){
     // Si hay cuotas definidas, mostrar total
     if(cuo>0){
       const total=cuotaFija*cuo;
-      if(hint)hint.innerHTML=`<span style="color:var(--gr)">✅ ${cuo} cuotas de ${(CFG.moneda||'$')}${cuotaFija.toLocaleString('es-AR')} = Total ${(CFG.moneda||'$')}${total.toLocaleString('es-AR')}</span>`;
+      if(hint)hint.innerHTML=`<span style="color:var(--gr)">✅ ${cuo} cuotas de ${(CFG.moneda||'$')}${cuotaFija.toLocaleString(LOCALE())} = Total ${(CFG.moneda||'$')}${total.toLocaleString(LOCALE())}</span>`;
     } else {
       if(hint)hint.innerHTML=`<span style="color:var(--ac2)">Agregá cantidad de cuotas abajo</span>`;
     }
@@ -2679,7 +2682,7 @@ function syncCuotaFija(){
       else if(tip==='simple'){capitalEst=total/(1+intPC*cuo);}
       else{capitalEst=total/(1+intPC);}
     }
-    hint.innerHTML=`<span style="color:var(--gr)">✅ ${cuo} cuotas × ${(CFG.moneda||'$')}${cuotaFija.toLocaleString('es-AR')} = <strong>Total: ${(CFG.moneda||'$')}${total.toLocaleString('es-AR')}</strong></span>`;actualizarPreview();
+    hint.innerHTML=`<span style="color:var(--gr)">✅ ${cuo} cuotas × ${(CFG.moneda||'$')}${cuotaFija.toLocaleString(LOCALE())} = <strong>Total: ${(CFG.moneda||'$')}${total.toLocaleString(LOCALE())}</strong></span>`;actualizarPreview();
     const monField=$('op_mon');
     if(monField&&(!monField.value||monField.dataset.autofilled==='1')){
       const capRedon=Math.round(capitalEst);
@@ -3021,7 +3024,7 @@ function showModal(id){
     // Resetear estilos del swipe-down por si quedaron del cierre anterior
     const _mpi=document.querySelector('#mPerfil .modal')||document.querySelector('#mPerfil > div');
     if(_mpi){_mpi.style.transform='';_mpi.style.opacity='';_mpi.style.transition='';}
-    $('cfg_n').value=CFG.nombre||'';$('cfg_m').value=CFG.moneda||'$';$('cfg_d').value=CFG.alertaDias||3;$('cfg_w').value=CFG.msgWa||'';$('cfg_mm').value=CFG.msgMora||'';if($('cfg_red'))$('cfg_red').value=CFG.redondeo||0;
+    $('cfg_n').value=CFG.nombre||'';$('cfg_m').value=CFG.moneda||'$';$('cfg_d').value=CFG.alertaDias||3;$('cfg_w').value=CFG.msgWa||'';$('cfg_mm').value=CFG.msgMora||'';if($('cfg_red'))$('cfg_red').value=CFG.redondeo||0;if($('cfg_lang'))$('cfg_lang').value=CFG.lang||'es';
     if($('cfg_aviso_resumen'))$('cfg_aviso_resumen').checked=!!(CFG.avisoResumen);
     if($('cfg_aviso_hora'))$('cfg_aviso_hora').value=CFG.avisoResumenHora||'20:00';
     if($('cfg_aviso_dias')){const dias=CFG.avisoResumenDias||[1,2,3,4,5];$('cfg_aviso_dias').querySelectorAll('input').forEach(cb=>{cb.checked=dias.includes(parseInt(cb.value));});}
@@ -3403,15 +3406,15 @@ function enviarResumenWA(){
   let detPagos='';
   if(pagosHoy.length){
     detPagos='\n📋 *Cobros de hoy:*\n';
-    pagosHoy.slice(0,8).forEach(p=>{const op=gO(p.oid),c=op?gC(op.cid):null;detPagos+=`  • ${c?c.nom:'?'}: ${mon}${p.mon.toLocaleString('es-AR')} (${p.met==='efectivo'?'💵':'📲'})\n`;});
+    pagosHoy.slice(0,8).forEach(p=>{const op=gO(p.oid),c=op?gC(op.cid):null;detPagos+=`  • ${c?c.nom:'?'}: ${mon}${p.mon.toLocaleString(LOCALE())} (${p.met==='efectivo'?'💵':'📲'})\n`;});
     if(pagosHoy.length>8)detPagos+=`  • ...y ${pagosHoy.length-8} más\n`;
   }
   let detMora='';
-  if(enMora.length){detMora='\n⚠️ *En mora:*\n';enMora.slice(0,5).forEach(o=>{const c=gC(o.cid);detMora+=`  • ${c?c.nom:'?'}: ${mon}${saldoMOp(o).toLocaleString('es-AR')} (${diasAtrOp(o)}d)\n`;});if(enMora.length>5)detMora+=`  • ...y ${enMora.length-5} más\n`;}
+  if(enMora.length){detMora='\n⚠️ *En mora:*\n';enMora.slice(0,5).forEach(o=>{const c=gC(o.cid);detMora+=`  • ${c?c.nom:'?'}: ${mon}${saldoMOp(o).toLocaleString(LOCALE())} (${diasAtrOp(o)}d)\n`;});if(enMora.length>5)detMora+=`  • ...y ${enMora.length-5} más\n`;}
   let detVenMan='';
-  if(venMan.length){detVenMan='\n📅 *Vencen mañana:*\n';venMan.slice(0,5).forEach(o=>{const c=gC(o.cid);detVenMan+=`  • ${c?c.nom:'?'}: ${mon}${Math.round(cvOp(o)).toLocaleString('es-AR')}\n`;});}
-  const fecha=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
-  const msg=`📊 *${nombre} — Resumen del ${fecha}*\n${'─'.repeat(30)}\n\n💰 *Cobrado hoy:* ${mon}${totHoy.toLocaleString('es-AR')} (${pagosHoy.length} pago${pagosHoy.length!==1?'s':''})\n  💵 Efectivo: ${mon}${efHoy.toLocaleString('es-AR')}\n  📲 Transf.: ${mon}${trHoy.toLocaleString('es-AR')}\n\n📈 *Cobrado este mes:* ${mon}${totMes.toLocaleString('es-AR')}\n\n🏦 *Cartera:*\n  Capital activo: ${mon}${capTotal.toLocaleString('es-AR')}\n  Por cobrar: ${mon}${porCobrar.toLocaleString('es-AR')}\n  En mora: ${mon}${totalMora.toLocaleString('es-AR')} (${enMora.length} cliente${enMora.length!==1?'s':''})\n${detPagos}${detMora}${detVenMan}\n_Enviado desde CobroAlDía_ 🚀`;
+  if(venMan.length){detVenMan='\n📅 *Vencen mañana:*\n';venMan.slice(0,5).forEach(o=>{const c=gC(o.cid);detVenMan+=`  • ${c?c.nom:'?'}: ${mon}${Math.round(cvOp(o)).toLocaleString(LOCALE())}\n`;});}
+  const fecha=new Date().toLocaleDateString(LOCALE(),{weekday:'long',day:'numeric',month:'long'});
+  const msg=`📊 *${nombre} — Resumen del ${fecha}*\n${'─'.repeat(30)}\n\n💰 *Cobrado hoy:* ${mon}${totHoy.toLocaleString(LOCALE())} (${pagosHoy.length} pago${pagosHoy.length!==1?'s':''})\n  💵 Efectivo: ${mon}${efHoy.toLocaleString(LOCALE())}\n  📲 Transf.: ${mon}${trHoy.toLocaleString(LOCALE())}\n\n📈 *Cobrado este mes:* ${mon}${totMes.toLocaleString(LOCALE())}\n\n🏦 *Cartera:*\n  Capital activo: ${mon}${capTotal.toLocaleString(LOCALE())}\n  Por cobrar: ${mon}${porCobrar.toLocaleString(LOCALE())}\n  En mora: ${mon}${totalMora.toLocaleString(LOCALE())} (${enMora.length} cliente${enMora.length!==1?'s':''})\n${detPagos}${detMora}${detVenMan}\n_Enviado desde CobroAlDía_ 🚀`;
 
   // Números guardados (array)
   const numerosGuardados=Array.isArray(CFG.telPropioLista)?CFG.telPropioLista:(CFG.telPropio?[CFG.telPropio]:[]);
@@ -3500,7 +3503,7 @@ async function _pdfCreditoNuevoWA_inner(op,c){
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   const mon=op.moneda||CFG.moneda||'$';
-  const fm=n=>mon+Math.round(n).toLocaleString('es-AR');
+  const fm=n=>mon+Math.round(n).toLocaleString(LOCALE());
   const fd=d=>{if(!d)return'—';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`};
   const cuota=cvOp(op);
   const frqLabel={mensual:'Mensual',quincenal:'Quincenal',semanal:'Semanal',diario:'Diario'}[op.frq]||op.frq;
@@ -3570,7 +3573,7 @@ async function _pdfCreditoNuevoWA_inner(op,c){
   doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
   doc.text(_cancelado?'CRÉDITO CANCELADO':'COMPROBANTE DE CRÉDITO',logoUrl?110:105,12,{align:'center'});
   doc.setFontSize(8);doc.setFont('helvetica','normal');
-  doc.text((CFG.nombre||'CobroAlDía')+' · Emitido: '+new Date().toLocaleDateString('es-AR'),logoUrl?110:105,21,{align:'center'});
+  doc.text((CFG.nombre||'CobroAlDía')+' · Emitido: '+new Date().toLocaleDateString(LOCALE()),logoUrl?110:105,21,{align:'center'});
 
   // ── Cliente ──
   let y=34;
@@ -3730,7 +3733,7 @@ async function _pdfCreditoNuevoWA_inner(op,c){
   const yF=doc.lastAutoTable?doc.lastAutoTable.finalY+10:y;
   doc.setDrawColor(200,200,220);doc.line(14,yF,196,yF);
   doc.setTextColor(150,150,170);doc.setFontSize(7.5);doc.setFont('helvetica','normal');
-  doc.text('CobroAlDía · Documento generado automáticamente · '+new Date().toLocaleDateString('es-AR'),105,yF+6,{align:'center'});
+  doc.text('CobroAlDía · Documento generado automáticamente · '+new Date().toLocaleDateString(LOCALE()),105,yF+6,{align:'center'});
 
   const fname=_buildFnameComprobante(op,c,cvOp(op),op.facr||op.fv||hoy());
   try{
@@ -3746,7 +3749,7 @@ function ofrecerWaCreditoNuevo(op,c){
   // Calcular fechas de cuotas
   let fechasStr='';
   if(op.tip==='interes_mensual'){
-    fechasStr=`  • Paga ${(op.moneda||CFG.moneda||'$')}${Math.round(op.cuota_fija||0).toLocaleString('es-AR')} de interés por mes\n  • Capital de ${(op.moneda||CFG.moneda||'$')}${Math.round(op.mon).toLocaleString('es-AR')} a devolver al cancelar\n`;
+    fechasStr=`  • Paga ${(op.moneda||CFG.moneda||'$')}${Math.round(op.cuota_fija||0).toLocaleString(LOCALE())} de interés por mes\n  • Capital de ${(op.moneda||CFG.moneda||'$')}${Math.round(op.mon).toLocaleString(LOCALE())} a devolver al cancelar\n`;
   } else {
     for(let i=0;i<Math.min(op.cuo,6);i++){
       const f=new Date(op.fv+'T00:00:00');
@@ -3754,11 +3757,11 @@ function ofrecerWaCreditoNuevo(op,c){
       else if(op.frq==='quincenal')f.setDate(f.getDate()+i*15);
       else if(op.frq==='semanal')f.setDate(f.getDate()+i*7);
       else f.setDate(f.getDate()+i);
-      fechasStr+=`  • Cuota ${i+1}: ${f.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}\n`;
+      fechasStr+=`  • Cuota ${i+1}: ${f.toLocaleDateString(LOCALE(),{day:'2-digit',month:'2-digit',year:'numeric'})}\n`;
     }
     if(op.cuo>6)fechasStr+=`  • ... y ${op.cuo-6} cuota${op.cuo-6!==1?'s':''} más\n`;
   }
-  const msg=`Hola ${c.nom}! 👋\n\nTe confirmamos los detalles de tu crédito:\n\n📋 *${op.cuo} cuotas de ${mon}${Math.round(cuota).toLocaleString('es-AR')}* por ${frqLabel}\n\n📅 *Fechas de pago:*\n${fechasStr}\n✅ Cualquier consulta, escribinos.\n¡Muchas gracias!`;
+  const msg=`Hola ${c.nom}! 👋\n\nTe confirmamos los detalles de tu crédito:\n\n📋 *${op.cuo} cuotas de ${mon}${Math.round(cuota).toLocaleString(LOCALE())}* por ${frqLabel}\n\n📅 *Fechas de pago:*\n${fechasStr}\n✅ Cualquier consulta, escribinos.\n¡Muchas gracias!`;
   const tel=c.tel.replace(/\D/g,'');
   const waUrl=`https://wa.me/${tel.startsWith('54')?tel:'54'+tel}?text=${encodeURIComponent(msg)}`;
 
@@ -3767,7 +3770,7 @@ function ofrecerWaCreditoNuevo(op,c){
   const toastId='waCredToast_'+Date.now();
   toastEl.id=toastId;
   toastEl.innerHTML=`<div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--tx)">¿Enviar detalles del crédito?</div>
-    <div style="font-size:10px;color:var(--tx2);margin-bottom:10px">${op.cuo} cuotas de ${mon}${Math.round(cuota).toLocaleString('es-AR')} · ${op.frq}</div>
+    <div style="font-size:10px;color:var(--tx2);margin-bottom:10px">${op.cuo} cuotas de ${mon}${Math.round(cuota).toLocaleString(LOCALE())} · ${op.frq}</div>
     <div style="display:flex;gap:6px">
       <button onclick="document.getElementById('${toastId}').remove()" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--tx2);border-radius:8px;padding:8px;font-size:11px;cursor:pointer">Ahora no</button>
       <button onclick="window.open('${waUrl}','_blank');document.getElementById('${toastId}').remove()" style="flex:1;background:#25d366;border:none;color:#fff;border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer">💬 WA texto</button>
@@ -4191,7 +4194,7 @@ async function guardarCamFecha(){const oid=parseInt($('cf_oid').value),fv=$('cf_
 
 // ══ CONFIG ══
 async function guardarCfg(){
-  CFG.nombre=$('cfg_n').value||'';CFG.moneda=$('cfg_m').value;CFG.alertaDias=parseInt($('cfg_d').value)||3;CFG.redondeo=parseInt($('cfg_red').value)||0;CFG.msgWa=$('cfg_w').value||CFG.msgWa;CFG.msgMora=$('cfg_mm').value||CFG.msgMora;
+  CFG.nombre=$('cfg_n').value||'';CFG.moneda=$('cfg_m').value;CFG.alertaDias=parseInt($('cfg_d').value)||3;CFG.redondeo=parseInt($('cfg_red').value)||0;CFG.lang=$('cfg_lang').value||'es';CFG.msgWa=$('cfg_w').value||CFG.msgWa;CFG.msgMora=$('cfg_mm').value||CFG.msgMora;aplicarIdioma(CFG.lang);
   // Aviso resumen
   if($('cfg_aviso_resumen')){
     CFG.avisoResumen=$('cfg_aviso_resumen').checked;
@@ -4243,7 +4246,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
       ${(()=>{try{
         const todosLosPagos=pagoDeOp(op.id).sort((a,b)=>(a.fec||'').localeCompare(b.fec||''));
         if(!todosLosPagos.length)return '';
-        const fm2=n=>(op.moneda||CFG.moneda||'$')+Math.round(n).toLocaleString('es-AR');
+        const fm2=n=>(op.moneda||CFG.moneda||'$')+Math.round(n).toLocaleString(LOCALE());
         // Agrupar pagos por cuota
         let cuotaNum=0;
         const grupos=[];
@@ -5257,7 +5260,7 @@ function renderAdminUsers(){
     const contadorHTML=`<div style="margin:8px 0;background:var(--bg2);border-radius:8px;padding:8px 10px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
         <span style="font-size:10px;font-weight:700;color:${colorDias}">${diasTexto}</span>
-        <span style="font-size:9px;color:var(--tx2)">${vence?vence.toLocaleDateString('es-AR'):''}</span>
+        <span style="font-size:9px;color:var(--tx2)">${vence?vence.toLocaleDateString(LOCALE()):''}</span>
       </div>
       <div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden">
         <div style="height:100%;width:${pctDias}%;background:${barraColorDias};border-radius:3px;transition:width .4s"></div>
@@ -5268,7 +5271,7 @@ function renderAdminUsers(){
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700">${u.negocio||'Sin nombre'}</div>
           <div style="font-size:10px;color:var(--tx2);margin-top:1px">${u.email||'—'}${u.tel?' · 📱 '+u.tel:''}</div>
-          <div style="font-size:9px;color:var(--tx2)">Alta: ${u.created_at?new Date(u.created_at).toLocaleDateString('es-AR'):'-'}</div>
+          <div style="font-size:9px;color:var(--tx2)">Alta: ${u.created_at?new Date(u.created_at).toLocaleDateString(LOCALE()):'-'}</div>
           <div style="margin-top:5px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">${planLabel}
             ${diasPausado!==null?`<span style="font-size:9px;color:var(--rd);font-weight:600">⏸ ${diasPausado}d pausado</span>`:''}
           </div>
@@ -5327,7 +5330,7 @@ function actualizarPreviewRen(){
   const nuevaFecha=new Date(base);nuevaFecha.setDate(nuevaFecha.getDate()+dias);
   const fechaEl=$('ren_preview_fecha');
   const subEl=$('ren_preview_sub');
-  if(fechaEl)fechaEl.textContent=nuevaFecha.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  if(fechaEl)fechaEl.textContent=nuevaFecha.toLocaleDateString(LOCALE(),{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   if(subEl)subEl.textContent=`${dias} días disponibles a partir de hoy`;
 }
 function abrirRenovar(uid,nombre,expiresAt){
@@ -5354,7 +5357,7 @@ function abrirRenovar(uid,nombre,expiresAt){
     diasEl.textContent=esVencido?'0':String(Math.max(0,diasRest));
     $('ren_dias_label').textContent=esVencido?'acceso vencido':'días restantes';
     $('ren_dias_label').style.color=color;
-    $('ren_vence_txt').textContent=esVencido?`⛔ Venció el ${_renExpires.toLocaleDateString('es-AR')}`:`Vence el ${_renExpires.toLocaleDateString('es-AR')}`;
+    $('ren_vence_txt').textContent=esVencido?`⛔ Venció el ${_renExpires.toLocaleDateString(LOCALE())}`:`Vence el ${_renExpires.toLocaleDateString(LOCALE())}`;
     $('ren_vence_txt').style.color=esVencido?'var(--rd)':'var(--tx2)';
     $('ren_cabeza').style.background=bgColor;
     // Barra — máximo referencia = 90 días para escala
@@ -5379,7 +5382,7 @@ async function confirmarRenovar(){
     base.setDate(base.getDate()+dias);
     await SB.from('user_profiles').update({expires_at:base.toISOString(),activo:true,trial:false}).eq('user_id',uid);
     closeModal('mRenovar');
-    const venceStr=base.toLocaleDateString('es-AR');
+    const venceStr=base.toLocaleDateString(LOCALE());
     toast(`✅ ${dias} días asignados — vence ${venceStr}`);
     const telClean=((data&&data.tel)||'').replace(/\D/g,'');
     if(telClean){
@@ -5673,9 +5676,9 @@ function exportarExcel(){if(!requierePro('Exportar Excel'))return;
   const ti=Ops.filter(o=>!esVenta(o)).reduce((s,o)=>s+intOp(o),0);
   const ganVxl=Ops.filter(o=>esVenta(o)).reduce((s,o)=>s+intOp(o),0);
   const ganNetaXl=ti+ganVxl-tg;
-  const fm=n=>Math.round(n).toLocaleString("es-AR");
+  const fm=n=>Math.round(n).toLocaleString(LOCALE());
   XLSX.utils.book_append_sheet(WB,XLSX.utils.json_to_sheet([
-    {"Concepto":"Fecha exportacion","Valor":new Date().toLocaleDateString("es-AR")},
+    {"Concepto":"Fecha exportacion","Valor":new Date().toLocaleDateString(LOCALE())},
     {"Concepto":"Total clientes","Valor":Cs.length},
     {"Concepto":"Total operaciones","Valor":Ops.length},
     {"Concepto":"Operaciones activas","Valor":oa.length},
@@ -5697,7 +5700,7 @@ function exportarPDF(){if(!requierePro('Exportar PDF'))return;
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
   const fd=d=>{if(!d)return"";const p=d.split("-");return p[2]+"/"+p[1]+"/"+p[0]};
-  const fm=n=>(CFG.moneda||"$")+Math.round(n).toLocaleString("es-AR");
+  const fm=n=>(CFG.moneda||"$")+Math.round(n).toLocaleString(LOCALE());
   let y=15;
 
   // Header
@@ -5707,7 +5710,7 @@ function exportarPDF(){if(!requierePro('Exportar PDF'))return;
   doc.setFontSize(16);doc.setFont("helvetica","bold");
   doc.text("CobrosPRO - Reporte completo",105,13,{align:"center"});
   doc.setFontSize(9);
-  doc.text("Generado: "+new Date().toLocaleDateString("es-AR"),105,19,{align:"center"});
+  doc.text("Generado: "+new Date().toLocaleDateString(LOCALE()),105,19,{align:"center"});
   y=30;
 
   // Resumen
@@ -5810,7 +5813,7 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
   const op=gO(oid);const c=op?gC(op.cid):null;if(!op||!c)return null;
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  const fm=n=>(op.moneda||CFG.moneda||'$')+Math.round(n).toLocaleString('es-AR');
+  const fm=n=>(op.moneda||CFG.moneda||'$')+Math.round(n).toLocaleString(LOCALE());
   const fd=d=>{if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`};
   const lbl=esVenta(op)?op.prod||'Venta':op.desc||'Crédito';
   const cuota=cvOp(op);
@@ -5883,7 +5886,7 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
   const headerTit=esCancelado?'COMPROBANTE — CANCELADO':'COMPROBANTE DE PAGO';
   doc.text(headerTit,logoData?112:105,13,{align:'center'});
   doc.setFontSize(9);doc.setFont('helvetica','normal');
-  doc.text((CFG.nombre||'CobroAlDía')+' · '+new Date().toLocaleDateString('es-AR'),logoData?112:105,21,{align:'center'});
+  doc.text((CFG.nombre||'CobroAlDía')+' · '+new Date().toLocaleDateString(LOCALE()),logoData?112:105,21,{align:'center'});
 
   // Box datos cliente
   doc.setDrawColor(200,200,220);doc.setFillColor(248,248,255);
@@ -6033,7 +6036,7 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
 function _buildFnameComprobante(op,c,monPag,fec){
   const nom=(c.nom||'Cliente').replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]/g,'').trim().replace(/\s+/g,'-');
   const cuota='Cuota'+(op.pag||1)+'de'+(op.cuo||1);
-  const monto=(op.moneda||CFG.moneda||'$')+Math.round(monPag).toLocaleString('es-AR').replace(/\./g,'');
+  const monto=(op.moneda||CFG.moneda||'$')+Math.round(monPag).toLocaleString(LOCALE()).replace(/\./g,'');
   return 'Comprobante-'+nom+'-'+cuota+'-'+monto+'-'+fec+'.pdf';
 }
 
@@ -7390,6 +7393,29 @@ function initTheme(){
 
 // ══ TAMAÑO DE LETRA ══
 const _FSIZE_ZOOM={normal:1, grande:1.15, muygrande:1.3};
+function aplicarIdioma(lang){
+  CFG.lang=lang||'es';
+  const es=(lang!=='en');
+  const T={
+    // Nav labels
+    'nav-home':es?'Inicio':'Home',
+    'nav-clients':es?'Clientes':'Clients',
+    'nav-ops':es?'Operaciones':'Operations',
+    'nav-cobros':es?'Cobros':'Collections',
+    'nav-stats':es?'Estadísticas':'Statistics',
+    // Config labels
+    'lbl_nombre_negocio':es?'Nombre del negocio':'Business name',
+    'lbl_moneda':es?'Moneda':'Currency',
+    'lbl_idioma':es?'Idioma / Language':'Language / Idioma',
+    'lbl_dias_alerta':es?'Días de alerta anticipada':'Alert days in advance',
+    'lbl_redondeo':es?'Redondeo de cobros':'Payment rounding',
+    'lbl_msg_wa':es?'Mensaje recordatorio WhatsApp':'WhatsApp reminder message',
+    'lbl_msg_mora':es?'Mensaje morosos':'Overdue message',
+  };
+  Object.entries(T).forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
+  // Update html lang attribute
+  document.documentElement.lang=lang==='en'?'en':'es';
+}
 function setFontSize(size){
   try{localStorage.setItem('cobropro_fsize', size);}catch(e){}
   _applyFontSize(size);
@@ -7806,7 +7832,7 @@ function _simFmt(n){
   if(n===undefined||n===null||isNaN(n))return'—';
   // Redondear a enteros para evitar decimales feos
   const v=Math.round(n*100)/100;
-  return (CFG.moneda||'$')+v.toLocaleString('es-AR',{minimumFractionDigits:v%1===0?0:2,maximumFractionDigits:2});
+  return (CFG.moneda||'$')+v.toLocaleString(LOCALE(),{minimumFractionDigits:v%1===0?0:2,maximumFractionDigits:2});
 }
 function _simNextDate(base, i, frq){
   const d=new Date(base+'T12:00:00');
@@ -7911,10 +7937,10 @@ function _renderSimTabla(tabla){
     <tr style="border-bottom:1px solid var(--border)">
       <td style="padding:5px 4px;font-weight:700;color:var(--tx2)">${r.n}</td>
       ${conFechas?`<td style="padding:5px 4px;color:var(--ac2);font-weight:600;white-space:nowrap">${_simFechaLabel(r.fec)}</td>`:''}
-      <td style="padding:5px 4px;text-align:right">${mon}${r.capital.toLocaleString('es-AR')}</td>
-      <td style="padding:5px 4px;text-align:right;color:var(--yw)">${mon}${r.interes.toLocaleString('es-AR')}</td>
-      <td style="padding:5px 4px;text-align:right;font-weight:700;color:var(--ac2)">${mon}${r.cuota.toLocaleString('es-AR')}</td>
-      <td style="padding:5px 4px;text-align:right;color:var(--tx2)">${mon}${r.saldo.toLocaleString('es-AR')}</td>
+      <td style="padding:5px 4px;text-align:right">${mon}${r.capital.toLocaleString(LOCALE())}</td>
+      <td style="padding:5px 4px;text-align:right;color:var(--yw)">${mon}${r.interes.toLocaleString(LOCALE())}</td>
+      <td style="padding:5px 4px;text-align:right;font-weight:700;color:var(--ac2)">${mon}${r.cuota.toLocaleString(LOCALE())}</td>
+      <td style="padding:5px 4px;text-align:right;color:var(--tx2)">${mon}${r.saldo.toLocaleString(LOCALE())}</td>
     </tr>`).join('');
 }
 function exportSimPDF(){
@@ -7927,7 +7953,7 @@ function exportSimPDF(){
     doc.text('Cuota: '+$('simResCuota').textContent+'  |  Total: '+$('simResTotal').textContent+'  |  Intereses: '+$('simResInt').textContent,14,26);
     const conFechas=(window._simTablaData||[]).some(r=>r.fec);
     const head=conFechas?[['#','Fecha','Capital','Interés','Cuota','Saldo']]:[['#','Capital','Interés','Cuota','Saldo']];
-    const data=(window._simTablaData||[]).map(r=>conFechas?[r.n,_simFechaLabel(r.fec),r.capital.toLocaleString('es-AR'),r.interes.toLocaleString('es-AR'),r.cuota.toLocaleString('es-AR'),r.saldo.toLocaleString('es-AR')]:[r.n,r.capital.toLocaleString('es-AR'),r.interes.toLocaleString('es-AR'),r.cuota.toLocaleString('es-AR'),r.saldo.toLocaleString('es-AR')]);
+    const data=(window._simTablaData||[]).map(r=>conFechas?[r.n,_simFechaLabel(r.fec),r.capital.toLocaleString(LOCALE()),r.interes.toLocaleString(LOCALE()),r.cuota.toLocaleString(LOCALE()),r.saldo.toLocaleString(LOCALE())]:[r.n,r.capital.toLocaleString(LOCALE()),r.interes.toLocaleString(LOCALE()),r.cuota.toLocaleString(LOCALE()),r.saldo.toLocaleString(LOCALE())]);
     doc.autoTable({head,body:data,startY:32,styles:{fontSize:8},headStyles:{fillColor:[108,99,255]}});
     doc.save('simulacion_credito.pdf');
   }catch(e){toast('Error al exportar PDF','error')}
@@ -8008,7 +8034,7 @@ function exportarReportePDF(){
     const r=_getRepPeriodo();
     const mon=CFG.moneda||'$';
     const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-    const fm=v=>mon+Math.round(v).toLocaleString('es-AR');
+    const fm=v=>mon+Math.round(v).toLocaleString(LOCALE());
     const W=210,mar=14;
 
     // ── Header ──
@@ -8017,7 +8043,7 @@ function exportarReportePDF(){
     doc.text('REPORTE FINANCIERO',mar,12);
     doc.setFontSize(8);doc.setFont('helvetica','normal');
     doc.text(`CobroAlDía · ${r.pLabel} · ${r.desdeStr.split('-').reverse().join('/')} → ${r.hastaStr.split('-').reverse().join('/')}`,mar,20);
-    const hoyStr=new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const hoyStr=new Date().toLocaleDateString(LOCALE(),{day:'2-digit',month:'2-digit',year:'numeric'});
     doc.text(`Generado: ${hoyStr}`,W-mar,20,{align:'right'});
     doc.setTextColor(0);
 
@@ -8238,7 +8264,7 @@ function animCount(el,targetText,dur=700){
     const pct=Math.min((now-start)/dur,1);
     const ease=1-Math.pow(1-pct,3);// cubic ease out
     const val=Math.round(from+(target-from)*ease);
-    el.textContent=mon+val.toLocaleString('es-AR');
+    el.textContent=mon+val.toLocaleString(LOCALE());
     if(pct<1)requestAnimationFrame(tick);
     else el.textContent=targetText;
   }
@@ -8772,10 +8798,10 @@ function rCobradorInicio(){
   const tr=psHoy.filter(p=>p.met==='transferencia').reduce((s,p)=>s+(p.mon||0),0);
   const mon=CFG?.moneda||'$';
   const pend=_cobradorOps.filter(o=>!_cobradorPs.some(p=>parseInt(p.oid)===parseInt(o.id)&&p.fec===hoy2)).length;
-  if($('cobHoyTotal'))$('cobHoyTotal').textContent=`${mon}${tot.toLocaleString('es-AR')}`;
+  if($('cobHoyTotal'))$('cobHoyTotal').textContent=`${mon}${tot.toLocaleString(LOCALE())}`;
   if($('cobHoySub'))$('cobHoySub').textContent=`${psHoy.length} cobro${psHoy.length!==1?'s':''} registrado${psHoy.length!==1?'s':''}`;
-  if($('cobHoyEf'))$('cobHoyEf').textContent=`${mon}${ef.toLocaleString('es-AR')}`;
-  if($('cobHoyTr'))$('cobHoyTr').textContent=`${mon}${tr.toLocaleString('es-AR')}`;
+  if($('cobHoyEf'))$('cobHoyEf').textContent=`${mon}${ef.toLocaleString(LOCALE())}`;
+  if($('cobHoyTr'))$('cobHoyTr').textContent=`${mon}${tr.toLocaleString(LOCALE())}`;
   if($('cobPendCount'))$('cobPendCount').textContent=pend?`${pend} pendiente${pend!==1?'s':''}`:' ✅ Al día';
 }
 
@@ -8802,11 +8828,11 @@ function rCobradorHist(){
   ps.forEach(p=>{const f=p.fec||'?';if(!grupos[f])grupos[f]=[];grupos[f].push(p);});
   el.innerHTML=Object.entries(grupos).map(([fec,pagos])=>{
     const tot=pagos.reduce((s,p)=>s+(p.mon||0),0);
-    const fechaLabel=fec==='?'?'Sin fecha':new Date(fec+'T00:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'2-digit',month:'2-digit'});
+    const fechaLabel=fec==='?'?'Sin fecha':new Date(fec+'T00:00:00').toLocaleDateString(LOCALE(),{weekday:'short',day:'2-digit',month:'2-digit'});
     return`<div style="margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px">
         <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:capitalize">${fechaLabel}</div>
-        <div style="font-size:11px;font-weight:700;color:var(--gr)">${mon}${tot.toLocaleString('es-AR')}</div>
+        <div style="font-size:11px;font-weight:700;color:var(--gr)">${mon}${tot.toLocaleString(LOCALE())}</div>
       </div>
       ${pagos.map(p=>{
         const op=_cobradorOps.find(o=>parseInt(o.id)===parseInt(p.oid))||{desc:'Operación',cuo:1,pag:0};
@@ -8817,7 +8843,7 @@ function rCobradorHist(){
             <div style="font-size:10px;color:var(--tx2);margin-top:2px">${op.desc||'Crédito'} · ${p.met==='transferencia'?'📲 Transf.':'💵 Efectivo'}${p.par?' · ⏳ Parcial':''}</div>
             ${p.not_?`<div style="font-size:10px;color:var(--tx2);margin-top:2px;font-style:italic">"${p.not_}"</div>`:''}
           </div>
-          <div style="font-size:14px;font-weight:800;color:${p.par?'var(--yw)':'var(--gr)'}">${mon}${(p.mon||0).toLocaleString('es-AR')}</div>
+          <div style="font-size:14px;font-weight:800;color:${p.par?'var(--yw)':'var(--gr)'}">${mon}${(p.mon||0).toLocaleString(LOCALE())}</div>
         </div>`;
       }).join('')}
     </div>`;
@@ -8843,7 +8869,7 @@ function _cobCliCard(c){
       </div>
       <div style="text-align:right">
         <div style="font-size:10px;color:var(--tx2)">Por cobrar</div>
-        <div style="font-size:16px;font-weight:800;color:${mora?'var(--rd)':'var(--ac)'}">${mon}${Math.round(saldo).toLocaleString('es-AR')}</div>
+        <div style="font-size:16px;font-weight:800;color:${mora?'var(--rd)':'var(--ac)'}">${mon}${Math.round(saldo).toLocaleString(LOCALE())}</div>
       </div>
     </div>
     ${ops.length?`<div style="display:flex;flex-direction:column;gap:6px">
@@ -8856,8 +8882,8 @@ function _cobCliCard(c){
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
             <div style="flex:1;min-width:0">
               <div style="font-size:11px;font-weight:600;color:var(--tx)">${o.desc||'Crédito'}</div>
-              <div style="font-size:10px;color:var(--tx2)">Cuota ${o.pag+1}/${o.cuo} · ${mon}${cuota.toLocaleString('es-AR')}</div>
-              ${pagoHoy?.par?`<div style="font-size:9px;color:var(--yw);font-weight:600;margin-top:2px">⏳ Parcial · falta ${mon}${(pagoHoy.flt||0).toLocaleString('es-AR')}</div>`:''}
+              <div style="font-size:10px;color:var(--tx2)">Cuota ${o.pag+1}/${o.cuo} · ${mon}${cuota.toLocaleString(LOCALE())}</div>
+              ${pagoHoy?.par?`<div style="font-size:9px;color:var(--yw);font-weight:600;margin-top:2px">⏳ Parcial · falta ${mon}${(pagoHoy.flt||0).toLocaleString(LOCALE())}</div>`:''}
               ${noCobro&&!yaHoy?`<div style="font-size:9px;color:var(--yw);margin-top:2px">📝 ${noCobro.label}${noCobro.nota?' — '+noCobro.nota:''}</div>`:''}
             </div>
             <button onclick="abrirPagoCobrador(${o.id},${c.id})" style="background:${yaHoy?'var(--bg3)':'var(--ac)'};border:${yaHoy?'1px solid var(--border)':'none'};color:${yaHoy?'var(--tx2)':'#fff'};border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent">${yaHoy?'✏️ Ver/Editar':'💵 Cobrar'}</button>
@@ -8926,7 +8952,7 @@ function rCobradorRuta(){
           <div style="font-size:10px;color:var(--tx2);margin-top:2px">${o.desc||'Crédito'} · Cuota ${o.pag+1}/${o.cuo}</div>
           ${diasAtr>0?`<div style="font-size:10px;color:var(--rd);font-weight:600;margin-top:2px">⚠️ ${diasAtr}d de atraso</div>`:''}
         </div>
-        <div style="font-size:16px;font-weight:800;color:${diasAtr>0?'var(--rd)':'var(--ac)'}">${mon}${cuota.toLocaleString('es-AR')}</div>
+        <div style="font-size:16px;font-weight:800;color:${diasAtr>0?'var(--rd)':'var(--ac)'}">${mon}${cuota.toLocaleString(LOCALE())}</div>
       </div>
       <div style="display:flex;gap:6px">
         ${yaHoy
@@ -8979,7 +9005,7 @@ function abrirPagoCobrador(oid,cid){
   $('cobPagoOid').value=oid;
   $('cobPagoCid').value=cid;
   $('cobPagoCliNom').textContent=c.nom;
-  $('cobPagoOpDesc').textContent=`${op.desc||'Crédito'} · Cuota ${op.pag+1}/${op.cuo} · ${(CFG?.moneda||'$')}${Math.round(cvOp2(op)).toLocaleString('es-AR')}`;
+  $('cobPagoOpDesc').textContent=`${op.desc||'Crédito'} · Cuota ${op.pag+1}/${op.cuo} · ${(CFG?.moneda||'$')}${Math.round(cvOp2(op)).toLocaleString(LOCALE())}`;
   $('cobPagoFec').value=hoy2;
   $('cobPagoNot').value='';
   const postPanel=$('cobPostPagoPanel');
@@ -8999,7 +9025,7 @@ function abrirPagoCobrador(oid,cid){
     postPanel.style.display='block';
     // Label según si es parcial
     const lbl=$('cobPostPagoLabel');
-    if(lbl)lbl.textContent=pagoHoy.par?`⏳ Pago parcial registrado · falta ${(CFG?.moneda||'$')}${(pagoHoy.flt||0).toLocaleString('es-AR')}`:'✅ Cobro registrado hoy';
+    if(lbl)lbl.textContent=pagoHoy.par?`⏳ Pago parcial registrado · falta ${(CFG?.moneda||'$')}${(pagoHoy.flt||0).toLocaleString(LOCALE())}`:'✅ Cobro registrado hoy';
     const compBtn=$('cobComprobanteBtn');
     const anularBtn=$('cobAnularBtn');
     const editBtn=$('cobEditarPagoBtn');
@@ -9140,15 +9166,15 @@ async function cancelarPagoCobrador(oid,pagoHoy){
 function enviarComprobanteCobrador(pago,op,c){
   if(!c?.tel){toast('El cliente no tiene teléfono guardado','warn');return;}
   const mon=CFG?.moneda||'$';
-  const fecha=new Date((pago.fec||hoy())+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const fecha=new Date((pago.fec||hoy())+'T00:00:00').toLocaleDateString(LOCALE(),{day:'2-digit',month:'2-digit',year:'numeric'});
   const msg=`✅ *Comprobante de pago*
 ────────────────────────
 👤 *${c.nom}*
 📋 ${op?.desc||'Crédito'} — Cuota ${op?.pag||'?'}/${op?.cuo||'?'}
-💰 *${mon}${(pago.mon||0).toLocaleString('es-AR')}*
+💰 *${mon}${(pago.mon||0).toLocaleString(LOCALE())}*
 ${pago.met==='transferencia'?'📲 Transferencia':'💵 Efectivo'}
 📅 ${fecha}
-${pago.par?`⚠️ Pago parcial · Falta: ${mon}${(pago.flt||0).toLocaleString('es-AR')}`:'✅ Cuota completa'}
+${pago.par?`⚠️ Pago parcial · Falta: ${mon}${(pago.flt||0).toLocaleString(LOCALE())}`:'✅ Cuota completa'}
 Cobrador: ${_cobradorData?.nombre||''}
 
 _CobroAlDía_ 🚀`;
@@ -9181,20 +9207,20 @@ function generarResumenCobrador(periodo){
   const ef=ps.filter(p=>p.met==='efectivo').reduce((s,p)=>s+(p.mon||0),0);
   const tr=ps.filter(p=>p.met==='transferencia').reduce((s,p)=>s+(p.mon||0),0);
   const label=['hoy','esta semana','este mes'][periodo];
-  const fecha=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
+  const fecha=new Date().toLocaleDateString(LOCALE(),{weekday:'long',day:'numeric',month:'long'});
   let det='';
   ps.slice(0,15).forEach(p=>{
     const op=_cobradorOps.find(o=>o.id===p.oid);
     const c=_cobradorClis.find(x=>op&&x.id===op.cid);
-    det+=`  • ${c?.nom||'?'}: ${mon}${(p.mon||0).toLocaleString('es-AR')} (${p.met==='efectivo'?'💵':'📲'}) — ${p.fec}\n`;
+    det+=`  • ${c?.nom||'?'}: ${mon}${(p.mon||0).toLocaleString(LOCALE())} (${p.met==='efectivo'?'💵':'📲'}) — ${p.fec}\n`;
   });
   if(ps.length>15)det+=`  • ...y ${ps.length-15} más\n`;
   const msg=`📊 *Resumen ${label} — ${_cobradorData?.nombre||'Cobrador'}*
 📅 ${fecha}
 ${'─'.repeat(28)}
-💰 *Total: ${mon}${total.toLocaleString('es-AR')}*
-  💵 Efectivo: ${mon}${ef.toLocaleString('es-AR')}
-  📲 Transf.: ${mon}${tr.toLocaleString('es-AR')}
+💰 *Total: ${mon}${total.toLocaleString(LOCALE())}*
+  💵 Efectivo: ${mon}${ef.toLocaleString(LOCALE())}
+  📲 Transf.: ${mon}${tr.toLocaleString(LOCALE())}
   🧾 ${ps.length} cobro${ps.length!==1?'s':''}
 ${det?`\n📋 Detalle:\n${det}`:''}
 _CobroAlDía_ 🚀`;
