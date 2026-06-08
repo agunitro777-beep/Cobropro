@@ -4434,6 +4434,10 @@ function mostrarBannerParcial(oid, nomCliente, flt){
 
 let _periodoInicio='sem';
 function setPeriodoInicio(p){
+  if((p==='mes'||p==='anio')&&!esPremium()){
+    requierePlan('Resumen por '+( p==='mes'?'mes':'año'),'premium');
+    return;
+  }
   _periodoInicio=p;
   ['sem','mes','anio'].forEach(k=>{
     const btn=$('btnPeriodo'+k.charAt(0).toUpperCase()+k.slice(1));
