@@ -3093,6 +3093,7 @@ async function guardarCli(){
   const limiteVal=parseFloat($('c_limite').value)||null;
   // Upload foto si hay nueva
   let _fotoUrl=window._fotoCliUrl||'';
+  toast('Debug: blob='+(window._fotoCliBlob?'SI':'NO')+' url='+(_fotoUrl?'SI':'NO'),'warn');
   if(window._fotoCliBlob){
     try{
       const _ext=window._fotoCliBlob.type.includes('png')?'png':'jpg';
