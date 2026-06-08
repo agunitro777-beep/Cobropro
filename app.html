@@ -100,7 +100,7 @@ html{font-size:16px}body{font-family:'DM Sans',sans-serif;background:var(--bg);c
 .fal{background:rgba(0,0,0,.8);color:#fff;padding:3px 8px;border-radius:5px;font-size:11px;backdrop-filter:blur(10px)}
 .mo{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-end}
 .mo.open{display:flex}
-.modal{background:var(--bg2);border-radius:20px 20px 0 0;padding:16px 15px 80px;width:100%;max-height:96dvh;min-height:40dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;animation:su .28s cubic-bezier(.34,1.56,.64,1);border-top:1px solid var(--border)}
+.modal{background:var(--bg2);border-radius:20px 20px 0 0;padding:16px 15px 80px;width:100%;height:96dvh;max-height:96dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;animation:su .28s cubic-bezier(.34,1.56,.64,1);border-top:1px solid var(--border)}
 @keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .mh{width:34px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
 .mt{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;margin-bottom:14px}
@@ -4322,10 +4322,10 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
       const _limSugHTML=_limSug&&!_limMax?'<div style="font-size:9px;color:var(--ac2)">Sug: '+fmt(_limSug)+'</div>':'';
       const _alertaHTML=_limAlerta?'<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:var(--rd)">⚠️ Límite alcanzado: '+fmt(_deuda)+' / '+fmt(_limMax)+'</div>':'';
       return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">'
-        +'<div class="mc"><div class="ml">Saldo capital</div><div class="mv" style="color:var(--cy)">'+fmt(_saldo)+'</div></div>'
-        +'<div class="mc"><div class="ml">Mora acumulada</div><div class="mv" style="color:'+(_mora>0?'var(--rd)':'var(--tx2)')+'">+'+fmt(_mora)+'</div></div>'
-        +'<div class="mc"><div class="ml">Total a cobrar</div><div class="mv" style="color:var(--ac)">'+fmt(_saldo+_mora)+'</div></div>'
-        +'<div class="mc"><div class="ml">Ganancia</div><div class="mv" style="color:var(--yw)">'+fmt(totInt)+'</div></div>'
+        +'<div class="mc"><div class="ml">Saldo capital</div><div class="mv" style="color:var(--cy);font-size:clamp(11px,3.5vw,18px)">'+fmt(_saldo)+'</div></div>'
+        +'<div class="mc"><div class="ml">Mora acumulada</div><div class="mv" style="color:'+(_mora>0?'var(--rd)':'var(--tx2)')+';font-size:clamp(11px,3.5vw,18px)">+'+fmt(_mora)+'</div></div>'
+        +'<div class="mc"><div class="ml">Total a cobrar</div><div class="mv" style="color:var(--ac);font-size:clamp(11px,3.5vw,18px)">'+fmt(_saldo+_mora)+'</div></div>'
+        +'<div class="mc"><div class="ml">Ganancia</div><div class="mv" style="color:var(--yw);font-size:clamp(11px,3.5vw,18px)">'+fmt(totInt)+'</div></div>'
         +'</div>'
         +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">'
         +'<div class="mc"><div class="ml">🎯 Score</div><div class="mv" style="color:'+_scColor+';font-size:14px">'+(_sc!==null?_sc+'pts':'-')+' <span style="font-size:9px;font-weight:400">'+_scLabel+'</span></div></div>'
