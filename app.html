@@ -4440,6 +4440,7 @@ function rInicio(){
   // Ganancia semana = intereses reales cobrados esta semana (usando intOp proporcional)
   const ganSem=ps.reduce((acc,p)=>{
     const op=gO(p.oid);if(!op)return acc;
+    if(op.tip==='interes_mensual'||(p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}
     const v=cvOp(op),pr=op.mon/op.cuo;
     if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*gan;}
     return acc+Math.max(0,Math.min(p.mon,v)-pr);
@@ -4458,7 +4459,7 @@ function rInicio(){
   const opsAct=Ops.filter(o=>o.pag<o.cuo),capP=Ops.filter(o=>!esVenta(o)&&o.pag<o.cuo).reduce((s,o)=>s+o.mon,0),porCob=opsAct.reduce((s,o)=>s+saldoMOp(o),0);
   const mes=new Date().toISOString().substring(0,7),pMes=Ps.filter(p=>p.fec&&p.fec.startsWith(mes)),cob=pMes.reduce((s,p)=>s+p.mon,0);
   const opsMora=Ops.filter(o=>stOp(o)==='atrasado'),pend=opsMora.reduce((s,o)=>s+moraOp(o),0);
-  const intM=pMes.reduce((acc,p)=>{const op=gO(p.oid);if(!op)return acc;const v=cvOp(op),pr=op.mon/op.cuo;if(esVenta(op)){const g=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*g;}return acc+Math.max(0,Math.min(p.mon,v)-pr);},0);
+  const intM=pMes.reduce((acc,p)=>{const op=gO(p.oid);if(!op)return acc;if(op.tip==='interes_mensual'||(p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}const v=cvOp(op),pr=op.mon/op.cuo;if(esVenta(op)){const g=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*g;}return acc+Math.max(0,Math.min(p.mon,v)-pr);},0);
   const ganV=Ops.filter(o=>esVenta(o)).reduce((s,o)=>s+intOp(o),0);
   $('stCap').textContent=ocul?'••••':fmt(capP);$('stAct').textContent=`${opsAct.filter(o=>!esVenta(o)).length} créditos`;
   $('stPorCob').textContent=ocul?'••••':fmt(porCob);$('stCob').textContent=ocul?'••••':fmt(cob);$('stPag').textContent=`${pMes.length} pagos`;
