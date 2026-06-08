@@ -2240,53 +2240,62 @@ async function pdfComprobanteOp(oid){
   await comprobantePDF(oid,ul.mon,ul.fec,ul.par||false,ul.flt||0);
 }
 
-// Historial PDF de operación terminada (sin total a pagar)
-async function pdfHistorialOpTerminado(oid,cid){
-  if(!esPremium()){requierePlan('Historial PDF de crédito','premium');return;}
-  const op=gO(oid);const c=gC(cid);if(!op||!c)return;
+// Historial PDF de todos los créditos terminados de un cliente
+async function pdfHistorialTodosTerminados(cid){
+  if(!esPremium()){requierePlan('Historial PDF de créditos','premium');return;}
+  const c=gC(cid);if(!c)return;
+  const ops=opsDeCli(cid).filter(o=>o.pag>=o.cuo&&o.tip!=='interes_mensual');
+  if(!ops.length){toast('No hay créditos terminados','warn');return;}
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  const fm=n=>(op.moneda||CFG.moneda||'$')+Math.round(n).toLocaleString(LOCALE());
   const fd=d=>{if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`};
-  const lbl=esVenta(op)?op.prod||'Venta':op.desc||'Crédito';
+  const metLabel={efectivo:'Efectivo',transferencia:'Transf.',otro:'Otro'};
   // Header
   doc.setFillColor(34,197,94);doc.rect(0,0,210,28,'F');
   doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
-  doc.text('HISTORIAL DE CRÉDITO',105,13,{align:'center'});
+  doc.text('HISTORIAL DE CRÉDITOS CANCELADOS',105,13,{align:'center'});
   doc.setFontSize(9);doc.setFont('helvetica','normal');
   doc.text((CFG.nombre||'CobroAlDía')+' · '+new Date().toLocaleDateString(LOCALE()),105,21,{align:'center'});
-  // Cliente y operación
+  // Cliente
   doc.setDrawColor(200,220,200);doc.setFillColor(245,255,245);
-  doc.roundedRect(14,34,182,28,3,3,'FD');
+  doc.roundedRect(14,34,182,20,3,3,'FD');
   doc.setTextColor(80,120,80);doc.setFontSize(8);doc.setFont('helvetica','bold');
-  doc.text('CLIENTE',20,42);doc.text('CRÉDITO',105,42);
+  doc.text('CLIENTE',20,42);
   doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);doc.setFontSize(11);
-  doc.text(c.nom,20,50);doc.text(lbl,105,50);
+  doc.text(c.nom,20,50);
   doc.setFontSize(9);doc.setTextColor(120,120,140);
-  if(c.tel)doc.text('Tel: '+c.tel,20,58);
-  doc.text(`${op.pag}/${op.cuo} cuotas · ${op.frq}`,105,58);
-  // Badge pagado
-  doc.setFillColor(34,197,94);doc.roundedRect(14,68,182,14,3,3,'F');
-  doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont('helvetica','bold');
-  doc.text('✅ CRÉDITO CANCELADO',105,77,{align:'center'});
-  // Tabla pagos
-  const pagosOp=pagoDeOp(oid).sort((a,b)=>a.fec.localeCompare(b.fec));
-  const metLabel={efectivo:'Efectivo',transferencia:'Transf.',otro:'Otro'};
-  const filas=pagosOp.map((p,i)=>[i+1,fd(p.fec),fm(p.mon),metLabel[p.met]||'—',p.not_||p.not||'—']);
-  doc.autoTable({
-    startY:88,
-    head:[['#','Fecha','Monto','Método','Nota']],
-    body:filas,
-    styles:{fontSize:8,cellPadding:2.5},
-    headStyles:{fillColor:[34,197,94],textColor:255,fontStyle:'bold'},
-    alternateRowStyles:{fillColor:[245,255,245]},
-    margin:{left:14,right:14}
+  if(c.tel)doc.text('Tel: '+c.tel,105,50);
+  let y=60;
+  // Una tabla por cada operación terminada
+  ops.forEach((op,idx)=>{
+    const fm=n=>(op.moneda||CFG.moneda||'$')+Math.round(n).toLocaleString(LOCALE());
+    const lbl=esVenta(op)?op.prod||'Venta':op.desc||'Crédito';
+    const pagosOp=pagoDeOp(op.id).sort((a,b)=>a.fec.localeCompare(b.fec));
+    const totalCobrado=pagosOp.reduce((s,p)=>s+p.mon,0);
+    // Subtítulo operación
+    if(y>250){doc.addPage();y=20;}
+    doc.setFillColor(220,255,220);doc.setDrawColor(34,197,94);
+    doc.roundedRect(14,y,182,12,2,2,'FD');
+    doc.setTextColor(20,100,20);doc.setFontSize(9);doc.setFont('helvetica','bold');
+    doc.text(`✅ ${lbl} · ${op.pag}/${op.cuo} cuotas · ${op.frq} · Total: ${fm(totalCobrado)}`,18,y+8);
+    y+=16;
+    const filas=pagosOp.map((p,i)=>[i+1,fd(p.fec),fm(p.mon),metLabel[p.met]||'—',p.not_||p.not||'']);
+    doc.autoTable({
+      startY:y,
+      head:[['#','Fecha','Monto','Método','Nota']],
+      body:filas,
+      styles:{fontSize:7.5,cellPadding:2},
+      headStyles:{fillColor:[34,197,94],textColor:255,fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[245,255,245]},
+      margin:{left:14,right:14}
+    });
+    y=doc.lastAutoTable.finalY+8;
   });
-  const y=doc.lastAutoTable.finalY+10;
+  // Footer
   doc.setDrawColor(200,220,200);doc.line(14,y,196,y);
   doc.setTextColor(150,170,150);doc.setFontSize(8);doc.setFont('helvetica','normal');
   doc.text('CobroAlDía · Documento generado automáticamente',105,y+7,{align:'center'});
-  const fname='Historial-'+c.nom.replace(/\s/g,'-')+'-'+lbl.replace(/\s/g,'-')+'.pdf';
+  const fname='Historial-Cancelados-'+c.nom.replace(/\s/g,'-')+'.pdf';
   await _compartirODescargarPDF(doc,fname,c);
 }
 
@@ -4377,7 +4386,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
       }catch(e){console.error('historial error',e);return '';}})()}
     </div>`;
   }).join('');
-  const opsCompHTML=opsComp.length?`<div style="margin-top:12px"><div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">✅ Terminados (${opsComp.length})</div>${opsComp.map(op=>{const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const tot=sv?op.precio:op.mon;const pagosOp=pagoDeOp(op.id);const totCobrado=pagosOp.reduce((s,p)=>s+p.mon,0);return`<div class="op-card" style="opacity:.7;border-left:3px solid var(--gr)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="op-tag" style="color:var(--gr)">${sv?'🛒':'💳'} ${sv?'VENTA':'CRÉDITO'}</div><div style="font-size:13px;font-weight:700">${lbl}</div><div style="font-size:9px;color:var(--tx2)">${op.pag}/${op.cuo} cuotas · ${op.frq}</div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:var(--gr)">${fmt(tot)}</div><span class="sb done">✅ ${op.pag}/${op.cuo} pagadas</span></div></div><div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap"><button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️ Editar</button><button class="btn bp bsm" style="background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.5);color:var(--yw)" onclick="abrirEditOpCanc(${op.id})">⚙️ Corregir</button><button class="btn bp bsm" style="background:rgba(108,99,255,.15);border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="confirmarReabrirOpCanc(${op.id})">🔄 Reabrir</button><button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfCreditoNuevoWA(gO(${op.id}),gC(${cid}))">📲 PDF</button><button class="btn bs bsm" style="border-color:rgba(34,197,94,.4);color:var(--gr)" onclick="pdfHistorialOpTerminado(${op.id},${cid})">🧾 Historial</button><button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button></div></div>`}).join('')}</div>`:'';
+  const opsCompHTML=opsComp.length?`<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">✅ Terminados (${opsComp.length})</div><button class="btn bs bsm" style="border-color:rgba(34,197,94,.4);color:var(--gr);font-size:10px" onclick="pdfHistorialTodosTerminados(${cid})">🧾 Historial</button></div>${opsComp.map(op=>{const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const tot=sv?op.precio:op.mon;const pagosOp=pagoDeOp(op.id);const totCobrado=pagosOp.reduce((s,p)=>s+p.mon,0);return`<div class="op-card" style="opacity:.7;border-left:3px solid var(--gr)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="op-tag" style="color:var(--gr)">${sv?'🛒':'💳'} ${sv?'VENTA':'CRÉDITO'}</div><div style="font-size:13px;font-weight:700">${lbl}</div><div style="font-size:9px;color:var(--tx2)">${op.pag}/${op.cuo} cuotas · ${op.frq}</div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:var(--gr)">${fmt(tot)}</div><span class="sb done">✅ ${op.pag}/${op.cuo} pagadas</span></div></div><div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap"><button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️ Editar</button><button class="btn bp bsm" style="background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.5);color:var(--yw)" onclick="abrirEditOpCanc(${op.id})">⚙️ Corregir</button><button class="btn bp bsm" style="background:rgba(108,99,255,.15);border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="confirmarReabrirOpCanc(${op.id})">🔄 Reabrir</button><button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfCreditoNuevoWA(gO(${op.id}),gC(${cid}))">📲 PDF</button><button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button></div></div>`}).join('')}</div>`:'';
   const notasHTML=c.not?`<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--tx2)"><span style="font-weight:600;color:var(--tx)">📝 Notas:</span> ${c.not}</div>`:'';
   $('verContent').innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
