@@ -4237,7 +4237,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
         ${(s==='atrasado'||s==='reprogramado')&&c.tel?`<a href="${waMoraLink(op)}" target="_blank" rel="noopener noreferrer"><button class="btn brd bsm">🔴 Mora</button></a>`:''}
         <button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button>
       </div>
-      ${(()=>{
+      ${(()=>{try{
         const todosLosPagos=pagoDeOp(op.id).sort((a,b)=>(a.fec||'').localeCompare(b.fec||''));
         if(!todosLosPagos.length)return '';
         const fm2=n=>(op.moneda||CFG.moneda||'$')+Math.round(n).toLocaleString('es-AR');
@@ -4296,7 +4296,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
         return `<div style="margin-top:10px;background:var(--bg3);border-radius:8px;padding:8px 10px">
           <div style="font-size:10px;font-weight:700;color:var(--tx2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">📋 Historial de pagos</div>
           ${rows}</div>`;
-      })()}
+      }catch(e){console.error('historial error',e);return '';}})()}
     </div>`;
   }).join('');
   const opsCompHTML=opsComp.length?`<div style="margin-top:12px"><div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">✅ Terminados (${opsComp.length})</div>${opsComp.map(op=>{const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const tot=sv?op.precio:op.mon;const pagosOp=pagoDeOp(op.id);const totCobrado=pagosOp.reduce((s,p)=>s+p.mon,0);return`<div class="op-card" style="opacity:.7;border-left:3px solid var(--gr)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="op-tag" style="color:var(--gr)">${sv?'🛒':'💳'} ${sv?'VENTA':'CRÉDITO'}</div><div style="font-size:13px;font-weight:700">${lbl}</div><div style="font-size:9px;color:var(--tx2)">${op.pag}/${op.cuo} cuotas · ${op.frq}</div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:var(--gr)">${fmt(tot)}</div><span class="sb done">✅ ${op.pag}/${op.cuo} pagadas</span></div></div><div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap"><button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️ Editar</button><button class="btn bp bsm" style="background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.5);color:var(--yw)" onclick="abrirEditOpCanc(${op.id})">⚙️ Corregir</button><button class="btn bp bsm" style="background:rgba(108,99,255,.15);border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="confirmarReabrirOpCanc(${op.id})">🔄 Reabrir</button><button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfCreditoNuevoWA(gO(${op.id}),gC(${cid}))">📲 PDF</button><button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button></div></div>`}).join('')}</div>`:'';
