@@ -5980,13 +5980,24 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
     filas.push([`${cuotaIdxB}*`,`En curso · ${atrasoStr}`,'—','—','—',`Falta: ${fm(cuota-parcialAcumB)}`]);
   }
   // Cuotas pendientes futuras: desde cuándo vence cada una
-  for(let n=cuotaIdxB+(parcialAcumB>0?1:1);n<=op.cuo;n++){
-    const due=fechaDeCuota(op,n);
-    if(!due||isNaN(due.getTime()))break;
-    const hoy2=new Date();hoy2.setHours(0,0,0,0);
-    const diasV=Math.floor((due-hoy2)/86400000);
-    const vencStr=diasV<0?`Vencida hace ${Math.abs(diasV)}d`:diasV===0?'Vence hoy':`Vence en ${diasV}d`;
-    filas.push([`${n}`,'Pendiente','—','—','—',vencStr]);
+  if(op.tip==='interes_mensual'){
+    // Solo mostrar próximo vencimiento, no las 999 cuotas
+    const fvDate=op.fv?new Date(op.fv+'T00:00:00'):null;
+    if(fvDate&&!isNaN(fvDate.getTime())){
+      const hoy2=new Date();hoy2.setHours(0,0,0,0);
+      const diasV=Math.floor((fvDate-hoy2)/86400000);
+      const vencStr=diasV<0?`Vencida hace ${Math.abs(diasV)}d`:diasV===0?'Vence hoy':`Vence en ${diasV}d`;
+      filas.push(['→','Próximo interés',fd(op.fv),fm(op.cuota_fija||cvOp(op)),'—',vencStr]);
+    }
+  } else {
+    for(let n=cuotaIdxB+(parcialAcumB>0?1:1);n<=op.cuo;n++){
+      const due=fechaDeCuota(op,n);
+      if(!due||isNaN(due.getTime()))break;
+      const hoy2=new Date();hoy2.setHours(0,0,0,0);
+      const diasV=Math.floor((due-hoy2)/86400000);
+      const vencStr=diasV<0?`Vencida hace ${Math.abs(diasV)}d`:diasV===0?'Vence hoy':`Vence en ${diasV}d`;
+      filas.push([`${n}`,'Pendiente','—','—','—',vencStr]);
+    }
   }
   if(filas.length>0){
     doc.autoTable({
@@ -7997,6 +8008,7 @@ function _getRepPeriodo(){
   const totalVentas=ops.filter(esVenta).reduce((s,o)=>s+o.precio,0);
   const gananciaInt=pagos.reduce((acc,p)=>{
     const op=gO(p.oid);if(!op)return acc;
+    if(op.tip==='interes_mensual'){return acc+p.mon;}
     const v=cvOp(op),pr=op.mon/op.cuo;
     if(esVenta(op)){const g=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*g;}
     return acc+Math.max(0,Math.min(p.mon,v)-pr);
