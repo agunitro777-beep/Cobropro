@@ -2232,6 +2232,7 @@ function pdfResumenCli(cid){
 }
 
 async function pdfResumenCliWA(cid){
+  if(!esPremium()){requierePlan('Resumen de cuenta PDF','premium');return;}
   const c=gC(cid);if(!c)return;
   const doc=_buildPdfResumenCli(cid);if(!doc)return;
   const fname='Estado-'+c.nom.replace(/\s/g,'-')+'-'+new Date().toISOString().split('T')[0]+'.pdf';
