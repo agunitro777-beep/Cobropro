@@ -3792,6 +3792,16 @@ function abrirPago(fixId=null){
       // Ocultar botón solo interés para ventas
       const btn=$('p_btnSoloInt');
       if(btn)btn.style.display=(esVenta(op)||op.tip==='cuota'||op.tip==='interes_mensual')?'none':'';
+      // Para interes_mensual: activar soloInt automáticamente y prellenar monto
+      if(op.tip==='interes_mensual'){
+        if($('p_soloInt'))$('p_soloInt').value='1';
+        const montoInt=op.cuota_fija||cvOp(op);
+        $('p_mon').value=Math.round(montoInt);
+        if($('p_soloIntMonto'))$('p_soloIntMonto').textContent=fmt(montoInt);
+        if($('p_soloIntBanner'))$('p_soloIntBanner').style.display='block';
+        if($('p_extFecha'))$('p_extFecha').checked=true;
+        $('pagoMT').textContent='💵 Cobrar interés mensual';
+      }
     }
   } else {$('p_waWrap').style.display='none';}
   showModal('mpago');
@@ -8008,7 +8018,10 @@ function _getRepPeriodo(){
   const totalVentas=ops.filter(esVenta).reduce((s,o)=>s+o.precio,0);
   const gananciaInt=pagos.reduce((acc,p)=>{
     const op=gO(p.oid);if(!op)return acc;
-    if(op.tip==='interes_mensual'){return acc+p.mon;}
+    // interes_mensual: el 100% de cada pago es ganancia (solo se cobra interés, no capital)
+    if(op.tip==='interes_mensual'||op.tip==='interes_mensual_cancelado'){return acc+p.mon;}
+    // pago de solo-interés en crédito normal (not_ empieza con 🔄 INTERES): también es ganancia pura
+    if((p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}
     const v=cvOp(op),pr=op.mon/op.cuo;
     if(esVenta(op)){const g=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*g;}
     return acc+Math.max(0,Math.min(p.mon,v)-pr);
