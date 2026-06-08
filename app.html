@@ -667,7 +667,11 @@ body.light .mo{background:rgba(0,0,0,.5)}
   <div id="logoMarcaLock" style="display:none;margin-bottom:10px;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;text-align:center;font-size:12px;color:var(--tx2)">🔒 Logo de marca disponible en <strong style="color:var(--ac)">Premium</strong></div>
   <div id="semCard" style="background:linear-gradient(135deg,rgba(108,99,255,.15),rgba(34,197,94,.08));border:1px solid rgba(108,99,255,.25);border-radius:14px;padding:14px 16px;margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px">📅 Esta semana</div>
+      <div style="display:flex;gap:4px">
+        <button id="btnPeriodoSem" onclick="setPeriodoInicio('sem')" style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;border:none;cursor:pointer;background:var(--ac);color:#fff">Sem</button>
+        <button id="btnPeriodoMes" onclick="setPeriodoInicio('mes')" style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid var(--border);cursor:pointer;background:transparent;color:var(--tx2)">Mes</button>
+        <button id="btnPeriodoAnio" onclick="setPeriodoInicio('anio')" style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid var(--border);cursor:pointer;background:transparent;color:var(--tx2)">Año</button>
+      </div>
       <div id="semLabel" style="font-size:9px;color:var(--tx2)"></div>
     </div>
     <div style="text-align:center;margin-bottom:12px">
@@ -677,7 +681,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
       <div style="background:rgba(0,0,0,.15);border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:9px;color:var(--tx2);margin-bottom:3px">Prestado (sem.)</div>
+        <div style="font-size:9px;color:var(--tx2);margin-bottom:3px" id="cajSemPrestLabel">Prestado</div>
         <div style="font-size:15px;font-weight:700;color:var(--ac2)" id="cajSemPrest">$0</div>
       </div>
       <div style="background:rgba(0,0,0,.15);border-radius:10px;padding:10px;text-align:center">
@@ -4428,16 +4432,43 @@ function mostrarBannerParcial(oid, nomCliente, flt){
   setTimeout(()=>banner.remove(),12000);
 }
 
+let _periodoInicio='sem';
+function setPeriodoInicio(p){
+  _periodoInicio=p;
+  ['sem','mes','anio'].forEach(k=>{
+    const btn=$('btnPeriodo'+k.charAt(0).toUpperCase()+k.slice(1));
+    if(btn){btn.style.background=k===p?'var(--ac)':'transparent';btn.style.color=k===p?'#fff':'var(--tx2)';btn.style.border=k===p?'none':'1px solid var(--border)';}
+  });
+  rInicio();
+}
 function rInicio(){
   _actualizarLogoMarca();
-  const h=new Date(),lu=new Date(h);lu.setDate(h.getDate()-((h.getDay()+6)%7));lu.setHours(0,0,0,0);
-  const do2=new Date(lu);do2.setDate(lu.getDate()+6);do2.setHours(23,59,59,999);
-  $('semLabel').textContent=`${fD(lu.toISOString().split('T')[0])}–${fD(do2.toISOString().split('T')[0])}`;
-  const luStr=lu.toISOString().split('T')[0],do2Str=do2.toISOString().split('T')[0];
-  const ps=Ps.filter(p=>{const d=new Date(p.fec+'T00:00:00');return d>=lu&&d<=do2});
-  // Cobrado esta semana
+  const h=new Date();
+  let desde,hasta,desdeStr,hastaStr,labelTxt,prestLabel;
+  if(_periodoInicio==='mes'){
+    desde=new Date(h.getFullYear(),h.getMonth(),1);desde.setHours(0,0,0,0);
+    hasta=new Date(h.getFullYear(),h.getMonth()+1,0);hasta.setHours(23,59,59,999);
+    const mNames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    labelTxt=mNames[h.getMonth()]+' '+h.getFullYear();
+    prestLabel='Prestado (mes)';
+  } else if(_periodoInicio==='anio'){
+    desde=new Date(h.getFullYear(),0,1);desde.setHours(0,0,0,0);
+    hasta=new Date(h.getFullYear(),11,31);hasta.setHours(23,59,59,999);
+    labelTxt='Año '+h.getFullYear();
+    prestLabel='Prestado (año)';
+  } else {
+    const lu=new Date(h);lu.setDate(h.getDate()-((h.getDay()+6)%7));lu.setHours(0,0,0,0);
+    const do2=new Date(lu);do2.setDate(lu.getDate()+6);do2.setHours(23,59,59,999);
+    desde=lu;hasta=do2;
+    labelTxt=fD(lu.toISOString().split('T')[0])+'–'+fD(do2.toISOString().split('T')[0]);
+    prestLabel='Prestado';
+  }
+  desdeStr=desde.toISOString().split('T')[0];
+  hastaStr=hasta.toISOString().split('T')[0];
+  $('semLabel').textContent=labelTxt;
+  const lbl=$('cajSemPrestLabel');if(lbl)lbl.textContent=prestLabel;
+  const ps=Ps.filter(p=>{const d=new Date(p.fec+'T00:00:00');return d>=desde&&d<=hasta});
   const cobSem=ps.reduce((s,p)=>s+p.mon,0);
-  // Ganancia semana = intereses reales cobrados esta semana (usando intOp proporcional)
   const ganSem=ps.reduce((acc,p)=>{
     const op=gO(p.oid);if(!op)return acc;
     if(op.tip==='interes_mensual'||(p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}
@@ -4445,9 +4476,7 @@ function rInicio(){
     if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*gan;}
     return acc+Math.max(0,Math.min(p.mon,v)-pr);
   },0);
-  // Prestado esta semana (créditos creados esta semana)
-  // Prestado esta semana: créditos con fecha de acreditación en la semana (se reinicia cada lunes)
-  const prestSem=Ops.filter(o=>!esVenta(o)&&o.facr&&o.facr>=luStr&&o.facr<=do2Str).reduce((s,o)=>s+o.mon,0);
+  const prestSem=Ops.filter(o=>!esVenta(o)&&o.facr&&o.facr>=desdeStr&&o.facr<=hastaStr).reduce((s,o)=>s+o.mon,0);
   const disponSem=cobSem-prestSem;
   $('cajSemTot').textContent=ocul?'••••':fmt(Math.round(ganSem));
   $('cajSemSub').textContent=`${ps.length} pago${ps.length!==1?'s':''}`;
