@@ -3125,10 +3125,10 @@ async function guardarCli(){
     try{
       const _ext=window._fotoCliBlob.type.includes('png')?'png':'jpg';
       const _path=UID()+'/foto_'+Date.now()+'.'+_ext;
-      const {data:_fd,error:_fe}=await SB.storage.from('fotos-clientes').upload(_path,window._fotoCliBlob,{upsert:true,contentType:window._fotoCliBlob.type});
+      const {data:_fd,error:_fe}=await SB.storage.from('Fotos-clientes').upload(_path,window._fotoCliBlob,{upsert:true,contentType:window._fotoCliBlob.type});
       if(_fe){toast('⚠️ Error subiendo foto: '+_fe.message,'warn');}
       else{
-        const {data:_pu}=SB.storage.from('fotos-clientes').getPublicUrl(_path);
+        const {data:_pu}=SB.storage.from('Fotos-clientes').getPublicUrl(_path);
         _fotoUrl=_pu?.publicUrl||'';
         if(!_fotoUrl)toast('⚠️ Foto subida pero sin URL pública — revisá el bucket','warn');
       }
