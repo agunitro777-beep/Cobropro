@@ -1108,6 +1108,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
           <input class="inp" id="op_cuota_im" type="number" placeholder="Ej: 200000" oninput="syncIntMensualCuota()">
         </div>
         <button type="button" id="btnToggleCuotaIM" onclick="toggleCuotaFijaIM()" style="font-size:11px;background:transparent;border:1px dashed var(--border);color:var(--tx2);border-radius:8px;padding:6px 12px;cursor:pointer;width:100%;margin-bottom:8px">Ingresar cuota fija en $ en vez de %</button>
+        <div class="ig" style="margin-top:4px"><label class="il">Cantidad de cuotas (opcional)</label><input class="inp" id="op_cuo_im" type="number" placeholder="Ej: 12 — dejar vacío si es indefinido" oninput="actualizarPreview()"><div style="font-size:9px;color:var(--tx2);margin-top:3px">Si ponés cuotas, la app avisará cuando se termine el plazo</div></div>
       </div>
 
       <!-- Preview dinámico unificado -->
@@ -2670,12 +2671,16 @@ function actualizarPreview(){
   if(tip==='interes_mensual'){
     const cuota=cuotaFijaIM>0?cuotaFijaIM:(mon&&int_?Math.round(mon*int_/100):0);
     if(!mon&&!cuota){pr.style.display='none';return;}
-    html=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Resumen del crédito</div>
+    const cuoIM=parseInt($('op_cuo_im')?.value)||0;
+    const gananciaIM=cuota&&cuoIM?Math.round(cuota*cuoIM):'—';
+    html=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Resumen interés mensual</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
   <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Capital</div><div style="font-weight:800;font-size:14px">${mon_}${Math.round(mon).toLocaleString(LOCALE())}</div></div>
   <div style="background:rgba(168,85,247,.15);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Paga por mes</div><div style="font-weight:800;font-size:14px;color:#a855f7">${cuota?mon_+cuota.toLocaleString(LOCALE()):'—'}</div></div>
+  ${cuoIM?`<div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Cuotas</div><div style="font-weight:800;font-size:14px">${cuoIM}</div></div>`:''}
+  ${cuoIM&&cuota?`<div style="background:rgba(34,197,94,.12);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Total intereses</div><div style="font-weight:800;font-size:14px;color:var(--gr)">${mon_}${Math.round(cuota*cuoIM).toLocaleString(LOCALE())}</div></div>`:''}
 </div>
-<div style="margin-top:8px;font-size:10px;color:var(--tx2);line-height:1.6">El capital de <strong style="color:var(--tx)">${mon_}${Math.round(mon).toLocaleString(LOCALE())}</strong> se devuelve cuando el cliente cancele. Mientras tanto paga <strong style="color:var(--tx)">${cuota?mon_+cuota.toLocaleString(LOCALE()):'—'}</strong> cada mes.</div>`;
+<div style="margin-top:8px;font-size:10px;color:var(--tx2);line-height:1.6">Paga <strong style="color:var(--tx)">${cuota?mon_+cuota.toLocaleString(LOCALE()):'—'}</strong>/mes. El capital se devuelve al cancelar.</div>`;
   } else if(tip==='diario_abierto'){
     const monD=parseFloat($('op_mon_d')?.value)||0;
     const intD=parseFloat($('op_int_d')?.value)||0;
@@ -3354,8 +3359,9 @@ async function guardarOp(){
     const intIMfinal=cuotaFijaIMg>0?(cuotaIM/monIM*100):intIM;
     const descIM=($('op_desc_im')?.value||$('op_desc')?.value||'Crédito solo interés').trim();
     const fvIM=$('op_fv').value||hoy();
-    // 999 cuotas = abierto; cuota_fija = interés mensual; capital en mon
-    Object.assign(d,{mon:monIM,int_:intIMfinal,mora:0,tip:'interes_mensual',desc_:descIM,prod:'',costo:0,precio:0,cuo:999,pag:0,frq:'mensual',fv:fvIM,facr:$('op_facr')?.value||null,cuota_fija:cuotaIM});
+    // si ingresaron cuotas usar ese número, si no 999 = abierto
+    const cuoIM=parseInt($('op_cuo_im')?.value)||999;
+    Object.assign(d,{mon:monIM,int_:intIMfinal,mora:0,tip:'interes_mensual',desc_:descIM,prod:'',costo:0,precio:0,cuo:cuoIM,pag:0,frq:'mensual',fv:fvIM,facr:$('op_facr')?.value||null,cuota_fija:cuotaIM});
   } else if(tipInt==='cuota'){
     // cuota fija directa
     const cuotaCF=parseFloat($('op_cuo_fixed_cf')?.value)||0;
