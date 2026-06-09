@@ -2388,6 +2388,10 @@ function toggleTipoInteres(forzar){
   show($('op_fv')?.closest('.ig'),   !esDiario);
   show($('op_facr')?.closest('.ig'), !esDiario);
   show($('op_mora')?.closest('.ig'), !esDiario&&!esMensual);
+  if(esCuota){
+    const mc=$('op_mora_check');
+    if(mc){mc.checked=false;toggleMoraField();}
+  }
   if(esDiario&&$('op_facr_d'))$('op_facr_d').value=hoy();
   if(esMensual)syncIntMensual();
   actualizarTipExplainer();
