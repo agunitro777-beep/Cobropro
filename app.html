@@ -2663,9 +2663,10 @@ function actualizarTipExplainer(){
 function actualizarPreview(){
   const tip=$('op_tip')?.value||'simple';
   const mon=tip==='interes_mensual'?parseFloat($('op_mon_im')?.value)||0:parseFloat($('op_mon')?.value)||0;
-  const cuo=parseInt($('op_cuo')?.value)||0;
+  const esCuotaFija=tip==='cuota';
+  const cuo=esCuotaFija?(parseInt($('op_cuo_cf')?.value)||0):(parseInt($('op_cuo')?.value)||0);
   const int_=tip==='interes_mensual'?parseFloat($('op_int_im')?.value)||0:parseFloat($('op_int')?.value)||0;
-  const cuotaFija=parseFloat($('op_cuo_fixed')?.value)||0;
+  const cuotaFija=esCuotaFija?(parseFloat($('op_cuo_fixed_cf')?.value)||0):(parseFloat($('op_cuo_fixed')?.value)||0);
   const cuotaFijaIM=parseFloat($('op_cuota_im')?.value)||0;
   const frq=$('op_frq')?.value||'mensual';
   const mon_=(CFG.moneda||'$');
@@ -3352,7 +3353,9 @@ async function guardarOp(){
   if(_guardando){return;}_guardando=true;
   const tipo=$('op_tipo').value,cidFijo=parseInt($('op_cidFijo').value)||0,cid=cidFijo||parseInt($('op_cli').value);
   if(!cid){toast('Seleccioná un cliente','error');_guardando=false;return}
-  const cuo=parseInt($('op_cuo').value)||1,frq=$('op_frq').value,fv=$('op_fv').value||hoy();
+  const tipIntPre=$('op_tip')?$('op_tip').value:'simple';
+  const cuoRaw=tipIntPre==='cuota'?(parseInt($('op_cuo_cf')?.value)||0):(parseInt($('op_cuo').value)||1);
+  const cuo=cuoRaw||1,frq=$('op_frq').value,fv=$('op_fv').value||hoy();
   const moneda=$('op_moneda').value||CFG.moneda||'$';
   const oid=parseInt($('op_id').value)||null;
   let d={cid,tipo,cuo,frq,fv,not_:$('op_not').value.trim(),fa:oid?((Ops.find(o=>o.id===oid)||{}).fa||hoy()):hoy(),moneda,facr:$('op_facr').value||null};
