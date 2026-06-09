@@ -634,6 +634,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
   <span class="brand">💸 CobroAlDía</span>
   <div class="hdr-r">
     <div class="ibtn" onclick="toggleOcul()" id="eyeBtn">👁️</div>
+    <div class="ibtn" id="undoBtn" onclick="mostrarColaDeshacer()" style="display:none;position:relative">↩️<span id="undoBadge" style="position:absolute;top:-4px;right:-4px;background:var(--rd);color:#fff;font-size:9px;font-weight:700;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;line-height:1"></span></div>
     <div class="ibtn" onclick="showModal('mPerfil')">⚙️</div>
   </div>
 </div>
@@ -2594,6 +2595,103 @@ function cancelarCapitalMensual(oid){
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',_setupFotoInput);}
   else{_setupFotoInput();}
 })();
+// ══ SISTEMA DESHACER (30 segundos) ══
+const _undoQueue=[];
+const _UNDO_TTL=30000; // 30 segundos
+
+function _undoPush(accion){
+  if(!esPremium())return;
+  const entry={...accion, ts:Date.now()};
+  _undoQueue.push(entry);
+  _undoRefreshUI();
+  // Auto-limpiar pasados 30 segundos
+  setTimeout(()=>{
+    const idx=_undoQueue.indexOf(entry);
+    if(idx>=0)_undoQueue.splice(idx,1);
+    _undoRefreshUI();
+  },_UNDO_TTL);
+}
+
+function _undoRefreshUI(){
+  const btn=document.getElementById('undoBtn');
+  const badge=document.getElementById('undoBadge');
+  const valid=_undoQueue.filter(e=>Date.now()-e.ts<_UNDO_TTL);
+  if(btn)btn.style.display=(esPremium()&&valid.length>0)?'flex':'none';
+  if(badge)badge.textContent=valid.length>0?valid.length:'';
+}
+
+async function mostrarColaDeshacer(){
+  const valid=_undoQueue.filter(e=>Date.now()-e.ts<_UNDO_TTL).slice().reverse();
+  if(!valid.length){toast('No hay acciones para deshacer','warn');return;}
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center';
+  const items=valid.map((e,i)=>{
+    const seg=Math.max(0,Math.round((_UNDO_TTL-(Date.now()-e.ts))/1000));
+    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div><div style="font-size:12px;font-weight:600">${e.label}</div><div style="font-size:10px;color:var(--tx2)">expira en ${seg}s</div></div>
+      <button onclick="ejecutarDeshacer(${i},this)" style="background:var(--ac);border:none;color:#fff;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer">↩️ Deshacer</button>
+    </div>`;
+  }).join('');
+  modal.innerHTML=`<div style="background:var(--bg2);border-radius:20px 20px 0 0;padding:16px 15px 40px;width:100%;max-height:70dvh;overflow-y:auto;border-top:1px solid var(--border)">
+    <div style="font-size:14px;font-weight:800;margin-bottom:12px">↩️ Deshacer acciones</div>
+    ${items}
+    <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;margin-top:12px;background:var(--card);border:1px solid var(--border);color:var(--tx);border-radius:10px;padding:11px;font-size:13px;cursor:pointer">Cerrar</button>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  window._undoModal=modal;
+}
+
+async function ejecutarDeshacer(idx,btn){
+  const valid=_undoQueue.filter(e=>Date.now()-e.ts<_UNDO_TTL).slice().reverse();
+  const entry=valid[idx];if(!entry)return;
+  btn.textContent='⏳';btn.disabled=true;
+  try{
+    if(entry.type==='cli'){
+      // Restaurar cliente
+      const {data:rc}=await SB.from('clientes').insert({...entry.data,user_id:UID()}).select().single();
+      if(rc){
+        Cs.push({...rc,not:rc.not_||''});
+        // Restaurar operaciones
+        for(const op of entry.ops||[]){
+          const {data:ro}=await SB.from('operaciones').insert({...op,user_id:UID()}).select().single();
+          if(ro){
+            Ops.push(ro);
+            // Restaurar pagos de esa operación
+            for(const p of entry.pagos?.filter(px=>px.oid===op.id)||[]){
+              await SB.from('pagos').insert({...p,user_id:UID()}).catch(()=>{});
+            }
+          }
+        }
+        rebuildMaps();
+      }
+    } else if(entry.type==='op'){
+      const {data:ro}=await SB.from('operaciones').insert({...entry.data,user_id:UID()}).select().single();
+      if(ro){
+        Ops.push(ro);
+        for(const p of entry.pagos||[]){
+          await SB.from('pagos').insert({...p,user_id:UID()}).catch(()=>{});
+        }
+        rebuildMaps();
+      }
+    } else if(entry.type==='pago'){
+      const {data:rp}=await SB.from('pagos').insert({...entry.data,user_id:UID()}).select().single();
+      if(rp){
+        Ps.push(rp);
+        await sincPagOp(entry.data.oid).catch(()=>{});
+        rebuildMaps();
+      }
+    }
+    // Quitar de la cola
+    const qi=_undoQueue.indexOf(entry);
+    if(qi>=0)_undoQueue.splice(qi,1);
+    _undoRefreshUI();
+    if(window._undoModal)window._undoModal.remove();
+    toast('↩️ Acción deshecha');
+    setTimeout(()=>refrescar(),100);
+  }catch(e){toast('Error al deshacer: '+e.message,'error');btn.textContent='↩️ Deshacer';btn.disabled=false;}
+}
+
 let _intModo='mensual'; // 'mensual' = % por cuota, 'total' = % sobre el total
 function setIntModo(modo){
   _intModo=modo;
@@ -3274,6 +3372,8 @@ async function elimCli(cid){
   if(!ok)return;
   try{
     const opIds=opsDeCli(cid).map(o=>o.id);
+    // Guardar en cola antes de borrar
+    _undoPush({type:'cli',label:'Cliente: '+(c?.nom||'?'),data:{...c},ops:Ops.filter(o=>o.cid===cid),pagos:Ps.filter(p=>opIds.includes(p.oid))});
     for(const oid of opIds){const pags=Ps.filter(p=>p.oid===oid);for(const p of pags){try{await dbDel('pagos',p.id)}catch(e){console.error('Error borrando pago',p.id,e);}}}
     for(const oid of opIds){try{await dbDel('operaciones',oid)}catch(e){console.error('Error borrando operación',oid,e);}}
     await dbDel('clientes',cid);
@@ -3481,6 +3581,7 @@ async function elimOp(oid){
   if(!ok)return;
   try{
     const pags=Ps.filter(p=>p.oid===oid);
+    _undoPush({type:'op',label:'Operación: '+(op?(esVenta(op)?op.prod||'Venta':op.desc||'Crédito'):'?'),data:{...op},pagos:[...pags]});
     for(const p of pags){try{await dbDel('pagos',p.id)}catch(e){console.error('Error borrando pago',p.id,e);}}
     await dbDel('operaciones',oid);
     Ops=Ops.filter(o=>o.id!==oid);Ps=Ps.filter(p=>p.oid!==oid);rebuildMaps();
@@ -4154,6 +4255,7 @@ async function confirmarElimPago(){
     const p=Ps.find(x=>x.id===pid);
     const opId=p?p.oid:null;
     const eraCompleto=p&&!p.par;
+    if(p){const op=gO(p.oid);_undoPush({type:'pago',label:'Pago: '+(op?op.desc||op.prod||'Operación':'?')+' — $'+Math.round(p.mon||0).toLocaleString('es-AR'),data:{...p}});}
     await dbDel('pagos',pid);
     // Actualizar estado local inmediatamente
     Ps=Ps.filter(x=>x.id!==pid);
