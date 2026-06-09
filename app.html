@@ -1650,7 +1650,7 @@ async function iniciarApp(){
   if(cliListEl)cliListEl.innerHTML=`<div class="skeleton skel-card"></div><div class="skeleton skel-card"></div><div class="skeleton skel-card" style="opacity:.6"></div><div class="skeleton skel-card" style="opacity:.35"></div>`;
 
   // Cargar datos
-  try{ await cargarTodo(); }catch(e){console.error('cargarTodo:',e);toast('Error cargando datos','error');}
+  try{ await cargarTodo();_undoRefreshUI(); }catch(e){console.error('cargarTodo:',e);toast('Error cargando datos','error');}
   _cargarLogos();
   refrescar();rCaja();
   initTheme();
@@ -2616,8 +2616,8 @@ function _undoRefreshUI(){
   const btn=document.getElementById('undoBtn');
   const badge=document.getElementById('undoBadge');
   const valid=_undoQueue.filter(e=>Date.now()-e.ts<_UNDO_TTL);
-  if(btn)btn.style.display=(esPremium()&&valid.length>0)?'flex':'none';
-  if(badge)badge.textContent=valid.length>0?valid.length:'';
+  if(btn)btn.style.display=esPremium()?'flex':'none';
+  if(badge){badge.textContent=valid.length>0?valid.length:'';badge.style.display=valid.length>0?'flex':'none';}
 }
 
 async function mostrarColaDeshacer(){
