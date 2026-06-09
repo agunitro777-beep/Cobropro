@@ -2697,10 +2697,23 @@ function actualizarPreview(){
   <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:7px;text-align:center"><div style="font-size:9px;color:var(--tx2)">30 días</div><div style="font-weight:800;font-size:12px">${mon_}${ej30.toLocaleString(LOCALE())}</div></div>
 </div>
 <div style="margin-top:6px;font-size:10px;color:var(--tx2)">${mon_}${monD.toLocaleString(LOCALE())} al ${intD}% diario · ${(intD*30).toFixed(1)}% mensual</div>`;
+  } else if(tip==='cuota'){
+    // Cuota fija directa
+    const cuotaCF=parseFloat($('op_cuo_fixed_cf')?.value)||0;
+    const cuoCF=parseInt($('op_cuo_cf')?.value)||0;
+    if(!cuotaCF||!cuoCF){pr.style.display='none';return;}
+    const totalCF=cuotaCF*cuoCF;
+    const frqLabel={diario:'días',semanal:'semanas',quincenal:'quincenas',mensual:'meses'}[frq]||'cuotas';
+    html=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Resumen cuota fija</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Cuota</div><div style="font-weight:800;font-size:14px;color:var(--ac)">${mon_}${cuotaCF.toLocaleString(LOCALE())}</div></div>
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Total a cobrar</div><div style="font-weight:800;font-size:14px">${mon_}${totalCF.toLocaleString(LOCALE())}</div></div>
+  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Cuotas</div><div style="font-weight:800;font-size:14px">${cuoCF}</div></div>
+</div>
+<div style="margin-top:6px;font-size:10px;color:var(--tx2)">${cuoCF} ${frqLabel} de ${mon_}${cuotaCF.toLocaleString(LOCALE())}</div>`;
   } else {
     if(!mon||!cuo){pr.style.display='none';return;}
-    // calcular cuota
-    const intPC=(tip==='interes_mensual'?int_:intMostradoAGuardar(int_,cuo))/100;
+    const intPC=intMostradoAGuardar(int_,cuo)/100;
     let cuota=cuotaFija>0?cuotaFija:0;
     if(!cuota){
       if(tip==='simple')cuota=Math.round(mon*(1+intPC*cuo)/cuo);
