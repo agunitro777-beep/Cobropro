@@ -2616,13 +2616,21 @@ function _undoRefreshUI(){
   const btn=document.getElementById('undoBtn');
   const badge=document.getElementById('undoBadge');
   const valid=_undoQueue.filter(e=>Date.now()-e.ts<_UNDO_TTL);
-  if(btn)btn.style.display=esPremium()?'flex':'none';
+  if(btn)btn.style.display='flex';
   if(badge){badge.textContent=valid.length>0?valid.length:'';badge.style.display=valid.length>0?'flex':'none';}
 }
 
 async function mostrarColaDeshacer(){
+  if(!esPremium()){
+    const ok=await showConfirm('↩️ Deshacer acciones','Esta función te permite recuperar clientes, operaciones y pagos borrados en los últimos 30 segundos.\n\nDisponible en el plan Premium.','⭐','Ver planes','bp');
+    if(ok)showModal('mPlanes');
+    return;
+  }
   const valid=_undoQueue.filter(e=>Date.now()-e.ts<_UNDO_TTL).slice().reverse();
-  if(!valid.length){toast('No hay acciones para deshacer','warn');return;}
+  if(!valid.length){
+    toast('↩️ No hay acciones recientes para deshacer. Borrá algo en los próximos 30 segundos y aparecerá acá.','warn');
+    return;
+  }
   const modal=document.createElement('div');
   modal.style.cssText='position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center';
   const items=valid.map((e,i)=>{
