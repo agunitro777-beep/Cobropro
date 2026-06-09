@@ -2058,28 +2058,40 @@ function _buildPdfResumenCli(cid){
   const fm=n=>mon+Math.round(n).toLocaleString(LOCALE());
   const fd=d=>{if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`};
   const hoy2=new Date();hoy2.setHours(0,0,0,0);
+  const metLabel={efectivo:'Efectivo',transferencia:'Transf.',otro:'Otro'};
 
   // ── Header ──
-  doc.setFillColor(108,99,255);doc.rect(0,0,210,30,'F');
+  doc.setFillColor(30,30,45);doc.rect(0,0,210,30,'F');
   doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
   doc.text('ESTADO DE CUENTA',105,13,{align:'center'});
-  doc.setFontSize(9);doc.setFont('helvetica','normal');
-  doc.text((CFG.nombre||'CobroAlDía')+' · Generado el '+new Date().toLocaleDateString(LOCALE()),105,21,{align:'center'});
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(180,180,210);
+  doc.text((CFG.nombre||'CobroAlDía')+' · '+new Date().toLocaleDateString(LOCALE()),105,22,{align:'center'});
 
   // ── Datos cliente ──
-  doc.setFillColor(245,245,255);doc.setDrawColor(200,200,220);
-  doc.roundedRect(14,36,182,24,3,3,'FD');
-  doc.setTextColor(80,80,120);doc.setFontSize(8);doc.setFont('helvetica','bold');
-  doc.text('CLIENTE',20,44);
-  if(c.tel)doc.text('TELÉFONO',100,44);
-  doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);doc.setFontSize(12);
-  doc.text(c.nom,20,52);
-  if(c.tel)doc.text(c.tel,100,52);
+  doc.setFillColor(245,245,252);doc.setDrawColor(200,200,225);
+  doc.roundedRect(14,36,182,22,3,3,'FD');
+  doc.setTextColor(100,100,140);doc.setFontSize(7.5);doc.setFont('helvetica','bold');
+  doc.text('CLIENTE',20,43);if(c.tel)doc.text('TELÉFONO',105,43);
+  doc.setFont('helvetica','normal');doc.setTextColor(20,20,30);doc.setFontSize(11);
+  doc.text(c.nom,20,51);if(c.tel)doc.text(c.tel,105,51);
+  doc.setFontSize(8);doc.setTextColor(120,120,150);
+  doc.text('Generado: '+new Date().toLocaleDateString(LOCALE()),196,51,{align:'right'});
 
-  let y=68;
+  let y=66;
   const opsAct=opsDeCli(cid).filter(o=>o.pag<o.cuo);
   if(!opsAct.length){
     doc.setFontSize(11);doc.setTextColor(120);doc.text('Sin operaciones activas.',14,y);
+  }
+
+  // ── Total general a pagar ──
+  if(opsAct.length>0){
+    const totalPagar=opsAct.reduce((s,o)=>s+saldoMOp(o),0);
+    doc.setFillColor(108,99,255);doc.roundedRect(14,y,182,14,3,3,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','bold');
+    doc.text('TOTAL PENDIENTE',18,y+5.5);
+    doc.text(`${opsAct.length} crédito${opsAct.length>1?'s':''}`,105,y+5.5,{align:'center'});
+    doc.setFontSize(12);doc.text(fm(totalPagar),196,y+10,{align:'right'});
+    y+=18;
   }
 
   opsAct.forEach((op,idx)=>{
@@ -2088,134 +2100,115 @@ function _buildPdfResumenCli(cid){
     const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');
     const cuota=cvOp(op);
     const saldo=saldoMOp(op);
-    const fecs=fechasOp(op);
     const st=stOp(op);
-    const pct=Math.round((op.pag/op.cuo)*100);
+    const pagosOp=pagoDeOp(op.id).sort((a,b)=>a.fec.localeCompare(b.fec));
+    // Pagos parciales no completados
+    const parciales=pagosOp.filter(p=>p.par);
+    const totalParcial=parciales.reduce((s,p)=>s+p.mon,0);
+    const fecs=fechasOp(op);
 
-    // Cabecera de la operación
-    const colOp=sv?[6,182,212]:(st==='atrasado'?[239,68,68]:[108,99,255]);
-    doc.setFillColor(...colOp);doc.roundedRect(14,y,182,8,2,2,'F');
+    // Cabecera operación
+    const enMora=st==='atrasado';
+    const colH=sv?[6,182,212]:(enMora?[220,50,50]:[60,60,90]);
+    doc.setFillColor(...colH);doc.roundedRect(14,y,182,9,2,2,'F');
     doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont('helvetica','bold');
-    doc.text(`${sv?'VENTA':'CRÉDITO'} — ${lbl}`,18,y+5.5);
-    doc.text(`Cuota ${fm(cuota)}`,196,y+5.5,{align:'right'});
-    y+=10;
+    doc.text(`${lbl}`,18,y+6);
+    doc.text(fm(cuota)+'/cuota',196,y+6,{align:'right'});
+    y+=11;
 
-    // Resumen de la operación — altura dinámica según si tiene acreditación
-    const tieneAcr=!!(op.facr);
-    const altRes=tieneAcr?26:16;
-    doc.setFillColor(248,248,255);doc.setDrawColor(220,220,235);
-    doc.roundedRect(14,y,182,altRes,2,2,'FD');
-    // Etiquetas fila 1
-    doc.setTextColor(80,80,120);doc.setFontSize(7.5);doc.setFont('helvetica','bold');
-    // Columnas: PAGADAS(18) SALDO(65) FRECUENCIA(110) FECHA(158)
-    const fechaLabel=op.cuo===1?'FECHA DE PAGO':'1er CUOTA';
-    doc.text('PAGADAS',18,y+5);doc.text('SALDO',65,y+5);doc.text('FRECUENCIA',110,y+5);doc.text(fechaLabel,158,y+5);
-    // Valores fila 1
-    doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);doc.setFontSize(9);
-    doc.text(`${op.pag} / ${op.cuo}  (${pct}%)`,18,y+12);
-    doc.setTextColor(st==='atrasado'?200:34,st==='atrasado'?30:150,st==='atrasado'?30:80);
-    doc.text(fm(saldo),65,y+12);
-    doc.setTextColor(20,20,20);
-    doc.text(op.frq,110,y+12);
-    doc.text(fd(op.fv),158,y+12);
-    // Fila 2: acreditación (si existe), dentro del mismo box
-    if(tieneAcr){
-      doc.setDrawColor(220,220,235);doc.setLineWidth(0.3);
-      doc.line(18,y+15,192,y+15);
-      doc.setTextColor(80,80,120);doc.setFontSize(7.5);doc.setFont('helvetica','bold');
-      doc.text('FECHA DE ACREDITACIÓN',18,y+20);
-      doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);doc.setFontSize(9);
-      doc.text(fd(op.facr),70,y+20);
+    // Info rápida: 4 datos en una fila
+    doc.setFillColor(248,248,252);doc.setDrawColor(215,215,230);
+    doc.roundedRect(14,y,182,12,2,2,'FD');
+    doc.setTextColor(100,100,140);doc.setFontSize(7);doc.setFont('helvetica','bold');
+    doc.text('CUOTAS',18,y+4.5);doc.text('PENDIENTE',62,y+4.5);doc.text('PRÓX. VENCIM.',108,y+4.5);doc.text('ACREDITADO',158,y+4.5);
+    doc.setFont('helvetica','normal');doc.setTextColor(20,20,30);doc.setFontSize(8.5);
+    doc.text(`${op.pag}/${op.cuo}`,18,y+10);
+    doc.setTextColor(enMora?200:34,enMora?30:140,enMora?30:70);doc.setFont('helvetica','bold');
+    doc.text(fm(saldo),62,y+10);
+    doc.setFont('helvetica','normal');doc.setTextColor(20,20,30);
+    doc.text(fecs.length?fd(fecs[0]):'—',108,y+10);
+    doc.text(op.facr?fd(op.facr):'—',158,y+10);
+    y+=14;
+
+    // Si hay pago parcial pendiente, mostrarlo destacado
+    if(totalParcial>0){
+      const resta=cuota-totalParcial;
+      doc.setFillColor(255,247,220);doc.setDrawColor(230,180,50);
+      doc.roundedRect(14,y,182,10,2,2,'FD');
+      doc.setTextColor(140,90,0);doc.setFontSize(8);doc.setFont('helvetica','bold');
+      doc.text(`⚡ Pago parcial registrado: ${fm(totalParcial)}  ·  Resta para completar cuota: ${fm(Math.max(0,resta))}`,18,y+6.5);
+      y+=13;
     }
-    y+=altRes+3;
 
-    // ── Tabla cuotas pendientes ──
-    if(y>240){doc.addPage();y=16;}
-    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(70,60,180);
-    doc.text('Cuotas pendientes',16,y+4);y+=7;
-    const cuotaRows=fecs.map((f,i)=>{
-      const numCuota=(op.pag||0)+i+1;
-      const fd2=new Date(f+'T00:00:00');
-      const dias=Math.floor((hoy2-fd2)/86400000);
-      const atrasado=dias>0;
-      const status=atrasado?`⚠ ${dias}d atraso`:(dias===0?'Vence hoy':'Pendiente');
-      return[`${numCuota}`,fd(f),atrasado?`${dias} días`:'—',status,fm(cuota)];
-    });
-    doc.autoTable({
-      startY:y,
-      head:[['Cuota','Fecha de pago','Días atraso','Estado','Monto']],
-      body:cuotaRows,
-      styles:{fontSize:7.5,cellPadding:2.5},
-      headStyles:{fillColor:[70,60,180],textColor:255,fontSize:7.5,fontStyle:'bold'},
-      columnStyles:{0:{cellWidth:14,halign:'center'},1:{cellWidth:32},2:{cellWidth:24,halign:'center'},3:{cellWidth:50},4:{cellWidth:30,halign:'right'}},
-      didParseCell:function(data){
-        if(data.section==='body'){
-          const row=cuotaRows[data.row.index];
-          if(row&&row[2]!=='—'){data.cell.styles.textColor=[200,30,30];data.cell.styles.fontStyle='bold';}
-        }
-      },
-      margin:{left:14,right:14}
-    });
-    y=doc.lastAutoTable.finalY+10;
-    if(idx<opsAct.length-1&&y>230){doc.addPage();y=16;}
+    // Cuotas pendientes
+    if(fecs.length>0){
+      if(y>245){doc.addPage();y=16;}
+      const cuotaRows=fecs.map((f,i)=>{
+        const numCuota=(op.pag||0)+i+1;
+        const fd2=new Date(f+'T00:00:00');
+        const dias=Math.floor((hoy2-fd2)/86400000);
+        const esProxima=i===0;
+        const montoEsta=esProxima&&totalParcial>0?Math.max(0,cuota-totalParcial):cuota;
+        const estado=dias>0?`⚠ ${dias}d atraso`:dias===0?'Vence hoy':'Pendiente';
+        return[`${numCuota}`,fd(f),estado,fm(montoEsta)];
+      });
+      doc.autoTable({
+        startY:y,
+        head:[['#','Fecha venc.','Estado','A pagar']],
+        body:cuotaRows,
+        styles:{fontSize:7.5,cellPadding:2,textColor:[30,30,40]},
+        headStyles:{fillColor:[60,60,90],textColor:255,fontSize:7.5,fontStyle:'bold'},
+        columnStyles:{0:{cellWidth:10,halign:'center'},1:{cellWidth:35},2:{cellWidth:80},3:{cellWidth:35,halign:'right'}},
+        didParseCell:function(data){
+          if(data.section==='body'){
+            const row=cuotaRows[data.row.index];
+            if(row&&row[2].includes('atraso')){data.cell.styles.textColor=[200,30,30];data.cell.styles.fontStyle='bold';}
+            if(data.row.index===0&&totalParcial>0){data.cell.styles.fillColor=[255,250,225];}
+          }
+        },
+        alternateRowStyles:{fillColor:[245,245,252]},
+        margin:{left:14,right:14}
+      });
+      y=doc.lastAutoTable.finalY+8;
+    }
+    if(idx<opsAct.length-1){if(y>230){doc.addPage();y=16;}else y+=2;}
   });
 
-  // ── Total a pagar (solo si todas las ops tienen 1 cuota y vencen el mismo día) ──
-  if(opsAct.length>1){
-    const todasUnaCuota=opsAct.every(o=>o.cuo===1);
-    const fechaRef=opsAct[0].fv;
-    const todasMismaFecha=opsAct.every(o=>o.fv===fechaRef);
-    if(todasUnaCuota&&todasMismaFecha){
-      const totalPagar=opsAct.reduce((s,o)=>s+saldoMOp(o),0);
-      if(y>260){doc.addPage();y=16;}
-      doc.setFillColor(108,99,255);doc.roundedRect(14,y,182,16,3,3,'F');
-      doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont('helvetica','bold');
-      doc.text(`TOTAL A PAGAR — ${fd(fechaRef)}`,18,y+6.5);
-      doc.setFontSize(13);doc.text(fm(totalPagar),196,y+11,{align:'right'});
-      y+=22;
-    }
-  }
-
-  // ── Historial de pagos ──
+  // ── Historial de todos los pagos ──
   const todosLosPagos=opsDeCli(cid).flatMap(op=>pagoDeOp(op.id).map(p=>({...p,_op:op})))
     .sort((a,b)=>b.fec.localeCompare(a.fec));
 
   if(todosLosPagos.length){
-    if(y>230){doc.addPage();y=16;}
-    doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(34,150,80);
-    doc.text('Historial de pagos',16,y+4);y+=8;
+    if(y>220){doc.addPage();y=16;}
+    doc.setFillColor(22,120,60);doc.roundedRect(14,y,182,8,2,2,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont('helvetica','bold');
+    doc.text('HISTORIAL DE PAGOS',18,y+5.5);
+    doc.text(`${todosLosPagos.length} registros`,196,y+5.5,{align:'right'});
+    y+=10;
     const pagRows=todosLosPagos.map(p=>{
       const op=p._op;
       const lbl=op?(esVenta(op)?op.prod||'Venta':op.desc||'Crédito'):'—';
-      const esInt=(p.not||'').startsWith('🔄 INTERES')||(p.not||'').includes('INTERES');
-      const tipo=p.par?'Parcial':esInt?'Interés':'Completo';
-      const mora=esInt?0:calcMoraPago(p,op);
-      const moraStr=mora>0?`⚠ ${mora}d`:'—';
-      return[fd(p.fec),lbl,p.met||'efectivo',tipo,moraStr,fm(p.mon)];
+      const esInt=(p.not_||p.not||'').startsWith('🔄 INTERES');
+      const tipo=p.par?'⚡ Parcial':esInt?'Interés':'Completo';
+      return[fd(p.fec),lbl,metLabel[p.met]||p.met||'—',tipo,fm(p.mon)];
     });
     doc.autoTable({
       startY:y,
-      head:[['Fecha','Concepto','Método','Tipo','Mora','Monto']],
+      head:[['Fecha','Crédito','Método','Tipo','Monto']],
       body:pagRows,
-      styles:{fontSize:7.5,cellPadding:2.5},
-      headStyles:{fillColor:[22,163,74],textColor:255,fontSize:7.5,fontStyle:'bold'},
-      columnStyles:{5:{halign:'right'}},
-      alternateRowStyles:{fillColor:[240,255,245]},
+      styles:{fontSize:7.5,cellPadding:2,textColor:[30,30,40]},
+      headStyles:{fillColor:[22,120,60],textColor:255,fontSize:7.5,fontStyle:'bold'},
+      columnStyles:{4:{halign:'right'}},
+      alternateRowStyles:{fillColor:[240,252,245]},
       didParseCell:function(data){
-        if(data.section==='body'&&data.column.index===4){
+        if(data.section==='body'&&data.column.index===3){
           const row=pagRows[data.row.index];
-          if(row&&row[4]!=='—'){data.cell.styles.textColor=[200,30,30];data.cell.styles.fontStyle='bold';}
+          if(row&&row[3].includes('Parcial')){data.cell.styles.textColor=[160,100,0];data.cell.styles.fontStyle='bold';}
         }
       },
       margin:{left:14,right:14}
     });
     y=doc.lastAutoTable.finalY+8;
-
-    const pagosConMora=todosLosPagos.filter(p=>calcMoraPago(p,p._op)>0);
-    if(pagosConMora.length){
-      doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(200,30,30);
-      doc.text(`⚠ ${pagosConMora.length} pago${pagosConMora.length>1?'s':''} realizados fuera de fecha`,16,y);
-    }
   }
 
   // ── Footer ──
