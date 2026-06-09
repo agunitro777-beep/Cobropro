@@ -8777,126 +8777,372 @@ function toggleFaq(id){
 }
 
 // ══ TOUR INTERACTIVO ══
+// ══ TOUR DEMO ANIMADO ══
 let _tourStep = 0;
-let _tourSteps = []; // pasos activos del tour actual
+let _tourSteps = [];
+let _tourFingerTimer = null;
 
 const TOUR_STEPS_MAIN = [
-  { icon:'👋', title:'¡Bienvenido a CobroAlDía!', desc:'Este tour rápido te muestra las funciones principales. Podés saltearlo en cualquier momento tocando la ✕.', target:null, page:null },
-  { icon:'🏠', title:'Pantalla de inicio', desc:'Acá ves el resumen de tu negocio: capital prestado, por cobrar, cobrado esta semana y alertas de clientes en mora o con cuotas próximas.', target:'page-inicio', page:'inicio' },
-  { icon:'👥', title:'Lista de clientes', desc:'Todos tus clientes aparecen acá. Tocá uno para ver sus operaciones, registrar pagos o abrir su ubicación en Maps. Usá la barra de búsqueda para filtrar.', target:'page-clientes', page:'clientes' },
-  { icon:'➕', title:'Agregar cliente o operación', desc:'Este botón "+" abre el menú para agregar un cliente nuevo o una operación. Siempre está visible en todas las secciones.', target:'fab', page:'clientes' },
-  { icon:'💰', title:'Caja del día', desc:'Acá registrás y ves todos los pagos recibidos. Podés filtrar por hoy, semana o mes, y también registrar gastos operativos.', target:'page-caja', page:'caja' },
-  { icon:'📅', title:'Calendario', desc:'Vista mensual de eventos, cobros y cumpleaños. Tocá un día para ver el detalle y agregar eventos propios con título, descripción y color.', target:'nav-cal', page:'cal' },
-  { icon:'🗓️', title:'Agenda de cobros (Ruta)', desc:'Tu ruta del día. Muestra los cobros pendientes ordenados. Swipe derecha = cobrado, swipe izquierda = parcial. Si los clientes tienen GPS, podés navegar la ruta en Maps.', target:'page-agenda', page:'agenda' },
-  { icon:'💹', title:'Finanzas y reportes', desc:'Gráficos de cobros, proyección a 12 meses y reporte completo de tu cartera con morosidad, ranking de clientes y exportación Excel/PDF.', target:'page-fin', page:'fin' },
-
-  { icon:'👑', title:'Planes: Trial · PRO · Premium', desc:'Tenés 30 días de prueba gratuita con acceso completo. Al vencer elegís:\n⭐ PRO: más clientes + exportación\n👑 Premium: sin límites, todas las funciones\n\nTus datos nunca se borran. Contactá por WhatsApp para activar tu plan.', target:null, page:null },
-  { icon:'🎉', title:'¡Ya estás listo!', desc:'Ya conocés CobroAlDía. Para aprender más sobre cada sección, andá a Perfil → ❓ Ayuda → tocá "🎯 Ver tour" en la categoría que quieras. ¡Éxito con tus cobros!', target:null, page:null },
+  {
+    title: '¡Bienvenido a CobroAlDía! 👋',
+    desc: 'Tu app para gestionar préstamos y cobros. Este tour te muestra todo en menos de 2 minutos. Podés saltar en cualquier momento.',
+    screen: () => `
+      <div style="padding:16px">
+        <div style="text-align:center;padding:20px 0">
+          <div style="font-size:48px;margin-bottom:8px">💸</div>
+          <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:800;color:#a29bfe;margin-bottom:4px">CobroAlDía</div>
+          <div style="font-size:12px;color:#7a7d8f">Gestión de préstamos y cobros</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+          <div style="background:#1e2030;border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px">👥</div><div style="font-size:10px;color:#7a7d8f;margin-top:2px">Clientes</div></div>
+          <div style="background:#1e2030;border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px">💰</div><div style="font-size:10px;color:#7a7d8f;margin-top:2px">Cobros</div></div>
+          <div style="background:#1e2030;border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px">📊</div><div style="font-size:10px;color:#7a7d8f;margin-top:2px">Reportes</div></div>
+          <div style="background:#1e2030;border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px">🗺️</div><div style="font-size:10px;color:#7a7d8f;margin-top:2px">Ruta diaria</div></div>
+        </div>
+      </div>`,
+    finger: null
+  },
+  {
+    title: 'Inicio — tu resumen del día 🏠',
+    desc: 'Al entrar ves el capital prestado, lo cobrado hoy, alertas de mora y clientes con vencimientos próximos.',
+    screen: () => `
+      <div>
+        <div class="td-hdr"><span class="td-brand">💸 CobroAlDía</span><span style="font-size:16px">👁️ ⚙️</span></div>
+        <div style="padding:10px">
+          <div style="font-size:11px;font-weight:700;color:#7a7d8f;margin-bottom:6px">📊 RESUMEN FINANCIERO</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+            <div class="td-card"><div style="font-size:9px;color:#7a7d8f">Total cobrado</div><div style="font-weight:800;font-size:13px;color:#00d68f">$2.450.000</div></div>
+            <div class="td-card"><div style="font-size:9px;color:#7a7d8f">Capital activo</div><div style="font-weight:800;font-size:13px;color:#a29bfe">$4.800.000</div></div>
+            <div class="td-card"><div style="font-size:9px;color:#7a7d8f">Por cobrar</div><div style="font-weight:800;font-size:13px;color:#06b6d4">$6.200.000</div></div>
+            <div class="td-card"><div style="font-size:9px;color:#7a7d8f">Ganancia</div><div style="font-weight:800;font-size:13px;color:#ffd166">$890.000</div></div>
+          </div>
+          <div class="td-card" style="border-left:3px solid #ff4d6d">
+            <div style="font-size:9px;color:#ff4d6d;font-weight:700">⚠️ EN MORA</div>
+            <div style="font-size:11px;color:#f0f0f5;margin-top:2px">3 clientes · $415.000</div>
+          </div>
+        </div>
+        <div class="td-nav">
+          <div class="td-ni act"><span style="font-size:16px">🏠</span><span>Inicio</span></div>
+          <div class="td-ni"><span style="font-size:16px">👥</span><span>Clientes</span></div>
+          <div class="td-ni"><span style="font-size:16px">💵</span><span>Caja</span></div>
+          <div class="td-ni"><span style="font-size:16px">📅</span><span>Agenda</span></div>
+        </div>
+      </div>`,
+    finger: null
+  },
+  {
+    title: 'Agregá un cliente nuevo ➕',
+    desc: 'Tocá el botón "+" para agregar un cliente. Ingresás nombre, teléfono, dirección y GPS. Al guardar se abre su ficha directamente.',
+    screen: () => `
+      <div>
+        <div class="td-hdr"><span class="td-brand">💸 CobroAlDía</span></div>
+        <div style="padding:10px">
+          <div style="font-size:11px;font-weight:700;color:#7a7d8f;margin-bottom:8px">👥 CLIENTES</div>
+          <div class="td-card" style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <div style="width:32px;height:32px;border-radius:50%;background:#6c63ff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff">DA</div>
+            <div style="flex:1"><div style="font-size:11px;font-weight:600">Dario Videla</div><div style="font-size:9px;color:#7a7d8f">$200.000/mes</div></div>
+            <div style="font-size:11px;font-weight:700;color:#ff4d6d">$170.000</div>
+          </div>
+          <div class="td-card" style="display:flex;align-items:center;gap:8px">
+            <div style="width:32px;height:32px;border-radius:50%;background:#00d68f;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff">MG</div>
+            <div style="flex:1"><div style="font-size:11px;font-weight:600">María González</div><div style="font-size:9px;color:#7a7d8f">Cuota 5/12</div></div>
+            <div style="font-size:11px;font-weight:700;color:#ffd166">$45.000</div>
+          </div>
+        </div>
+        <div id="tdFabDemo" style="position:absolute;bottom:40px;right:12px;width:44px;height:44px;border-radius:50%;background:#6c63ff;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;box-shadow:0 4px 15px rgba(108,99,255,.5)">+</div>
+        <div class="td-nav">
+          <div class="td-ni"><span style="font-size:16px">🏠</span><span>Inicio</span></div>
+          <div class="td-ni act"><span style="font-size:16px">👥</span><span>Clientes</span></div>
+          <div class="td-ni"><span style="font-size:16px">💵</span><span>Caja</span></div>
+          <div class="td-ni"><span style="font-size:16px">📅</span><span>Agenda</span></div>
+        </div>
+      </div>`,
+    finger: {target:'tdFabDemo', label:'Tocá + para agregar'}
+  },
+  {
+    title: 'Creá un crédito 💳',
+    desc: 'Elegís el tipo: simple, compuesto, cuota fija, diario o solo interés mensual. La app calcula la cuota y muestra un preview antes de guardar.',
+    screen: () => `
+      <div style="padding:12px">
+        <div style="font-size:12px;font-weight:700;color:#f0f0f5;margin-bottom:10px">➕ Nueva operación</div>
+        <div style="background:#1e2030;border-radius:8px;padding:8px;margin-bottom:6px">
+          <div style="font-size:9px;color:#7a7d8f;margin-bottom:3px">Tipo de crédito</div>
+          <div style="font-size:11px;color:#a29bfe;font-weight:600">💰 Solo interés mensual</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+          <div style="background:#1e2030;border-radius:8px;padding:8px"><div style="font-size:9px;color:#7a7d8f">Capital</div><div style="font-size:12px;font-weight:700">$650.000</div></div>
+          <div style="background:#1e2030;border-radius:8px;padding:8px"><div style="font-size:9px;color:#7a7d8f">Interés</div><div style="font-size:12px;font-weight:700">30.2%</div></div>
+        </div>
+        <div style="background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.3);border-radius:10px;padding:10px">
+          <div style="font-size:9px;color:#7a7d8f;margin-bottom:4px">📊 Vista previa</div>
+          <div style="display:flex;justify-content:space-between">
+            <div><div style="font-size:9px;color:#7a7d8f">Paga por mes</div><div style="font-size:14px;font-weight:800;color:#a29bfe">$196.300</div></div>
+            <div><div style="font-size:9px;color:#7a7d8f">Capital</div><div style="font-size:14px;font-weight:800">$650.000</div></div>
+          </div>
+        </div>
+      </div>`,
+    finger: null
+  },
+  {
+    title: 'Registrá un pago 💵',
+    desc: 'Abrís el cliente, tocás 💵 Pago e ingresás el monto. Si paga de más, el sobrante se aplica a la siguiente cuota automáticamente.',
+    screen: () => `
+      <div>
+        <div class="td-hdr"><span style="font-size:12px;font-weight:700">Dario Videla</span></div>
+        <div style="padding:10px">
+          <div class="td-card" style="border-left:3px solid #a29bfe;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:9px;color:#a29bfe;font-weight:700">💰 INTERÉS MENSUAL</div>
+                <div style="font-size:12px;font-weight:700">Crédito solo interés</div>
+                <div style="font-size:9px;color:#7a7d8f">Capital $650.000 · $196.300/mes</div>
+              </div>
+              <div style="text-align:right"><div style="font-size:14px;font-weight:800;color:#ff4d6d">$196.300</div></div>
+            </div>
+            <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap" id="tdPagoBtn">
+              <div style="background:#6c63ff;border-radius:8px;padding:6px 10px;font-size:10px;font-weight:700;color:#fff">💵 Interés</div>
+              <div style="background:rgba(0,214,143,.2);border-radius:8px;padding:6px 10px;font-size:10px;font-weight:700;color:#00d68f">⚙️ Capital</div>
+            </div>
+          </div>
+          <div style="background:#1e2030;border-radius:10px;padding:10px">
+            <div style="font-size:9px;color:#7a7d8f;margin-bottom:4px">Monto del pago</div>
+            <div style="font-size:20px;font-weight:800;color:#f0f0f5">$200.000</div>
+            <div style="font-size:9px;color:#00d68f;margin-top:2px">✅ Cuota cubierta + $3.700 a favor</div>
+          </div>
+        </div>
+      </div>`,
+    finger: {target:'tdPagoBtn', label:'Tocá para cobrar'}
+  },
+  {
+    title: 'Caja del día 💰',
+    desc: 'Todos los pagos del día se registran acá. Ves efectivo vs transferencia, gastos del día y el balance neto.',
+    screen: () => `
+      <div>
+        <div class="td-hdr"><span class="td-brand">💸 CobroAlDía</span></div>
+        <div style="padding:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+            <div class="td-card" style="text-align:center"><div style="font-size:9px;color:#7a7d8f">Cobrado hoy</div><div style="font-weight:800;color:#00d68f;font-size:14px">$230.000</div></div>
+            <div class="td-card" style="text-align:center"><div style="font-size:9px;color:#7a7d8f">Gastos</div><div style="font-weight:800;color:#ff4d6d;font-size:14px">$15.000</div></div>
+          </div>
+          <div style="font-size:10px;color:#7a7d8f;font-weight:700;margin-bottom:4px">HOY</div>
+          <div class="td-card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div><div style="font-size:11px;font-weight:600">Dario Videla</div><div style="font-size:9px;color:#7a7d8f">Interés mensual</div></div>
+            <div style="font-size:12px;font-weight:800;color:#00d68f">+$200.000</div>
+          </div>
+          <div class="td-card" style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:11px;font-weight:600">María González</div><div style="font-size:9px;color:#7a7d8f">Cuota 5/12</div></div>
+            <div style="font-size:12px;font-weight:800;color:#00d68f">+$45.000</div>
+          </div>
+        </div>
+        <div class="td-nav">
+          <div class="td-ni"><span style="font-size:16px">🏠</span></div>
+          <div class="td-ni"><span style="font-size:16px">👥</span></div>
+          <div class="td-ni act"><span style="font-size:16px">💵</span><span>Caja</span></div>
+          <div class="td-ni"><span style="font-size:16px">📅</span></div>
+        </div>
+      </div>`,
+    finger: null
+  },
+  {
+    title: 'Ruta diaria 🗺️',
+    desc: 'Ver todos los cobros del día ordenados. Swipe derecha = cobrado, swipe izquierda = parcial. Si el cliente tiene GPS podés navegar directo en Maps.',
+    screen: () => `
+      <div>
+        <div class="td-hdr"><span class="td-brand">🗓️ Ruta del día</span></div>
+        <div style="padding:10px">
+          <div class="td-card" style="border-left:3px solid #ff4d6d;margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:11px;font-weight:700">Dario Videla 🔴</div>
+                <div style="font-size:9px;color:#7a7d8f">$170.000 · 27d mora</div>
+              </div>
+              <div style="display:flex;gap:4px">
+                <div style="background:rgba(0,214,143,.2);border-radius:6px;padding:4px 8px;font-size:9px;color:#00d68f">✓</div>
+                <div style="background:#1e2030;border-radius:6px;padding:4px 8px;font-size:9px">🗺️</div>
+              </div>
+            </div>
+          </div>
+          <div class="td-card" style="border-left:3px solid #ffd166;margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:11px;font-weight:700">María González ⏰</div>
+                <div style="font-size:9px;color:#7a7d8f">$45.000 · vence hoy</div>
+              </div>
+              <div style="display:flex;gap:4px">
+                <div style="background:rgba(0,214,143,.2);border-radius:6px;padding:4px 8px;font-size:9px;color:#00d68f">✓</div>
+                <div style="background:#1e2030;border-radius:6px;padding:4px 8px;font-size:9px">🗺️</div>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:9px;color:#7a7d8f;text-align:center;margin-top:8px">← deslizá para marcar cobrado o parcial →</div>
+        </div>
+        <div class="td-nav">
+          <div class="td-ni"><span style="font-size:16px">🏠</span></div>
+          <div class="td-ni"><span style="font-size:16px">👥</span></div>
+          <div class="td-ni"><span style="font-size:16px">💵</span></div>
+          <div class="td-ni act"><span style="font-size:16px">🗺️</span><span>Ruta</span></div>
+        </div>
+      </div>`,
+    finger: null
+  },
+  {
+    title: 'PDF y WhatsApp 📲',
+    desc: 'Desde la ficha de cada cliente podés enviar el estado de cuenta por WhatsApp o descargar el comprobante en PDF para compartir.',
+    screen: () => `
+      <div style="padding:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <div style="width:40px;height:40px;border-radius:50%;background:#6c63ff;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff">DA</div>
+          <div><div style="font-size:13px;font-weight:800">Dario Videla</div><div style="font-size:9px;color:#7a7d8f">🥈 Plata · 73pts</div></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          <div style="background:rgba(37,211,102,.15);border:1px solid rgba(37,211,102,.3);border-radius:8px;padding:7px 12px;font-size:11px;color:#25d366;font-weight:700">📲 PDF x WA</div>
+          <div style="background:#1e2030;border:1px solid #2a2d3e;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700">✏️ Editar</div>
+          <div style="background:#1e2030;border:1px solid #2a2d3e;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700">📞 Llamar</div>
+        </div>
+        <div style="background:#1a1c24;border-radius:10px;padding:10px;font-size:10px;color:#7a7d8f;line-height:1.7">
+          El PDF incluye:<br>
+          ✅ Datos del cliente<br>
+          ✅ Historial de pagos<br>
+          ✅ Saldo pendiente<br>
+          ✅ Próximos vencimientos
+        </div>
+      </div>`,
+    finger: null
+  },
+  {
+    title: 'Reportes y finanzas 📊',
+    desc: 'Gráficos de cobros, análisis de morosidad, clientes más rentables y exportación en Excel. Plan PRO y Premium.',
+    screen: () => `
+      <div>
+        <div class="td-hdr"><span class="td-brand">📊 Reportes</span></div>
+        <div style="padding:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+            <div class="td-card" style="text-align:center"><div style="font-size:9px;color:#7a7d8f">Morosidad</div><div style="font-weight:800;color:#ff4d6d;font-size:16px">42%</div></div>
+            <div class="td-card" style="text-align:center"><div style="font-size:9px;color:#7a7d8f">ROI</div><div style="font-weight:800;color:#00d68f;font-size:16px">18.4%</div></div>
+          </div>
+          <div style="font-size:10px;font-weight:700;color:#7a7d8f;margin-bottom:4px">🏆 MÁS RENTABLES</div>
+          <div class="td-card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:6px"><span>🥇</span><div style="font-size:11px;font-weight:600">Tamara Palma</div></div>
+            <div style="font-size:11px;font-weight:800;color:#ffd166">$279.666</div>
+          </div>
+          <div class="td-card" style="display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;align-items:center;gap:6px"><span>🥈</span><div style="font-size:11px;font-weight:600">Manu</div></div>
+            <div style="font-size:11px;font-weight:800;color:#7a7d8f">$98.000</div>
+          </div>
+        </div>
+      </div>`,
+    finger: null
+  },
+  {
+    title: '¡Listo para empezar! 🎉',
+    desc: 'Ya conocés CobroAlDía. Cualquier duda podés relanzar este tour desde ⚙️ → Configuración. ¡Éxito con tus cobros!',
+    screen: () => `
+      <div style="padding:20px;text-align:center">
+        <div style="font-size:56px;margin-bottom:12px">🎉</div>
+        <div style="font-family:Syne,sans-serif;font-size:18px;font-weight:800;color:#a29bfe;margin-bottom:8px">¡Ya sabés todo!</div>
+        <div style="font-size:12px;color:#7a7d8f;line-height:1.7;margin-bottom:16px">Agregá tu primer cliente y empezá a gestionar tus cobros de manera profesional.</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.3);border-radius:10px;padding:10px;font-size:11px;color:#a29bfe;font-weight:600">👥 Ir a Clientes</div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px;font-size:11px;color:#7a7d8f">❓ Ver ayuda</div>
+        </div>
+      </div>`,
+    finger: null
+  }
 ];
 
 function iniciarTour(){
   _tourSteps = TOUR_STEPS_MAIN;
   _tourStep = 0;
-  _abrirTourOverlay();
+  document.getElementById('tourDemo').style.display='flex';
+  _renderTourStep();
   localStorage.setItem('cobropro_tour_done','1');
 }
+
 function iniciarMiniTour(key){
-  const steps = SECTION_TOURS[key];
-  if(!steps||!steps.length) return;
-  _tourSteps = steps;
-  _tourStep = 0;
-  _abrirTourOverlay();
+  iniciarTour(); // por ahora usa el tour principal
 }
-function _abrirTourOverlay(){
-  $('tourMaskLayer').style.display = 'block';
-  $('tourBubble').style.display = 'block';
-  _renderTourStep();
-}
+
 function finalizarTour(){
-  ['tourMaskLayer','tourHighlight','tourBubble'].forEach(id=>{
-    const el=$(id); if(el) el.style.display='none';
-  });
+  document.getElementById('tourDemo').style.display='none';
+  if(_tourFingerTimer){clearInterval(_tourFingerTimer);_tourFingerTimer=null;}
 }
+
 function tourNav(dir){
   _tourStep = Math.max(0, Math.min(_tourSteps.length-1, _tourStep+dir));
   _renderTourStep();
 }
+
 function _renderTourStep(){
   const s = _tourSteps[_tourStep];
   if(!s) return;
+  if(_tourFingerTimer){clearInterval(_tourFingerTimer);_tourFingerTimer=null;}
 
-  if(s.page) goPage(s.page);
+  // Contenido pantalla
+  const sc = document.getElementById('tdScreenContent');
+  if(sc){
+    sc.style.animation='none';
+    sc.innerHTML = s.screen();
+    void sc.offsetWidth;
+    sc.style.animation='tourSlideIn .35s ease';
+  }
 
-  $('tourStepIcon').textContent = s.icon;
-  $('tourStepTitle').textContent = s.title;
-  $('tourStepDesc').innerHTML = (s.desc||'').replace(/\n/g,'<br>');
-  $('tourStepLabel').textContent = `Paso ${_tourStep+1} de ${_tourSteps.length}`;
-  $('tourBtnPrev').style.display = _tourStep===0 ? 'none' : 'flex';
-  const isLast = _tourStep===_tourSteps.length-1;
-  $('tourBtnNext').textContent = isLast ? '✅ Finalizar' : 'Siguiente →';
-  $('tourBtnNext').onclick = isLast ? finalizarTour : ()=>tourNav(1);
-  $('tourBtnPrev').onclick = ()=>tourNav(-1);
+  // Título y descripción
+  const title=document.getElementById('tdTitle');
+  const desc=document.getElementById('tdDesc');
+  if(title)title.textContent=s.title;
+  if(desc)desc.textContent=s.desc;
 
-  $('tourDots').innerHTML = _tourSteps.map((_,i)=>
-    `<div style="width:${i===_tourStep?18:6}px;height:6px;border-radius:3px;background:${i===_tourStep?'var(--ac)':'var(--border)'};transition:.3s"></div>`
+  // Label paso
+  const lbl=document.getElementById('tdStepLabel');
+  if(lbl)lbl.textContent=`Paso ${_tourStep+1} de ${_tourSteps.length}`;
+
+  // Botones
+  const prev=document.getElementById('tdBtnPrev');
+  const next=document.getElementById('tdBtnNext');
+  if(prev)prev.style.display=_tourStep===0?'none':'block';
+  const isLast=_tourStep===_tourSteps.length-1;
+  if(next){
+    next.textContent=isLast?'✅ Empezar':'Siguiente →';
+    next.onclick=isLast?finalizarTour:()=>tourNav(1);
+  }
+
+  // Dots
+  const dots=document.getElementById('tdDots');
+  if(dots)dots.innerHTML=_tourSteps.map((_,i)=>
+    `<div style="width:${i===_tourStep?20:6}px;height:6px;border-radius:3px;background:${i===_tourStep?'#6c63ff':'#2a2d3e'};transition:.3s"></div>`
   ).join('');
 
-  _posicionarBurbujaCentro();
-  setTimeout(()=>_highlightTarget(s.target), s.page ? 420 : 0);
-}
-
-function _posicionarBurbujaCentro(){
-  const bubble=$('tourBubble');
-  if(!bubble) return;
-  const vw=window.innerWidth, vh=window.innerHeight;
-  const bW=Math.min(300,vw-24);
-  bubble.style.left = ((vw-bW)/2)+'px';
-  bubble.style.top  = Math.max(12,(vh/2-130))+'px';
-  bubble.style.width= bW+'px';
-}
-
-function _highlightTarget(targetId){
-  const hl=$('tourHighlight'), bubble=$('tourBubble');
-  if(!hl||!bubble) return;
-
-  if(!targetId){ hl.style.display='none'; _posicionarBurbujaCentro(); return; }
-
-  const el = document.getElementById(targetId)||document.querySelector('.'+targetId);
-  if(!el){ hl.style.display='none'; _posicionarBurbujaCentro(); return; }
-
-  el.scrollIntoView({block:'nearest',behavior:'smooth'});
-
-  setTimeout(()=>{
-    const r=el.getBoundingClientRect(), pad=8;
-    const vw=window.innerWidth, vh=window.innerHeight, margin=12;
-
-    // Highlight — usa position:fixed para no depender del scroll
-    hl.style.animation='none';
-    hl.style.display='block';
-    hl.style.left  =(r.left-pad)+'px';
-    hl.style.top   =(r.top-pad)+'px';
-    hl.style.width =(r.width+pad*2)+'px';
-    hl.style.height=(r.height+pad*2)+'px';
-    void hl.offsetWidth; // forzar reflow
-    hl.style.animation='tourPulse 2s ease-in-out infinite';
-
-    // Burbuja — centrada horizontalmente sobre el elemento
-    const bW=Math.min(300,vw-24), bEstH=270;
-    let bLeft=r.left+r.width/2-bW/2;
-    bLeft=Math.max(margin,Math.min(vw-bW-margin,bLeft));
-
-    const spaceBelow=vh-r.bottom-pad-margin;
-    const spaceAbove=r.top-pad-margin;
-    let bTop;
-    if(spaceBelow>=bEstH)      bTop=r.bottom+pad+margin;
-    else if(spaceAbove>=bEstH) bTop=r.top-pad-margin-bEstH;
-    else                       bTop=Math.max(margin,(vh-bEstH)/2);
-    bTop=Math.max(margin,Math.min(vh-bEstH-margin,bTop));
-
-    bubble.style.left =bLeft+'px';
-    bubble.style.top  =bTop+'px';
-    bubble.style.width=bW+'px';
-  }, 80);
+  // Finger animado
+  const finger=document.getElementById('tdFinger');
+  const hl=document.getElementById('tdHighlight');
+  if(finger)finger.style.display='none';
+  if(hl)hl.style.display='none';
+  if(s.finger){
+    setTimeout(()=>{
+      const target=document.getElementById(s.finger.target);
+      if(!target||!finger)return;
+      const r=target.getBoundingClientRect();
+      const sc2=document.getElementById('tdScreen').getBoundingClientRect();
+      const x=r.left-sc2.left+r.width/2-14;
+      const y=r.top-sc2.top+r.height/2-14;
+      finger.style.display='block';
+      finger.style.left=x+'px';
+      finger.style.top=y+'px';
+      if(hl){
+        hl.style.display='block';
+        hl.style.left=(r.left-sc2.left-4)+'px';
+        hl.style.top=(r.top-sc2.top-4)+'px';
+        hl.style.width=(r.width+8)+'px';
+        hl.style.height=(r.height+8)+'px';
+      }
+      let tap=false;
+      _tourFingerTimer=setInterval(()=>{
+        tap=!tap;
+        finger.style.transform=tap?'scale(.75)':'scale(1)';
+        finger.style.transition='transform .2s ease';
+      },800);
+    },400);
+  }
 }
 
 // ══ SISTEMA DE COBRADORES ══
@@ -9930,23 +10176,56 @@ function checkPrimerTour(){
 </body>
 </html>
 <!-- Capa 1: máscara oscura (no captura toques) -->
-<div id="tourMaskLayer" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.55);pointer-events:none;transition:opacity .3s"></div>
-<!-- Capa 2: highlight del elemento (no captura toques) -->
-<div id="tourHighlight" style="display:none;position:fixed;z-index:1001;border-radius:12px;border:2.5px solid rgba(167,139,250,1);box-shadow:0 0 0 9999px rgba(0,0,0,.55),0 0 0 4px rgba(167,139,250,.4);pointer-events:none;transition:all .35s cubic-bezier(.34,1.2,.64,1)"></div>
-<!-- Capa 3: burbuja (captura toques, siempre encima) -->
-<div id="tourBubble" style="display:none;position:fixed;z-index:1002;background:var(--bg2);border:1px solid var(--ac);border-radius:16px;padding:16px;width:min(300px,calc(100vw - 24px));box-shadow:0 8px 32px rgba(0,0,0,.6)">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-    <div style="font-size:9px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px" id="tourStepLabel">Paso 1</div>
-    <button onclick="finalizarTour()" style="background:none;border:none;color:var(--tx2);font-size:18px;cursor:pointer;padding:0 0 0 8px;line-height:1;touch-action:manipulation">✕</button>
+<!-- ══ TOUR DEMO ══ -->
+<div id="tourDemo" style="display:none;position:fixed;inset:0;z-index:2000;background:#0a0a0f;flex-direction:column;overflow:hidden">
+  <style>
+    @keyframes tourFinger{0%{transform:scale(1);opacity:.9}50%{transform:scale(.85);opacity:1}100%{transform:scale(1);opacity:.9}}
+    @keyframes tourFingerTap{0%{transform:scale(1)}30%{transform:scale(.7)}100%{transform:scale(1)}}
+    @keyframes tourSlideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes tourPulseRing{0%{box-shadow:0 0 0 0 rgba(108,99,255,.6)}70%{box-shadow:0 0 0 12px rgba(108,99,255,0)}100%{box-shadow:0 0 0 0 rgba(108,99,255,0)}}
+    #tourDemo .td-screen{background:#12141a;border-radius:24px;border:2px solid #2a2d3e;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.8)}
+    #tourDemo .td-hdr{background:#0b0c10;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e2030}
+    #tourDemo .td-brand{font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:#a29bfe}
+    #tourDemo .td-nav{display:flex;justify-content:space-around;background:#0b0c10;border-top:1px solid #1e2030;padding:6px 0 10px}
+    #tourDemo .td-ni{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f}
+    #tourDemo .td-ni.act{color:#a29bfe}
+    #tourDemo .td-card{background:#1a1c24;border:1px solid #2a2d3e;border-radius:12px;padding:10px 12px;margin-bottom:6px}
+    #tourDemo .td-finger{position:absolute;font-size:28px;pointer-events:none;z-index:10;transition:all .5s cubic-bezier(.34,1.2,.64,1);filter:drop-shadow(0 4px 8px rgba(0,0,0,.6))}
+    #tourDemo .td-highlight{position:absolute;border:2px solid #6c63ff;border-radius:10px;pointer-events:none;z-index:9;animation:tourPulseRing 1.5s infinite;transition:all .4s ease}
+  </style>
+
+  <!-- Header tour -->
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px 8px;flex-shrink:0">
+    <div>
+      <div style="font-family:Syne,sans-serif;font-size:18px;font-weight:800;color:#a29bfe">CobroAlDía</div>
+      <div id="tdStepLabel" style="font-size:10px;color:#7a7d8f;margin-top:1px">Paso 1 de 10</div>
+    </div>
+    <button onclick="finalizarTour()" style="background:rgba(255,255,255,.08);border:none;color:#f0f0f5;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;touch-action:manipulation">✕</button>
   </div>
-  <div style="font-size:20px;margin-bottom:6px" id="tourStepIcon">👋</div>
-  <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:800;margin-bottom:6px;color:var(--tx)" id="tourStepTitle"></div>
-  <div style="font-size:12px;color:var(--tx2);line-height:1.65;margin-bottom:14px" id="tourStepDesc"></div>
-  <div style="display:flex;gap:8px">
-    <button id="tourBtnPrev" class="btn bs bsm" style="flex:1;touch-action:manipulation" onclick="tourNav(-1)">← Anterior</button>
-    <button id="tourBtnNext" class="btn bp bsm" style="flex:1;touch-action:manipulation" onclick="tourNav(1)">Siguiente →</button>
+
+  <!-- Dots -->
+  <div id="tdDots" style="display:flex;justify-content:center;gap:4px;padding:0 18px 8px;flex-shrink:0"></div>
+
+  <!-- Pantalla simulada -->
+  <div style="flex:1;padding:0 18px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+    <div id="tdScreen" style="width:100%;max-width:320px;max-height:100%;position:relative" class="td-screen">
+      <div id="tdScreenContent" style="min-height:320px"></div>
+      <div id="tdFinger" class="td-finger" style="display:none">👆</div>
+      <div id="tdHighlight" class="td-highlight" style="display:none"></div>
+    </div>
   </div>
-  <div style="margin-top:10px;display:flex;justify-content:center;gap:5px" id="tourDots"></div>
+
+  <!-- Info del paso -->
+  <div id="tdInfo" style="padding:12px 18px 8px;flex-shrink:0;animation:tourSlideIn .3s ease">
+    <div id="tdTitle" style="font-family:Syne,sans-serif;font-size:15px;font-weight:800;color:#f0f0f5;margin-bottom:4px"></div>
+    <div id="tdDesc" style="font-size:12px;color:#7a7d8f;line-height:1.6"></div>
+  </div>
+
+  <!-- Botones nav -->
+  <div style="display:flex;gap:10px;padding:8px 18px 24px;flex-shrink:0">
+    <button id="tdBtnPrev" onclick="tourNav(-1)" style="flex:1;background:#1a1c24;border:1px solid #2a2d3e;color:#f0f0f5;border-radius:12px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;touch-action:manipulation">← Anterior</button>
+    <button id="tdBtnNext" onclick="tourNav(1)" style="flex:2;background:#6c63ff;border:none;color:#fff;border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">Siguiente →</button>
+  </div>
 </div>
 <script>
 try{
