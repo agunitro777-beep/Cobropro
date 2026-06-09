@@ -1083,6 +1083,10 @@ body.light .mo{background:rgba(0,0,0,.5)}
           <input class="inp" id="op_cuo_fixed_cf" type="number" placeholder="Ej: 5000" oninput="syncCuotaFijaDirecta()">
           <div id="op_cf_hint" style="font-size:10px;color:var(--ac2);margin-top:3px;min-height:14px"></div>
         </div>
+        <div class="ig">
+          <label class="il">Cantidad de cuotas *</label>
+          <input class="inp" id="op_cuo_cf" type="number" placeholder="Ej: 12" oninput="syncCuotaFijaDirecta()">
+        </div>
       </div>
 
       <!-- BLOQUE: diario abierto -->
@@ -2731,15 +2735,14 @@ function syncInteresOp(){
 }
 function syncCuotaFijaDirecta(){
   const cuotaFija=parseFloat($('op_cuo_fixed_cf')?.value)||0;
-  const cuo=parseInt($('op_cuo')?.value)||0;
+  const cuo=parseInt($('op_cuo_cf')?.value)||0;
   const hint=$('op_cf_hint');
   if(cuotaFija>0){
-    // Si hay cuotas definidas, mostrar total
     if(cuo>0){
       const total=cuotaFija*cuo;
       if(hint)hint.innerHTML=`<span style="color:var(--gr)">✅ ${cuo} cuotas de ${(CFG.moneda||'$')}${cuotaFija.toLocaleString(LOCALE())} = Total ${(CFG.moneda||'$')}${total.toLocaleString(LOCALE())}</span>`;
     } else {
-      if(hint)hint.innerHTML=`<span style="color:var(--ac2)">Agregá cantidad de cuotas abajo</span>`;
+      if(hint)hint.innerHTML=`<span style="color:var(--ac2)">Agregá cantidad de cuotas</span>`;
     }
   } else {
     if(hint)hint.textContent='';
@@ -3280,7 +3283,7 @@ function abrirOp(cidFijo=null,oid=null){
   $('op_cliGrp').style.display=cidFijo?'none':'block';if(!cidFijo)poblarSelClis();
   if(oid){
     const op=gO(oid);if(!op)return;
-    $('op_tipo').value=op.tipo;toggleOpTipo();$('op_cuo').value=op.cuo;$('op_frq').value=op.frq;$('op_fv').value=op.fv;$('op_not').value=op.not||'';$('op_moneda').value=op.moneda||CFG.moneda||'$';$('op_facr').value=op.facr||'';
+    $('op_tipo').value=op.tipo;toggleOpTipo();$('op_cuo').value=op.cuo;if(op.tip==='cuota'&&$('op_cuo_cf'))$('op_cuo_cf').value=op.cuo;$('op_frq').value=op.frq;$('op_fv').value=op.fv;$('op_not').value=op.not||'';$('op_moneda').value=op.moneda||CFG.moneda||'$';$('op_facr').value=op.facr||'';
     if(op.tipo==='venta'){$('op_prod').value=op.prod||'';$('op_costo').value=op.costo||0;$('op_precio').value=op.precio||0}
     else{
       $('op_desc').value=op.desc||'';
@@ -3323,7 +3326,7 @@ function abrirOp(cidFijo=null,oid=null){
       }
     }
   } else {
-    ['op_desc','op_mon','op_int','op_cuo','op_cuo_fixed','op_not','op_prod','op_costo','op_precio'].forEach(f=>{const el=document.getElementById(f);if(el){el.value='';el.dataset.autofilled='';el.style.borderColor='';}});
+    ['op_desc','op_mon','op_int','op_cuo','op_cuo_fixed','op_cuo_cf','op_not','op_prod','op_costo','op_precio'].forEach(f=>{const el=document.getElementById(f);if(el){el.value='';el.dataset.autofilled='';el.style.borderColor='';}});
     $('op_mora').value='0';$('op_mora').disabled=true;$('op_mora').style.opacity='.4';
     if($('op_mora_check'))$('op_mora_check').checked=false;
     $('op_fv').value=hoy();$('op_frq').value='quincenal';$('op_tipo').value='prestamo';$('op_moneda').value=CFG.moneda||'$';if($('op_facr'))$('op_facr').value=hoy();autoFechaOp();
@@ -3365,7 +3368,7 @@ async function guardarOp(){
   } else if(tipInt==='cuota'){
     // cuota fija directa
     const cuotaCF=parseFloat($('op_cuo_fixed_cf')?.value)||0;
-    const cuoCF=parseInt($('op_cuo')?.value)||0;
+    const cuoCF=parseInt($('op_cuo_cf')?.value)||0;
     if(!cuotaCF){toast('Ingresá el valor de cuota','error');_guardando=false;return;}
     if(!cuoCF){toast('Ingresá la cantidad de cuotas','error');_guardando=false;return;}
     d.cuota_fija=cuotaCF;
