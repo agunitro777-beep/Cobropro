@@ -3223,6 +3223,9 @@ async function guardarCli(){
       Cs.push({...r,not:r.not_||'',docs:[]});
       rebuildMaps();
       toast(`✅ ${nom} agregado`);
+      closeModal('mcli');
+      setTimeout(()=>{refrescar();setF('todos',document.querySelector('#cliTabs .tab:nth-child(4)'));verCli(r.id);},50);
+      return;
     }
     // Si el modal de ver cliente está abierto, quedarse en él y refrescar
     const mver=document.getElementById('mver');
