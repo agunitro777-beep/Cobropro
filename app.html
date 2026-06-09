@@ -634,7 +634,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
   <span class="brand">💸 CobroAlDía</span>
   <div class="hdr-r">
     <div class="ibtn" onclick="toggleOcul()" id="eyeBtn">👁️</div>
-    <div class="ibtn" onclick="showModal('mPerfil')">👤</div>
+    <div class="ibtn" onclick="showModal('mPerfil')">⚙️</div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -722,6 +722,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
   <div class="tabs" id="cliTabs">
     <div class="tab active" onclick="setF('activos',this)">Activos<span class="tab-badge" id="cnt-activos"></span></div>
     <div class="tab" onclick="setF('atrasado',this)">Mora<span class="tab-badge danger" id="cnt-atrasado"></span></div>
+    <div class="tab" onclick="setF('todos',this)">Todos<span class="tab-badge" id="cnt-todos"></span></div>
     <div class="tab" onclick="setF('completo',this)">Saldados<span class="tab-badge" id="cnt-completo"></span></div>
     <div class="tab" onclick="setF('todos',this)">Todos<span class="tab-badge" id="cnt-todos"></span></div>
     <div class="tab" id="tabCobradores" onclick="setF('cobradores',this)" style="display:none">👥 Cobradores</div>
@@ -3251,6 +3252,11 @@ async function guardarCli(){
     if(mver&&mver.classList.contains('open')){
       closeModal('mcli');
       setTimeout(()=>{refrescar();verCli(id||Cs[Cs.length-1]?.id);},50);
+    } else if(!id){
+      // Cliente nuevo — abrir ficha directamente
+      const newCli=Cs[Cs.length-1];
+      closeModal('mcli');
+      setTimeout(()=>{refrescar();if(newCli)verCli(newCli.id);},100);
     } else {
       closeModal('mcli');
       setTimeout(()=>{refrescar();},0);
@@ -3836,9 +3842,18 @@ async function _pdfCreditoNuevoWA_inner(op,c){
 
   const fname=_buildFnameComprobante(op,c,cvOp(op),op.facr||op.fv||hoy());
   try{
-    doc.save(fname);
-    toast('📄 PDF descargado');
-  }catch(e){doc.save(fname);toast('📄 PDF descargado');}
+    const pdfBlob=doc.output('blob');
+    const file=new File([pdfBlob],fname,{type:'application/pdf'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:fname.replace('.pdf',''),text:'Hola '+(c.nom||'')+', te comparto el detalle de tu crédito.'});
+    } else if(navigator.share){
+      const blobUrl=URL.createObjectURL(pdfBlob);
+      try{await navigator.share({url:blobUrl,title:fname.replace('.pdf','')});}catch(e2){if(e2.name!=='AbortError'){doc.save(fname);toast('📄 PDF descargado');}}
+      setTimeout(()=>URL.revokeObjectURL(blobUrl),5000);
+    } else {
+      doc.save(fname);toast('📄 PDF descargado');
+    }
+  }catch(e){if(e.name!=='AbortError'){doc.save(fname);toast('📄 PDF descargado');}}
 }
 
 function ofrecerWaCreditoNuevo(op,c){
