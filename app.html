@@ -5312,9 +5312,9 @@ function rCaja(){
   // ── Transacciones unificadas: cobros + préstamos, ordenados por fecha desc ──
   // ── Transacciones divididas en 3 grupos ──
   const txCobros=pf.map(p=>{const op=gO(p.oid);const c=op?gC(op.cid):null;const lbl=op?(esVenta(op)?op.prod||'Venta':op.desc||'Crédito'):'?';return{tipo:'cobro',fec:p.fec,nom:c?c.nom:'?',lbl,mon:p.mon,met:p.met,par:p.par,not:p.not,id:p.id};});
-  const opsDelPeriodo=Ops.filter(op=>{const fa=op.fa||op.fv;return filtrP([{fec:fa}],'fec').length>0});
-  const txPrestamos=opsDelPeriodo.filter(op=>!esVenta(op)).map(op=>{const c=gC(op.cid);return{tipo:'prestamo',fec:op.fa||op.fv,nom:c?c.nom:'?',lbl:op.desc||'Crédito',mon:op.mon,cuo:op.cuo,frq:op.frq,oid:op.id};});
-  const txVentas=opsDelPeriodo.filter(op=>esVenta(op)).map(op=>{const c=gC(op.cid);return{tipo:'venta',fec:op.fa||op.fv,nom:c?c.nom:'?',lbl:op.prod||'Venta',mon:op.precio,cuo:op.cuo,frq:op.frq,oid:op.id};});
+  const opsDelPeriodo=Ops.filter(op=>{const fa=op.facr||op.fa||op.fv;return filtrP([{fec:fa}],'fec').length>0});
+  const txPrestamos=opsDelPeriodo.filter(op=>!esVenta(op)).map(op=>{const c=gC(op.cid);return{tipo:'prestamo',fec:op.facr||op.fa||op.fv,nom:c?c.nom:'?',lbl:op.desc||'Crédito',mon:op.mon,cuo:op.cuo,frq:op.frq,oid:op.id};});
+  const txVentas=opsDelPeriodo.filter(op=>esVenta(op)).map(op=>{const c=gC(op.cid);return{tipo:'venta',fec:op.facr||op.fa||op.fv,nom:c?c.nom:'?',lbl:op.prod||'Venta',mon:op.precio,cuo:op.cuo,frq:op.frq,oid:op.id};});
 
   if(!window._cajaTab)window._cajaTab='cobrado';
 
