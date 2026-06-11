@@ -3819,7 +3819,8 @@ async function _pdfCreditoNuevoWA_inner(op,c){
   doc.text('CONDICIONES DEL CRÉDITO',20,y+7);
   doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);doc.setFontSize(9);
   // Col 1
-  doc.setFont('helvetica','bold');doc.text('Cuotas:',20,y+15);doc.setFont('helvetica','normal');doc.text(`${op.cuo} ${frqLabel.toLowerCase()}es`,47,y+15);
+  const cuoLabel2=op.tip==='interes_mensual'?'Capital abierto · '+frqLabel.toLowerCase():`${op.cuo} ${frqLabel.toLowerCase()}es`;
+  doc.setFont('helvetica','bold');doc.text('Cuotas:',20,y+15);doc.setFont('helvetica','normal');doc.text(cuoLabel2,47,y+15);
   doc.setFont('helvetica','bold');doc.text('Valor cuota:',20,y+23);doc.setFont('helvetica','normal');doc.text(fm(cuota),52,y+23);
   // Col 2
   doc.setFont('helvetica','bold');doc.text('Acreditación:',105,y+15);doc.setFont('helvetica','normal');doc.text(fd(op.facr),140,y+15);
@@ -6263,13 +6264,13 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
   }
   // Cuotas pendientes futuras: desde cuándo vence cada una
   if(op.tip==='interes_mensual'){
-    // Solo mostrar próximo vencimiento, no las 999 cuotas
+    // Solo mostrar próximo vencimiento
     const fvDate=op.fv?new Date(op.fv+'T00:00:00'):null;
     if(fvDate&&!isNaN(fvDate.getTime())){
       const hoy2=new Date();hoy2.setHours(0,0,0,0);
       const diasV=Math.floor((fvDate-hoy2)/86400000);
       const vencStr=diasV<0?`Vencida hace ${Math.abs(diasV)}d`:diasV===0?'Vence hoy':`Vence en ${diasV}d`;
-      filas.push(['→','Próximo interés',fd(op.fv),fm(op.cuota_fija||cvOp(op)),'—',vencStr]);
+      rowsC.push(['→','Próximo interés',fd(op.fv),fm(op.cuota_fija||cvOp(op)),'—',vencStr]);
     }
   } else {
     for(let n=cuotaIdxB+(parcialAcumB>0?1:1);n<=op.cuo;n++){
