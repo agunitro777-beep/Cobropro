@@ -6289,13 +6289,16 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
       rowsC.push(['→','Próximo interés',fd(op.fv),fm(op.cuota_fija||cvOp(op)),'—',vencStr]);
     }
   } else {
-    for(let n=cuotaIdxB+(parcialAcumB>0?1:1);n<=op.cuo;n++){
-      const due=fechaDeCuota(op,n);
-      if(!due||isNaN(due.getTime()))break;
-      const hoy2=new Date();hoy2.setHours(0,0,0,0);
-      const diasV=Math.floor((due-hoy2)/86400000);
-      const vencStr=diasV<0?`Vencida hace ${Math.abs(diasV)}d`:diasV===0?'Vence hoy':`Vence en ${diasV}d`;
-      filas.push([`${n}`,'Pendiente','—','—','—',vencStr]);
+    // Solo mostrar la próxima cuota pendiente
+    const nNext=cuotaIdxB+(parcialAcumB>0?0:1)+1;
+    if(nNext<=op.cuo){
+      const due=fechaDeCuota(op,nNext);
+      if(due&&!isNaN(due.getTime())){
+        const hoy2=new Date();hoy2.setHours(0,0,0,0);
+        const diasV=Math.floor((due-hoy2)/86400000);
+        const vencStr=diasV<0?`Vencida hace ${Math.abs(diasV)}d`:diasV===0?'Vence hoy':`Vence en ${diasV}d`;
+        filas.push([`${nNext}`,'Pendiente','—','—','—',vencStr]);
+      }
     }
   }
   if(filas.length>0){
