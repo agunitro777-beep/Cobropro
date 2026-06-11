@@ -1950,7 +1950,16 @@ function intOp(op){
   if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return pagos.filter(p=>!(p.not||'').startsWith('🔄 INTERES')).reduce((s,p)=>s+Math.min(p.mon/cvOp(op),1)*gan,0)}
   const soloInt=pagos.filter(p=>(p.not||'').startsWith('🔄 INTERES')).reduce((s,p)=>s+p.mon,0);
   const v=cvOp(op),pr=op.mon/op.cuo;
-  const intCuotas=pagos.filter(p=>!(p.not||'').startsWith('🔄 INTERES')).reduce((s,p)=>s+Math.max(0,Math.min(p.mon,v)-pr),0);
+  const ganPorCuota=v-pr; // interés embebido por cuota
+  const intCuotas=pagos.filter(p=>!(p.not||'').startsWith('🔄 INTERES')).reduce((s,p)=>{
+    if(ganPorCuota>0&&op.cuota_fija>0){
+      // Si pagó la cuota completa: ganancia = cuota_fija - capital_por_cuota
+      // Si pagó solo el interés (p.mon < cuota_fija): ganancia = p.mon
+      if(p.mon<=ganPorCuota+1)return s+p.mon; // pagó solo interés
+      return s+Math.max(0,Math.min(p.mon,v)-pr); // pagó cuota completa
+    }
+    return s+Math.max(0,Math.min(p.mon,v)-pr);
+  },0);
   return soloInt+intCuotas;
 }
 const saldoTotalCli=cid=>opsDeCli(cid).filter(o=>o.pag<o.cuo).reduce((s,o)=>s+saldoMOp(o),0);
@@ -4465,13 +4474,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
   const opsAct=ops.filter(o=>o.pag<o.cuo||o.tip==='interes_mensual'),opsComp=ops.filter(o=>o.pag>=o.cuo&&o.tip!=='interes_mensual');
   const totInt=ops.reduce((s,o)=>s+intOp(o),0);
   const totIntProy=ops.reduce((s,o)=>{if(esVenta(o))return s+(o.precio&&o.costo?(o.precio-o.costo):0);return s+Math.max(0,cvOp(o)*o.cuo-o.mon);},0);
-  console.log('DEBUG',{ops:ops.map(o=>({id:o.id,tip:o.tip,tipo:o.tipo,mon:o.mon,cuo:o.cuo,pag:o.pag,int:o.int,cuota_fija:o.cuota_fija})),pagos:Ps.filter(p=>ops.some(o=>o.id===p.oid)).map(p=>({oid:p.oid,mon:p.mon,par:p.par,not:p.not})),totInt,totIntProy});
-  const _dbgPagos=Ps.filter(p=>ops.some(o=>o.id===p.oid));
-  toast('ops:'+ops.length+' pagos:'+_dbgPagos.length+' cobrada:'+totInt+' proy:'+totIntProy,'info',8000);
-  if(ops.length>0){const o0=ops[0];const p0=Ps.filter(p=>ops.some(o=>o.id===p.oid))[0];toast('op.id='+o0.id+'('+typeof o0.id+') pago.oid='+(p0?p0.oid+'('+typeof p0.oid+')':'none'),'info',10000);}
-  const _dbgP2=Ps.filter(p=>ops.some(o=>o.id===p.oid));
-  toast('pagos: '+_dbgP2.map(p=>'mon:'+p.mon+' par:'+p.par+' not:'+(p.not||'').substring(0,10)).join(' | '),'info',15000);
-  toast('ops: '+ops.map(o=>'m:'+o.mon+' i:'+o.int+' cf:'+o.cuota_fija+' c:'+o.cuo+' v:'+Math.round(cvOp(o))).join(' | '),'info',15000);
+  
   const bmap={atrasado:'<span class="sb late">⚠ Atrasado</span>',porVencer:'<span class="sb due">Por vencer</span>',aldía:'<span class="sb ok">Al día</span>',completo:'<span class="sb done">✅</span>',reprogramado:'<span class="sb due" style="background:rgba(251,191,36,.15);border-color:rgba(251,191,36,.4);color:var(--yw)">⏸ Reprogramado</span>'};
   const opsHTML=opsAct.map(op=>{
     const sv=esVenta(op),s=stOp(op),cuota=cvOp(op),sm=saldoMOp(op),pct=Math.round((op.pag/op.cuo)*100);
