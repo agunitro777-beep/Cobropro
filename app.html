@@ -3496,6 +3496,7 @@ async function guardarOp(){
     const cuotaCF=parseFloat($('op_cuo_fixed_cf')?.value)||0;
     const cuoCF=parseInt($('op_cuo_cf')?.value)||parseInt($('op_cuo')?.value)||0;
     const monCF=parseFloat($('op_mon')?.value)||0;
+    toast(`Debug: cuota=${cuotaCF} cuo=${cuoCF} mon=${monCF}`,'warn');
     if(!cuotaCF){toast('Ingresá el valor de cuota','error');_guardando=false;return;}
     if(!cuoCF){toast('Ingresá la cantidad de cuotas','error');_guardando=false;return;}
     if(!monCF){toast('Ingresá el monto prestado','error');_guardando=false;return;}
