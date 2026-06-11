@@ -4039,7 +4039,7 @@ function abrirPago(fixId=null){
       const c=gC(op.cid);$('p_waWrap').style.display=c&&c.tel?'block':'none';
       // Ocultar botón solo interés para ventas
       const btn=$('p_btnSoloInt');
-      if(btn)btn.style.display=(esVenta(op)||op.tip==='cuota'||op.tip==='interes_mensual')?'none':'';
+      if(btn)btn.style.display=(esVenta(op)||op.tip==='interes_mensual')?'none':'';
       // Para interes_mensual: activar soloInt automáticamente y prellenar monto
       if(op.tip==='interes_mensual'){
         if($('p_soloInt'))$('p_soloInt').value='1';
