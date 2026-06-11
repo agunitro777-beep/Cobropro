@@ -3930,17 +3930,17 @@ async function _pdfCreditoNuevoWA_inner(op,c){
     y+=20;
   }
 
-  // ── Cuotas pendientes con fechas ──
+  // ── Cuotas pendientes con fechas - solo la próxima ──
   if(cuotasPendientes>0){
     const fecs=fechasOp(op);
-    const pendFecs=fecs.slice(cuotasPagadas);
-    const rowsPend=pendFecs.map((f,i)=>[
-      `${cuotasPagadas+i+1}`,
-      fd(typeof f==='string'?f:(f&&f.toISOString?f.toISOString().split('T')[0]:'—')),
+    const proxFec=fecs[0];
+    const rowsPend=proxFec?[[
+      `${cuotasPagadas+1}`,
+      fd(typeof proxFec==='string'?proxFec:(proxFec&&proxFec.toISOString?proxFec.toISOString().split('T')[0]:'—')),
       fm(cuota),
       'Pendiente'
-    ]);
-    doc.autoTable({
+    ]]:[];
+    if(rowsPend.length>0)doc.autoTable({
       startY:y,
       head:[['Cuota','Vencimiento','Monto','Estado']],
       body:rowsPend,
@@ -3949,15 +3949,8 @@ async function _pdfCreditoNuevoWA_inner(op,c){
       columnStyles:{0:{cellWidth:14,halign:'center'},2:{halign:'right',cellWidth:36},3:{cellWidth:28,halign:'center'}},
       margin:{left:14,right:14},
       bodyStyles:{textColor:[60,60,60]},
-      didDrawPage:(d)=>{
-        if(d.pageNumber>1){
-          doc.setFillColor(108,99,255);doc.rect(0,0,210,12,'F');
-          doc.setTextColor(255,255,255);doc.setFontSize(8);
-          doc.text('COMPROBANTE — '+(CFG.nombre||'CobroAlDía'),105,8,{align:'center'});
-        }
-      }
     });
-    y=doc.lastAutoTable.finalY+6;
+    y=(rowsPend.length>0&&doc.lastAutoTable)?doc.lastAutoTable.finalY+6:y;
   }
 
   // ── Nota de la operación ──
