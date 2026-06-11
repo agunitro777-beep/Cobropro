@@ -3883,14 +3883,16 @@ async function _pdfCreditoNuevoWA_inner(op,c){
   });
   // Cuota en curso parcial
   if(paC>0){const d=_dhC(ciC);rowsC.push([`${ciC}*`,d>0?`En curso ⚠${d}d`:'En curso al día','—','—','—',`Falta: ${fm(cuota-paC)}`]);}
-  // Cuotas pendientes
+  // Cuotas pendientes - solo la próxima
   const pendStart=paC>0?ciC+1:ciC+1;
-  for(let n=pendStart;n<=op.cuo;n++){
-    const due=fechaDeCuota(op,n);if(!due||isNaN(due.getTime()))break;
-    const h=new Date();h.setHours(0,0,0,0);
-    const dv=Math.floor((due-h)/86400000);
-    const vStr=dv<0?`Vencida ${Math.abs(dv)}d`:dv===0?'Vence hoy':`En ${dv}d (${fd(due.toISOString().split('T')[0])})`;
-    rowsC.push([`${n}`,'Pendiente','—','—','—',vStr]);
+  if(pendStart<=op.cuo){
+    const due=fechaDeCuota(op,pendStart);
+    if(due&&!isNaN(due.getTime())){
+      const h=new Date();h.setHours(0,0,0,0);
+      const dv=Math.floor((due-h)/86400000);
+      const vStr=dv<0?`Vencida ${Math.abs(dv)}d`:dv===0?'Vence hoy':`En ${dv}d (${fd(due.toISOString().split('T')[0])})`;
+      rowsC.push([`${pendStart}`,'Pendiente','—','—','—',vStr]);
+    }
   }
   if(rowsC.length>0){
     doc.autoTable({
