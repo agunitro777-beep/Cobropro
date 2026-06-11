@@ -1946,8 +1946,8 @@ function rankCli(cid){
   return{lb:'Irregular',ic:'⚠️',cl:'rank-moroso'};
 }
 function intOp(op){
-  if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return pagoDeOp(op.id).reduce((s,p)=>s+Math.min(p.mon/cvOp(op),1)*gan,0)}
-  const v=cvOp(op),pr=op.mon/op.cuo;return pagoDeOp(op.id).reduce((s,p)=>s+Math.max(0,Math.min(p.mon,v)-pr),0);
+  if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return pagoDeOp(op.id).filter(p=>!p.par).reduce((s,p)=>s+Math.min(p.mon/cvOp(op),1)*gan,0)}
+  const v=cvOp(op),pr=op.mon/op.cuo;return pagoDeOp(op.id).filter(p=>!p.par).reduce((s,p)=>s+Math.max(0,Math.min(p.mon,v)-pr),0);
 }
 const saldoTotalCli=cid=>opsDeCli(cid).filter(o=>o.pag<o.cuo).reduce((s,o)=>s+saldoMOp(o),0);
 function fechasOp(op){
