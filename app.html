@@ -5310,20 +5310,55 @@ function rCaja(){
   const tc=pf.reduce((s,p)=>s+p.mon,0),ef=pf.filter(p=>p.met==='efectivo').reduce((s,p)=>s+p.mon,0),tr=pf.filter(p=>p.met==='transferencia').reduce((s,p)=>s+p.mon,0),tg=gf.reduce((s,g)=>s+g.mon,0),bal=tc-tg;
   $('cajaStats').innerHTML=`<div class="sc gr"><div class="sl">Total cobrado</div><div class="sv gr" style="font-size:14px">${fmt(tc)}</div><div class="ss">${pf.length} pagos</div></div><div class="sc ${bal>=0?'bl':'rd'}"><div class="sl">Balance neto</div><div class="sv ${bal>=0?'bl':'rd'}" style="font-size:14px">${fmt(bal)}</div></div><div class="sc gr"><div class="sl">💵 Efectivo</div><div class="sv gr" style="font-size:14px">${fmt(ef)}</div></div><div class="sc bl"><div class="sl">📲 Transf.</div><div class="sv bl" style="font-size:14px">${fmt(tr)}</div></div>`;
   // ── Transacciones unificadas: cobros + préstamos, ordenados por fecha desc ──
+  // ── Transacciones divididas en 3 grupos ──
   const txCobros=pf.map(p=>{const op=gO(p.oid);const c=op?gC(op.cid):null;const lbl=op?(esVenta(op)?op.prod||'Venta':op.desc||'Crédito'):'?';return{tipo:'cobro',fec:p.fec,nom:c?c.nom:'?',lbl,mon:p.mon,met:p.met,par:p.par,not:p.not,id:p.id};});
   const opsDelPeriodo=Ops.filter(op=>{const fa=op.fa||op.fv;return filtrP([{fec:fa}],'fec').length>0});
-  const txPrestamos=opsDelPeriodo.map(op=>{const c=gC(op.cid);const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const monto=sv?op.precio:op.mon;return{tipo:sv?'venta':'prestamo',fec:op.fa||op.fv,nom:c?c.nom:'?',lbl,mon:monto,cuo:op.cuo,frq:op.frq,oid:op.id,s:stOp(op)};});
-  const txTodas=[...txCobros,...txPrestamos].sort((a,b)=>b.fec.localeCompare(a.fec));
-  $('transaccionesList').innerHTML=txTodas.length===0?'<div style="font-size:10px;color:var(--tx2);padding:5px 0">Sin transacciones</div>':txTodas.map(tx=>{
-    if(tx.tipo==='cobro'){
-      return`<div class="pi"><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">💵</div><div><div style="font-size:11px;font-weight:600">${ocul?'••••':tx.nom} · ${tx.lbl}</div><div class="pd">${fD(tx.fec)}${tx.not?' · '+tx.not:''}${tx.par?' · <span class="pb">parcial</span>':''}</div></div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px"><div class="pm" style="color:var(--gr)">+${fmt(tx.mon)}</div><span class="mt2 ${tx.met}">${tx.met}</span><button class="btn bs bsm" style="padding:2px 6px;font-size:9px" onclick="abrirEditPago(${tx.id})">✏️</button></div></div>`;
-    } else {
-      const icon=tx.tipo==='venta'?'🛒':'💳';
-      const col=tx.tipo==='venta'?'var(--cy)':'var(--rd)';
-      const label=tx.tipo==='venta'?'Venta':'Préstamo';
-      return`<div class="pi" style="cursor:pointer" onclick="verOpDetalle(${tx.oid})"><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">${icon}</div><div><div style="font-size:11px;font-weight:600">${ocul?'••••':tx.nom} · ${tx.lbl}</div><div class="pd">${label} · ${tx.cuo} cuota${tx.cuo>1?'s':''} · ${tx.frq} · ${fD(tx.fec)}</div></div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:700;font-size:12px;color:${col}">−${fmt(tx.mon)}</div><span style="font-size:9px;color:var(--tx2)">${label}</span></div></div>`;
-    }
-  }).join('');
+  const txPrestamos=opsDelPeriodo.filter(op=>!esVenta(op)).map(op=>{const c=gC(op.cid);return{tipo:'prestamo',fec:op.fa||op.fv,nom:c?c.nom:'?',lbl:op.desc||'Crédito',mon:op.mon,cuo:op.cuo,frq:op.frq,oid:op.id};});
+  const txVentas=opsDelPeriodo.filter(op=>esVenta(op)).map(op=>{const c=gC(op.cid);return{tipo:'venta',fec:op.fa||op.fv,nom:c?c.nom:'?',lbl:op.prod||'Venta',mon:op.precio,cuo:op.cuo,frq:op.frq,oid:op.id};});
+
+  // Estado de secciones colapsadas (persiste en memoria)
+  if(!window._cajaOpen)window._cajaOpen={cobrado:true,prestado:false,ventas:false};
+
+  const rowCobro=tx=>`<div class="pi"><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">💵</div><div><div style="font-size:11px;font-weight:600">${ocul?'••••':tx.nom} · ${tx.lbl}</div><div class="pd">${tx.not?tx.not:''}${tx.par?' · <span class="pb">parcial</span>':''}</div></div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px"><div class="pm" style="color:var(--gr)">+${fmt(tx.mon)}</div><span class="mt2 ${tx.met}">${tx.met}</span><button class="btn bs bsm" style="padding:2px 6px;font-size:9px" onclick="abrirEditPago(${tx.id})">✏️</button></div></div>`;
+  const rowPrestamo=tx=>`<div class="pi" style="cursor:pointer" onclick="verOpDetalle(${tx.oid})"><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">💳</div><div><div style="font-size:11px;font-weight:600">${ocul?'••••':tx.nom} · ${tx.lbl}</div><div class="pd">Préstamo · ${tx.cuo} cuota${tx.cuo>1?'s':''} · ${tx.frq}</div></div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:700;font-size:12px;color:var(--rd)">−${fmt(tx.mon)}</div></div></div>`;
+  const rowVenta=tx=>`<div class="pi" style="cursor:pointer" onclick="verOpDetalle(${tx.oid})"><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:rgba(6,182,212,.12);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">🛒</div><div><div style="font-size:11px;font-weight:600">${ocul?'••••':tx.nom} · ${tx.lbl}</div><div class="pd">Venta</div></div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:700;font-size:12px;color:var(--cy)">−${fmt(tx.mon)}</div></div></div>`;
+
+  const agruparPorFecha=(items,rowFn)=>{
+    if(!items.length)return`<div style="font-size:10px;color:var(--tx2);padding:8px 4px">Sin registros en este período</div>`;
+    const grupos={};
+    items.forEach(x=>{(grupos[x.fec]=grupos[x.fec]||[]).push(x);});
+    return Object.keys(grupos).sort((a,b)=>b.localeCompare(a)).map(fec=>{
+      const dayItems=grupos[fec];
+      const tot=dayItems.reduce((s,x)=>s+x.mon,0);
+      return`<div style="margin-bottom:2px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:rgba(255,255,255,.04);border-radius:6px;margin-bottom:2px">
+          <span style="font-size:10px;font-weight:700;color:var(--tx2)">${fD(fec)}</span>
+          <span style="font-size:10px;font-weight:600;color:var(--tx2)">${dayItems.length} · ${fmt(tot)}</span>
+        </div>
+        ${dayItems.map(rowFn).join('')}
+      </div>`;
+    }).join('');
+  };
+
+  const seccion=(key,titulo,color,emoji,items,rowFn)=>{
+    const open=window._cajaOpen[key];
+    const tot=items.reduce((s,x)=>s+x.mon,0);
+    return`<div style="margin-bottom:6px;border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden">
+      <div onclick="window._cajaOpen['${key}']=!window._cajaOpen['${key}'];rCaja()" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;background:rgba(255,255,255,.03);user-select:none">
+        <span style="font-family:Syne,sans-serif;font-size:12px;font-weight:800;color:${color};text-transform:uppercase;letter-spacing:.6px">${emoji} ${titulo}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:Syne,sans-serif;font-size:12px;font-weight:700;color:${color}">${items.length} · ${fmt(tot)}</span>
+          <span style="font-size:10px;color:var(--tx2);transition:transform .2s;display:inline-block;transform:rotate(${open?'180':'0'}deg)">▼</span>
+        </div>
+      </div>
+      ${open?`<div style="padding:8px 10px 10px">${agruparPorFecha(items,rowFn)}</div>`:''}
+    </div>`;
+  };
+
+  $('transaccionesList').innerHTML=
+    seccion('cobrado','Cobrado','var(--gr)','💵',txCobros,rowCobro)+
+    seccion('prestado','Prestado','var(--rd)','💳',txPrestamos,rowPrestamo)+
+    seccion('ventas','Ventas','var(--cy)','🛒',txVentas,rowVenta);
   const ci={pérdida:'⛔',operativo:'🏢',otro:'📌'};
   $('gastosList').innerHTML=gf.length===0?'<div style="font-size:10px;color:var(--tx2);padding:5px 0">Sin gastos</div>':gf.slice().reverse().map(g=>`<div class="gi"><div class="gic">${ci[g.cat]||'💸'}</div><div class="gin"><div class="gn">${g.des}</div><div class="gd">${fD(g.fec)} · ${g.cat}</div></div><div style="display:flex;align-items:center;gap:5px"><div class="ga">−${fmt(g.mon)}</div><button class="btn bs bsm" style="padding:4px 6px" onclick="abrirGasto(${g.id})">✏️</button><button class="btn brd bsm" style="padding:4px 6px" onclick="elimGasto(${g.id})">🗑️</button></div></div>`).join('');
 }
