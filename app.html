@@ -4471,6 +4471,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
   if(ops.length>0){const o0=ops[0];const p0=Ps.filter(p=>ops.some(o=>o.id===p.oid))[0];toast('op.id='+o0.id+'('+typeof o0.id+') pago.oid='+(p0?p0.oid+'('+typeof p0.oid+')':'none'),'info',10000);}
   const _dbgP2=Ps.filter(p=>ops.some(o=>o.id===p.oid));
   toast('pagos: '+_dbgP2.map(p=>'mon:'+p.mon+' par:'+p.par+' not:'+(p.not||'').substring(0,10)).join(' | '),'info',15000);
+  toast('ops: '+ops.map(o=>'m:'+o.mon+' i:'+o.int+' cf:'+o.cuota_fija+' c:'+o.cuo+' v:'+Math.round(cvOp(o))).join(' | '),'info',15000);
   const bmap={atrasado:'<span class="sb late">⚠ Atrasado</span>',porVencer:'<span class="sb due">Por vencer</span>',aldía:'<span class="sb ok">Al día</span>',completo:'<span class="sb done">✅</span>',reprogramado:'<span class="sb due" style="background:rgba(251,191,36,.15);border-color:rgba(251,191,36,.4);color:var(--yw)">⏸ Reprogramado</span>'};
   const opsHTML=opsAct.map(op=>{
     const sv=esVenta(op),s=stOp(op),cuota=cvOp(op),sm=saldoMOp(op),pct=Math.round((op.pag/op.cuo)*100);
