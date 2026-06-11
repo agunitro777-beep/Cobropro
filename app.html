@@ -1049,7 +1049,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <div class="ig"><label class="il">Moneda</label><select class="inp sel" id="op_moneda"><option value="$">$ (Peso)</option><option value="U$S">U$S (Dólar)</option><option value="R$">R$ (Real)</option><option value="€">€ (Euro)</option><option value="A$">A$ (AUD)</option></select></div>
     <div id="opCamposP">
       <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc" placeholder="Ej: Crédito personal..."></div>
-      <div class="ig"><label class="il">Monto *</label><input class="inp" id="op_mon" type="number" placeholder="0.00" oninput="(function(){const v=parseFloat(document.getElementById('op_mon').value);const h=document.getElementById('op_mon_hint');if(v&&v!==Math.round(v)){h.textContent='⚠️ Se guardará como $'+Math.round(v).toLocaleString(LOCALE());h.style.color='var(--yw)';}else{h.textContent='';}actualizarPreview();})()"><div id="op_mon_hint" style="font-size:10px;min-height:13px;margin-top:3px"></div></div>
+      <div class="ig"><label class="il" id="op_mon_label">Monto prestado *</label><input class="inp" id="op_mon" type="number" placeholder="Capital que le prestás al cliente" oninput="(function(){const v=parseFloat(document.getElementById('op_mon').value);const h=document.getElementById('op_mon_hint');if(v&&v!==Math.round(v)){h.textContent='⚠️ Se guardará como $'+Math.round(v).toLocaleString(LOCALE());h.style.color='var(--yw)';}else{h.textContent='';}actualizarPreview();})()"><div id="op_mon_hint" style="font-size:10px;min-height:13px;margin-top:3px"></div></div>
       <div class="ig"><label class="il">Tipo de crédito</label><select class="inp sel" id="op_tip" onchange="toggleTipoInteres()">
         <option value="simple">📐 Simple</option>
         <option value="compuesto">📈 Compuesto</option>
@@ -1080,8 +1080,12 @@ body.light .mo{background:rgba(0,0,0,.5)}
       <!-- BLOQUE: cuota fija -->
       <div id="intCuotaBlock" style="display:none">
         <div class="ig">
+          <label class="il">Monto prestado *</label>
+          <input class="inp" id="op_mon_cf" type="number" placeholder="Ej: 500000" oninput="syncCuotaFijaDirecta()">
+        </div>
+        <div class="ig">
           <label class="il">Valor de cuota *</label>
-          <input class="inp" id="op_cuo_fixed_cf" type="number" placeholder="Ej: 5000" oninput="syncCuotaFijaDirecta()">
+          <input class="inp" id="op_cuo_fixed_cf" type="number" placeholder="Ej: 635000" oninput="syncCuotaFijaDirecta()">
           <div id="op_cf_hint" style="font-size:10px;color:var(--ac2);margin-top:3px;min-height:14px"></div>
         </div>
         <div class="ig">
@@ -2851,16 +2855,16 @@ function syncInteresOp(){
   actualizarPreview();
 }
 function syncCuotaFijaDirecta(){
+  const mon=parseFloat($('op_mon_cf')?.value)||0;
   const cuotaFija=parseFloat($('op_cuo_fixed_cf')?.value)||0;
   const cuo=parseInt($('op_cuo_cf')?.value)||0;
   const hint=$('op_cf_hint');
-  if(cuotaFija>0){
-    if(cuo>0){
-      const total=cuotaFija*cuo;
-      if(hint)hint.innerHTML=`<span style="color:var(--gr)">✅ ${cuo} cuotas de ${(CFG.moneda||'$')}${cuotaFija.toLocaleString(LOCALE())} = Total ${(CFG.moneda||'$')}${total.toLocaleString(LOCALE())}</span>`;
-    } else {
-      if(hint)hint.innerHTML=`<span style="color:var(--ac2)">Agregá cantidad de cuotas</span>`;
-    }
+  if(cuotaFija>0&&cuo>0){
+    const total=cuotaFija*cuo;
+    const gan=mon>0?total-mon:null;
+    if(hint)hint.innerHTML=`<span style="color:var(--gr)">✅ ${cuo} cuotas de ${(CFG.moneda||'$')}${cuotaFija.toLocaleString(LOCALE())} = Total ${(CFG.moneda||'$')}${total.toLocaleString(LOCALE())}${gan!==null?' · <span style="color:var(--yw)">Ganancia: '+(CFG.moneda||'$')+gan.toLocaleString(LOCALE())+'</span>':''}</span>`;
+  } else if(cuotaFija>0){
+    if(hint)hint.innerHTML=`<span style="color:var(--ac2)">Agregá cantidad de cuotas</span>`;
   } else {
     if(hint)hint.textContent='';
   }
@@ -3407,7 +3411,7 @@ function abrirOp(cidFijo=null,oid=null){
   $('op_cliGrp').style.display=cidFijo?'none':'block';if(!cidFijo)poblarSelClis();
   if(oid){
     const op=gO(oid);if(!op)return;
-    $('op_tipo').value=op.tipo;toggleOpTipo();$('op_cuo').value=op.cuo;if(op.tip==='cuota'&&$('op_cuo_cf'))$('op_cuo_cf').value=op.cuo;$('op_frq').value=op.frq;$('op_fv').value=op.fv;$('op_not').value=op.not||'';$('op_moneda').value=op.moneda||CFG.moneda||'$';$('op_facr').value=op.facr||'';
+    $('op_tipo').value=op.tipo;toggleOpTipo();$('op_cuo').value=op.cuo;if(op.tip==='cuota'&&$('op_cuo_cf')){$('op_cuo_cf').value=op.cuo;if($('op_cuo_fixed_cf'))$('op_cuo_fixed_cf').value=op.cuota_fija||'';if($('op_mon_cf'))$('op_mon_cf').value=op.mon||'';}$('op_frq').value=op.frq;$('op_fv').value=op.fv;$('op_not').value=op.not||'';$('op_moneda').value=op.moneda||CFG.moneda||'$';$('op_facr').value=op.facr||'';
     if(op.tipo==='venta'){$('op_prod').value=op.prod||'';$('op_costo').value=op.costo||0;$('op_precio').value=op.precio||0}
     else{
       $('op_desc').value=op.desc||'';
@@ -3492,14 +3496,12 @@ async function guardarOp(){
     const cuoIM=parseInt($('op_cuo_im')?.value)||999;
     Object.assign(d,{mon:monIM,int_:intIMfinal,mora:0,tip:'interes_mensual',desc_:descIM,prod:'',costo:0,precio:0,cuo:cuoIM,pag:0,frq:'mensual',fv:fvIM,facr:$('op_facr')?.value||null,cuota_fija:cuotaIM});
   } else if(tipInt==='cuota'){
-    // cuota fija directa
     const cuotaCF=parseFloat($('op_cuo_fixed_cf')?.value)||0;
     const cuoCF=parseInt($('op_cuo_cf')?.value)||parseInt($('op_cuo')?.value)||0;
-    const monCF=parseFloat($('op_mon')?.value)||0;
-    toast(`Debug: cuota=${cuotaCF} cuo=${cuoCF} mon=${monCF}`,'warn');
+    const monCF=parseFloat($('op_mon_cf')?.value)||0;
+    if(!monCF){toast('Ingresá el monto prestado','error');_guardando=false;return;}
     if(!cuotaCF){toast('Ingresá el valor de cuota','error');_guardando=false;return;}
     if(!cuoCF){toast('Ingresá la cantidad de cuotas','error');_guardando=false;return;}
-    if(!monCF){toast('Ingresá el monto prestado','error');_guardando=false;return;}
     d.cuota_fija=cuotaCF;
     d.mon=monCF;
   } else if(tipo==='venta'){const precio=parseFloat($('op_precio').value);if(!precio){toast('Ingresá el precio','error');_guardando=false;return}Object.assign(d,{prod:$('op_prod').value.trim(),costo:parseFloat($('op_costo').value)||0,precio,mon:0,int_:0,mora:0,tip:'cuota',desc_:''})}
