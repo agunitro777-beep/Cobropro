@@ -2375,7 +2375,7 @@ function toggleTipoInteres(forzar){
   show($('intCuotaBlock'),  esCuota);
   show($('intDiarioBlock'), esDiario);
   show($('intMensualBlock'),esMensual);
-  show($('op_mon')?.closest('.ig'),  !esDiario&&!esMensual);
+  show($('op_mon')?.closest('.ig'),   !esDiario&&!esMensual);
   show($('op_desc')?.closest('.ig'), !esDiario&&!esMensual);
   show($('op_cuo')?.closest('.ig'),  !esDiario&&!esMensual&&!esCuota);
   show($('op_frq')?.closest('.ig'),  !esDiario&&!esMensual);
@@ -3494,11 +3494,13 @@ async function guardarOp(){
   } else if(tipInt==='cuota'){
     // cuota fija directa
     const cuotaCF=parseFloat($('op_cuo_fixed_cf')?.value)||0;
-    const cuoCF=parseInt($('op_cuo_cf')?.value)||0;
+    const cuoCF=parseInt($('op_cuo_cf')?.value)||parseInt($('op_cuo')?.value)||0;
+    const monCF=parseFloat($('op_mon')?.value)||0;
     if(!cuotaCF){toast('Ingresá el valor de cuota','error');_guardando=false;return;}
     if(!cuoCF){toast('Ingresá la cantidad de cuotas','error');_guardando=false;return;}
+    if(!monCF){toast('Ingresá el monto prestado','error');_guardando=false;return;}
     d.cuota_fija=cuotaCF;
-    if(!d.mon||!parseFloat(d.mon))d.mon=cuotaCF*cuoCF;
+    d.mon=monCF;
   } else if(tipo==='venta'){const precio=parseFloat($('op_precio').value);if(!precio){toast('Ingresá el precio','error');_guardando=false;return}Object.assign(d,{prod:$('op_prod').value.trim(),costo:parseFloat($('op_costo').value)||0,precio,mon:0,int_:0,mora:0,tip:'cuota',desc_:''})}
   else{
     const cuotaFija=parseFloat($('op_cuo_fixed').value)||0;
