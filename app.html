@@ -3826,19 +3826,22 @@ async function _pdfCreditoNuevoWA_inner(op,c){
   y+=c.tel?30:24;
 
   // ── Condiciones del crédito ──
+  const esIM=op.tip==='interes_mensual';
+  const boxH=esIM?40:32;
   doc.setFillColor(240,240,255);doc.setDrawColor(200,200,220);
-  doc.roundedRect(14,y,182,32,3,3,'FD');
+  doc.roundedRect(14,y,182,boxH,3,3,'FD');
   doc.setTextColor(80,80,120);doc.setFontSize(7);doc.setFont('helvetica','bold');
   doc.text('CONDICIONES DEL CRÉDITO',20,y+7);
   doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);doc.setFontSize(9);
   // Col 1
-  const cuoLabel2=op.tip==='interes_mensual'?'Capital abierto · '+frqLabel.toLowerCase():`${op.cuo} ${frqLabel.toLowerCase()}es`;
+  const cuoLabel2=esIM?'Capital abierto · '+frqLabel.toLowerCase():`${op.cuo} ${frqLabel.toLowerCase()}es`;
   doc.setFont('helvetica','bold');doc.text('Cuotas:',20,y+15);doc.setFont('helvetica','normal');doc.text(cuoLabel2,47,y+15);
   doc.setFont('helvetica','bold');doc.text('Valor cuota:',20,y+23);doc.setFont('helvetica','normal');doc.text(fm(cuota),52,y+23);
+  if(esIM){doc.setFont('helvetica','bold');doc.text('Monto entregado:',20,y+31);doc.setFont('helvetica','normal');doc.text(fm(op.mon),62,y+31);}
   // Col 2
   doc.setFont('helvetica','bold');doc.text('Acreditación:',105,y+15);doc.setFont('helvetica','normal');doc.text(fd(op.facr),140,y+15);
   doc.setFont('helvetica','bold');doc.text('1er vencimiento:',105,y+23);doc.setFont('helvetica','normal');doc.text(fd(op.fv),148,y+23);
-  y+=38;
+  y+=boxH+6;
 
   // ── Resumen de estado ──
   // Box pagado
