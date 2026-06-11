@@ -4465,6 +4465,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
   const opsAct=ops.filter(o=>o.pag<o.cuo||o.tip==='interes_mensual'),opsComp=ops.filter(o=>o.pag>=o.cuo&&o.tip!=='interes_mensual');
   const totInt=ops.reduce((s,o)=>s+intOp(o),0);
   const totIntProy=ops.reduce((s,o)=>{if(esVenta(o))return s+(o.precio&&o.costo?(o.precio-o.costo):0);return s+Math.max(0,cvOp(o)*o.cuo-o.mon);},0);
+  console.log('DEBUG',{ops:ops.map(o=>({id:o.id,tip:o.tip,tipo:o.tipo,mon:o.mon,cuo:o.cuo,pag:o.pag,int:o.int,cuota_fija:o.cuota_fija})),pagos:Ps.filter(p=>ops.some(o=>o.id===p.oid)).map(p=>({oid:p.oid,mon:p.mon,par:p.par,not:p.not})),totInt,totIntProy});
   const bmap={atrasado:'<span class="sb late">⚠ Atrasado</span>',porVencer:'<span class="sb due">Por vencer</span>',aldía:'<span class="sb ok">Al día</span>',completo:'<span class="sb done">✅</span>',reprogramado:'<span class="sb due" style="background:rgba(251,191,36,.15);border-color:rgba(251,191,36,.4);color:var(--yw)">⏸ Reprogramado</span>'};
   const opsHTML=opsAct.map(op=>{
     const sv=esVenta(op),s=stOp(op),cuota=cvOp(op),sm=saldoMOp(op),pct=Math.round((op.pag/op.cuo)*100);
