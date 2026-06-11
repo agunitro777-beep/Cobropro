@@ -2379,7 +2379,7 @@ function toggleTipoInteres(forzar){
   show($('intCuotaBlock'),  esCuota);
   show($('intDiarioBlock'), esDiario);
   show($('intMensualBlock'),esMensual);
-  show($('op_mon')?.closest('.ig'),   !esDiario&&!esMensual);
+  show($('op_mon')?.closest('.ig'),   !esDiario&&!esMensual&&!esCuota);
   show($('op_desc')?.closest('.ig'), !esDiario&&!esMensual);
   show($('op_cuo')?.closest('.ig'),  !esDiario&&!esMensual&&!esCuota);
   show($('op_frq')?.closest('.ig'),  !esDiario&&!esMensual);
@@ -2769,7 +2769,7 @@ function actualizarTipExplainer(){
 }
 function actualizarPreview(){
   const tip=$('op_tip')?.value||'simple';
-  const mon=tip==='interes_mensual'?parseFloat($('op_mon_im')?.value)||0:parseFloat($('op_mon')?.value)||0;
+  const mon=tip==='interes_mensual'?parseFloat($('op_mon_im')?.value)||0:tip==='cuota'?parseFloat($('op_mon_cf')?.value)||0:parseFloat($('op_mon')?.value)||0;
   const esCuotaFija=tip==='cuota';
   const cuo=esCuotaFija?(parseInt($('op_cuo_cf')?.value)||0):(parseInt($('op_cuo')?.value)||0);
   const int_=tip==='interes_mensual'?parseFloat($('op_int_im')?.value)||0:parseFloat($('op_int')?.value)||0;
@@ -2806,17 +2806,19 @@ function actualizarPreview(){
 </div>
 <div style="margin-top:6px;font-size:10px;color:var(--tx2)">${mon_}${monD.toLocaleString(LOCALE())} al ${intD}% diario · ${(intD*30).toFixed(1)}% mensual</div>`;
   } else if(tip==='cuota'){
-    // Cuota fija directa
     const cuotaCF=parseFloat($('op_cuo_fixed_cf')?.value)||0;
     const cuoCF=parseInt($('op_cuo_cf')?.value)||0;
+    const monCF=parseFloat($('op_mon_cf')?.value)||0;
     if(!cuotaCF||!cuoCF){pr.style.display='none';return;}
     const totalCF=cuotaCF*cuoCF;
+    const ganancia=monCF>0?totalCF-monCF:null;
     const frqLabel={diario:'días',semanal:'semanas',quincenal:'quincenas',mensual:'meses'}[frq]||'cuotas';
     html=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Resumen cuota fija</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+  ${monCF?`<div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Capital prestado</div><div style="font-weight:800;font-size:14px">${mon_}${Math.round(monCF).toLocaleString(LOCALE())}</div></div>`:''}
   <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Cuota</div><div style="font-weight:800;font-size:14px;color:var(--ac)">${mon_}${cuotaCF.toLocaleString(LOCALE())}</div></div>
   <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Total a cobrar</div><div style="font-weight:800;font-size:14px">${mon_}${totalCF.toLocaleString(LOCALE())}</div></div>
-  <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Cuotas</div><div style="font-weight:800;font-size:14px">${cuoCF}</div></div>
+  ${ganancia!==null?`<div style="background:rgba(34,197,94,.12);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Tu ganancia</div><div style="font-weight:800;font-size:14px;color:var(--gr)">${mon_}${ganancia.toLocaleString(LOCALE())}</div></div>`:''}
 </div>
 <div style="margin-top:6px;font-size:10px;color:var(--tx2)">${cuoCF} ${frqLabel} de ${mon_}${cuotaCF.toLocaleString(LOCALE())}</div>`;
   } else {
