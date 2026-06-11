@@ -4460,6 +4460,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
   const ops=opsDeCli(cid),r=rankCli(cid),saldoT=saldoTotalCli(cid),sTC=stCli(cid);
   const opsAct=ops.filter(o=>o.pag<o.cuo||o.tip==='interes_mensual'),opsComp=ops.filter(o=>o.pag>=o.cuo&&o.tip!=='interes_mensual');
   const totInt=ops.reduce((s,o)=>s+intOp(o),0);
+  const totIntProy=ops.reduce((s,o)=>{if(esVenta(o))return s+(o.precio&&o.costo?(o.precio-o.costo):0);return s+Math.max(0,cvOp(o)*o.cuo-o.mon);},0);
   const bmap={atrasado:'<span class="sb late">⚠ Atrasado</span>',porVencer:'<span class="sb due">Por vencer</span>',aldía:'<span class="sb ok">Al día</span>',completo:'<span class="sb done">✅</span>',reprogramado:'<span class="sb due" style="background:rgba(251,191,36,.15);border-color:rgba(251,191,36,.4);color:var(--yw)">⏸ Reprogramado</span>'};
   const opsHTML=opsAct.map(op=>{
     const sv=esVenta(op),s=stOp(op),cuota=cvOp(op),sm=saldoMOp(op),pct=Math.round((op.pag/op.cuo)*100);
@@ -4580,7 +4581,8 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
         +'<div class="mc"><div class="ml">Saldo capital</div><div class="mv" style="color:var(--cy);font-size:clamp(11px,3.5vw,18px)">'+fmt(_saldo)+'</div></div>'
         +'<div class="mc"><div class="ml">Mora acumulada</div><div class="mv" style="color:'+(_mora>0?'var(--rd)':'var(--tx2)')+';font-size:clamp(11px,3.5vw,18px)">+'+fmt(_mora)+'</div></div>'
         +'<div class="mc"><div class="ml">Total a cobrar</div><div class="mv" style="color:var(--ac);font-size:clamp(11px,3.5vw,18px)">'+fmt(_saldo+_mora)+'</div></div>'
-        +'<div class="mc"><div class="ml">Ganancia</div><div class="mv" style="color:var(--yw);font-size:clamp(11px,3.5vw,18px)">'+fmt(totInt)+'</div></div>'
+        +'<div class="mc"><div class="ml">Ganancia cobrada</div><div class="mv" style="color:var(--yw);font-size:clamp(11px,3.5vw,18px)">'+fmt(totInt)+'</div></div>'
+        +'<div class="mc"><div class="ml">Ganancia proyectada</div><div class="mv" style="color:var(--gr);font-size:clamp(11px,3.5vw,18px)">'+fmt(totIntProy)+'</div></div>'
         +'</div>'
         +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">'
         +'<div class="mc"><div class="ml">🎯 Score</div><div class="mv" style="color:'+_scColor+';font-size:14px">'+(_sc!==null?_sc+'pts':'-')+' <span style="font-size:9px;font-weight:400">'+_scLabel+'</span></div></div>'
