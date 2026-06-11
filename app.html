@@ -2239,7 +2239,12 @@ function pdfResumenCli(cid){
 async function pdfComprobanteOp(oid){
   const op=gO(oid);if(!op)return;
   const pagos=pagoDeOp(oid).filter(p=>!p.par).sort((a,b)=>b.fec.localeCompare(a.fec));
-  if(!pagos.length){toast('Esta operación no tiene pagos registrados','warn');return;}
+  if(!pagos.length){
+    // Sin pagos — generar PDF de condiciones del crédito
+    const c=gC(op.cid);if(!c)return;
+    await pdfCreditoNuevoWA(op,c);
+    return;
+  }
   const ul=pagos[0];
   await comprobantePDF(oid,ul.mon,ul.fec,ul.par||false,ul.flt||0);
 }
