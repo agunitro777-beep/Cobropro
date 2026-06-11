@@ -1051,8 +1051,6 @@ body.light .mo{background:rgba(0,0,0,.5)}
       <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc" placeholder="Ej: Crédito personal..."></div>
       <div class="ig"><label class="il" id="op_mon_label">Monto prestado *</label><input class="inp" id="op_mon" type="number" placeholder="Capital que le prestás al cliente" oninput="(function(){const v=parseFloat(document.getElementById('op_mon').value);const h=document.getElementById('op_mon_hint');if(v&&v!==Math.round(v)){h.textContent='⚠️ Se guardará como $'+Math.round(v).toLocaleString(LOCALE());h.style.color='var(--yw)';}else{h.textContent='';}actualizarPreview();})()"><div id="op_mon_hint" style="font-size:10px;min-height:13px;margin-top:3px"></div></div>
       <div class="ig"><label class="il">Tipo de crédito</label><select class="inp sel" id="op_tip" onchange="toggleTipoInteres()">
-        <option value="simple">📐 Simple</option>
-        <option value="compuesto">📈 Compuesto</option>
         <option value="cuota">🔒 Cuota fija</option>
         <option value="diario_abierto">📅 Diario (fecha abierta)</option>
         <option value="interes_mensual">💰 Solo interés mensual</option>
@@ -3479,7 +3477,7 @@ function abrirOp(cidFijo=null,oid=null){
     if($('op_mora_check'))$('op_mora_check').checked=false;
     $('op_fv').value=hoy();$('op_frq').value='quincenal';$('op_tipo').value='prestamo';$('op_moneda').value=CFG.moneda||'$';if($('op_facr'))$('op_facr').value=hoy();autoFechaOp();
     _intModo='mensual';setIntModo('mensual');toggleOpTipo();
-    if($('op_tip')){$('op_tip').value='simple';toggleTipoInteres('simple');}actualizarTipExplainer();actualizarPreview();
+    if($('op_tip')){$('op_tip').value='cuota';toggleTipoInteres('cuota');}actualizarTipExplainer();actualizarPreview();
   }
   showModal('mop');
 }
