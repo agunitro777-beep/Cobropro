@@ -8849,99 +8849,128 @@ let _tourFingerTimer = null;
 const TOUR_STEPS_MAIN = [
   {
     title: '¡Bienvenido a CobroAlDía! 👋',
-    desc: 'Tu app para gestionar préstamos y cobros. Este tour te muestra todo en menos de 2 minutos. Podés saltar en cualquier momento.',
+    desc: 'Tu app para gestionar préstamos y cobros de forma profesional. Este tour te muestra todo en menos de 2 minutos.',
     screen: () => `
-      <div style="padding:16px">
-        <div style="text-align:center;padding:20px 0">
-          <div style="font-size:48px;margin-bottom:8px">💸</div>
-          <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:800;color:#a29bfe;margin-bottom:4px">CobroAlDía</div>
-          <div style="font-size:12px;color:#7a7d8f">Gestión de préstamos y cobros</div>
+      <div style="background:#0a0a0f;min-height:420px;display:flex;flex-direction:column">
+        <div style="background:linear-gradient(160deg,#1a1040 0%,#0a0a0f 60%);padding:36px 20px 20px;text-align:center;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#6c63ff,#a29bfe);display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:14px;box-shadow:0 8px 32px rgba(108,99,255,.4)">💸</div>
+          <div style="font-family:Syne,sans-serif;font-size:24px;font-weight:800;color:#f0f0f5;margin-bottom:4px">CobroAlDía</div>
+          <div style="font-size:11px;color:#7a7d8f;margin-bottom:24px">Gestión de préstamos y cobros</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%">
+            <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;margin-bottom:4px">👥</div><div style="font-size:10px;color:#a29bfe;font-weight:600">Clientes</div></div>
+            <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;margin-bottom:4px">💵</div><div style="font-size:10px;color:#00d68f;font-weight:600">Cobros</div></div>
+            <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;margin-bottom:4px">📊</div><div style="font-size:10px;color:#06b6d4;font-weight:600">Reportes</div></div>
+            <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;margin-bottom:4px">🗺️</div><div style="font-size:10px;color:#ffd166;font-weight:600">Ruta diaria</div></div>
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-          <div style="background:#1e2030;border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px">👥</div><div style="font-size:10px;color:#7a7d8f;margin-top:2px">Clientes</div></div>
-          <div style="background:#1e2030;border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px">💰</div><div style="font-size:10px;color:#7a7d8f;margin-top:2px">Cobros</div></div>
-          <div style="background:#1e2030;border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px">📊</div><div style="font-size:10px;color:#7a7d8f;margin-top:2px">Reportes</div></div>
-          <div style="background:#1e2030;border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px">🗺️</div><div style="font-size:10px;color:#7a7d8f;margin-top:2px">Ruta diaria</div></div>
+        <div style="background:#0b0c10;border-top:1px solid #1e2030;display:flex;justify-content:space-around;padding:8px 0 12px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#a29bfe"><span style="font-size:18px">🏠</span>Inicio</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">👥</span>Clientes</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">💰</span>Caja</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">📅</span>Agenda</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">🗺️</span>Ruta</div>
         </div>
       </div>`,
     finger: null
   },
   {
-    title: 'Inicio — tu resumen del día 🏠',
-    desc: 'Al entrar ves el capital prestado, lo cobrado hoy, alertas de mora y clientes con vencimientos próximos.',
+    title: 'Inicio — resumen del día 🏠',
+    desc: 'Al entrar ves capital prestado, cobrado hoy, mora acumulada y alertas de vencimientos. Todo de un vistazo.',
     screen: () => `
-      <div>
-        <div class="td-hdr"><span class="td-brand">💸 CobroAlDía</span><span style="font-size:16px">👁️ ⚙️</span></div>
-        <div style="padding:10px">
-          <div style="font-size:11px;font-weight:700;color:#7a7d8f;margin-bottom:6px">📊 RESUMEN FINANCIERO</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
-            <div class="td-card"><div style="font-size:9px;color:#7a7d8f">Total cobrado</div><div style="font-weight:800;font-size:13px;color:#00d68f">$2.450.000</div></div>
-            <div class="td-card"><div style="font-size:9px;color:#7a7d8f">Capital activo</div><div style="font-weight:800;font-size:13px;color:#a29bfe">$4.800.000</div></div>
-            <div class="td-card"><div style="font-size:9px;color:#7a7d8f">Por cobrar</div><div style="font-weight:800;font-size:13px;color:#06b6d4">$6.200.000</div></div>
-            <div class="td-card"><div style="font-size:9px;color:#7a7d8f">Ganancia</div><div style="font-weight:800;font-size:13px;color:#ffd166">$890.000</div></div>
+      <div style="background:#0a0a0f;min-height:420px;display:flex;flex-direction:column">
+        <div style="background:#0b0c10;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e2030">
+          <span style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:#a29bfe">💸 CobroAlDía</span>
+          <span style="font-size:14px;color:#7a7d8f">📊 👁️ ⚙️</span>
+        </div>
+        <div style="flex:1;padding:10px;overflow:hidden">
+          <div style="font-size:10px;font-weight:700;color:#7a7d8f;margin-bottom:6px;letter-spacing:.5px">📊 RESUMEN FINANCIERO</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+            <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px"><div style="font-size:9px;color:#7a7d8f">Total cobrado</div><div style="font-weight:800;font-size:14px;color:#00d68f">$3.120.000</div></div>
+            <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px"><div style="font-size:9px;color:#7a7d8f">Capital activo</div><div style="font-weight:800;font-size:14px;color:#a29bfe">$6.400.000</div></div>
+            <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px"><div style="font-size:9px;color:#7a7d8f">Por cobrar</div><div style="font-weight:800;font-size:14px;color:#06b6d4">$8.750.000</div></div>
+            <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px"><div style="font-size:9px;color:#7a7d8f">Ganancia</div><div style="font-weight:800;font-size:14px;color:#ffd166">$1.240.000</div></div>
           </div>
-          <div class="td-card" style="border-left:3px solid #ff4d6d">
-            <div style="font-size:9px;color:#ff4d6d;font-weight:700">⚠️ EN MORA</div>
-            <div style="font-size:11px;color:#f0f0f5;margin-top:2px">3 clientes · $415.000</div>
+          <div style="background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.25);border-radius:10px;padding:10px;margin-bottom:6px">
+            <div style="font-size:9px;color:#ff4d6d;font-weight:700;margin-bottom:3px">⚠️ EN MORA</div>
+            <div style="font-size:11px;color:#f0f0f5">4 clientes · $620.000 en mora</div>
+          </div>
+          <div style="background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.2);border-radius:10px;padding:10px">
+            <div style="font-size:9px;color:#ffd166;font-weight:700;margin-bottom:3px">⏰ VENCEN HOY</div>
+            <div style="font-size:11px;color:#f0f0f5">2 cuotas · $185.000</div>
           </div>
         </div>
-        <div class="td-nav">
-          <div class="td-ni act"><span style="font-size:16px">🏠</span><span>Inicio</span></div>
-          <div class="td-ni"><span style="font-size:16px">👥</span><span>Clientes</span></div>
-          <div class="td-ni"><span style="font-size:16px">💵</span><span>Caja</span></div>
-          <div class="td-ni"><span style="font-size:16px">📅</span><span>Agenda</span></div>
+        <div style="background:#0b0c10;border-top:1px solid #1e2030;display:flex;justify-content:space-around;padding:8px 0 12px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#a29bfe"><span style="font-size:18px">🏠</span>Inicio</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">👥</span>Clientes</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">💰</span>Caja</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">📅</span>Agenda</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">🗺️</span>Ruta</div>
         </div>
       </div>`,
     finger: null
   },
   {
-    title: 'Agregá un cliente nuevo ➕',
-    desc: 'Tocá el botón "+" para agregar un cliente. Ingresás nombre, teléfono, dirección y GPS. Al guardar se abre su ficha directamente.',
+    title: 'Tus clientes 👥',
+    desc: 'Cada cliente tiene su ficha con créditos, historial de pagos, saldo, score de puntualidad y datos de contacto.',
     screen: () => `
-      <div>
-        <div class="td-hdr"><span class="td-brand">💸 CobroAlDía</span></div>
-        <div style="padding:10px">
-          <div style="font-size:11px;font-weight:700;color:#7a7d8f;margin-bottom:8px">👥 CLIENTES</div>
-          <div class="td-card" style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-            <div style="width:32px;height:32px;border-radius:50%;background:#6c63ff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff">DA</div>
-            <div style="flex:1"><div style="font-size:11px;font-weight:600">Dario Videla</div><div style="font-size:9px;color:#7a7d8f">$200.000/mes</div></div>
-            <div style="font-size:11px;font-weight:700;color:#ff4d6d">$170.000</div>
+      <div style="background:#0a0a0f;min-height:420px;display:flex;flex-direction:column">
+        <div style="background:#0b0c10;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e2030">
+          <span style="font-family:Syne,sans-serif;font-weight:800;font-size:13px;color:#f0f0f5">👥 Clientes</span>
+          <span style="font-size:14px;color:#7a7d8f">🔍</span>
+        </div>
+        <div style="flex:1;padding:10px">
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:12px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ff4d6d,#ff8fa3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0">RC</div>
+            <div style="flex:1"><div style="font-size:12px;font-weight:700;color:#f0f0f5">Roberto Castro</div><div style="font-size:9px;color:#7a7d8f">$280.000/mes · 3 créditos</div></div>
+            <div style="text-align:right"><div style="font-size:12px;font-weight:800;color:#ff4d6d">$840.000</div><div style="font-size:9px;color:#ff4d6d">⚠️ mora</div></div>
           </div>
-          <div class="td-card" style="display:flex;align-items:center;gap:8px">
-            <div style="width:32px;height:32px;border-radius:50%;background:#00d68f;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff">MG</div>
-            <div style="flex:1"><div style="font-size:11px;font-weight:600">María González</div><div style="font-size:9px;color:#7a7d8f">Cuota 5/12</div></div>
-            <div style="font-size:11px;font-weight:700;color:#ffd166">$45.000</div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:12px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6c63ff,#a29bfe);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0">SV</div>
+            <div style="flex:1"><div style="font-size:12px;font-weight:700;color:#f0f0f5">Sandra Villalba</div><div style="font-size:9px;color:#7a7d8f">$95.000/mes · Cuota 4/12</div></div>
+            <div style="text-align:right"><div style="font-size:12px;font-weight:800;color:#ffd166">$855.000</div><div style="font-size:9px;color:#00d68f">✅ al día</div></div>
+          </div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:12px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#00d68f,#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0">NF</div>
+            <div style="flex:1"><div style="font-size:12px;font-weight:700;color:#f0f0f5">Nicolás Ferreyra</div><div style="font-size:9px;color:#7a7d8f">$150.000 · interés mensual</div></div>
+            <div style="text-align:right"><div style="font-size:12px;font-weight:800;color:#06b6d4">$150.000</div><div style="font-size:9px;color:#ffd166">⏰ vence hoy</div></div>
           </div>
         </div>
-        <div id="tdFabDemo" style="position:absolute;bottom:40px;right:12px;width:44px;height:44px;border-radius:50%;background:#6c63ff;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;box-shadow:0 4px 15px rgba(108,99,255,.5)">+</div>
-        <div class="td-nav">
-          <div class="td-ni"><span style="font-size:16px">🏠</span><span>Inicio</span></div>
-          <div class="td-ni act"><span style="font-size:16px">👥</span><span>Clientes</span></div>
-          <div class="td-ni"><span style="font-size:16px">💵</span><span>Caja</span></div>
-          <div class="td-ni"><span style="font-size:16px">📅</span><span>Agenda</span></div>
+        <div id="tdFabDemo" style="position:absolute;bottom:52px;right:14px;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#6c63ff,#a29bfe);display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;box-shadow:0 4px 20px rgba(108,99,255,.5)">+</div>
+        <div style="background:#0b0c10;border-top:1px solid #1e2030;display:flex;justify-content:space-around;padding:8px 0 12px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">🏠</span>Inicio</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#a29bfe"><span style="font-size:18px">👥</span>Clientes</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">💰</span>Caja</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">📅</span>Agenda</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">🗺️</span>Ruta</div>
         </div>
       </div>`,
-    finger: {target:'tdFabDemo', label:'Tocá + para agregar'}
+    finger: {target:'tdFabDemo', label:'Tocá + para agregar cliente'}
   },
   {
     title: 'Creá un crédito 💳',
-    desc: 'Elegís el tipo: simple, compuesto, cuota fija, diario o solo interés mensual. La app calcula la cuota y muestra un preview antes de guardar.',
+    desc: 'Elegís el tipo: cuota fija, diario o solo interés mensual. La app calcula la cuota y muestra un preview antes de guardar.',
     screen: () => `
-      <div style="padding:12px">
-        <div style="font-size:12px;font-weight:700;color:#f0f0f5;margin-bottom:10px">➕ Nueva operación</div>
-        <div style="background:#1e2030;border-radius:8px;padding:8px;margin-bottom:6px">
+      <div style="background:#0a0a0f;min-height:420px;padding:14px">
+        <div style="font-family:Syne,sans-serif;font-size:14px;font-weight:800;color:#f0f0f5;margin-bottom:12px">➕ Nueva operación</div>
+        <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px;margin-bottom:8px">
+          <div style="font-size:9px;color:#7a7d8f;margin-bottom:3px">Cliente</div>
+          <div style="font-size:12px;font-weight:700;color:#a29bfe">Sandra Villalba</div>
+        </div>
+        <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px;margin-bottom:8px">
           <div style="font-size:9px;color:#7a7d8f;margin-bottom:3px">Tipo de crédito</div>
-          <div style="font-size:11px;color:#a29bfe;font-weight:600">💰 Solo interés mensual</div>
+          <div style="font-size:12px;font-weight:700;color:#f0f0f5">🔒 Cuota fija</div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
-          <div style="background:#1e2030;border-radius:8px;padding:8px"><div style="font-size:9px;color:#7a7d8f">Capital</div><div style="font-size:12px;font-weight:700">$650.000</div></div>
-          <div style="background:#1e2030;border-radius:8px;padding:8px"><div style="font-size:9px;color:#7a7d8f">Interés</div><div style="font-size:12px;font-weight:700">30.2%</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px"><div style="font-size:9px;color:#7a7d8f">Capital</div><div style="font-size:13px;font-weight:700">$500.000</div></div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px"><div style="font-size:9px;color:#7a7d8f">Interés mensual</div><div style="font-size:13px;font-weight:700">28%</div></div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px"><div style="font-size:9px;color:#7a7d8f">Cuotas</div><div style="font-size:13px;font-weight:700">6 mensuales</div></div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px"><div style="font-size:9px;color:#7a7d8f">1er vencimiento</div><div style="font-size:13px;font-weight:700">10/07/2026</div></div>
         </div>
-        <div style="background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.3);border-radius:10px;padding:10px">
-          <div style="font-size:9px;color:#7a7d8f;margin-bottom:4px">📊 Vista previa</div>
-          <div style="display:flex;justify-content:space-between">
-            <div><div style="font-size:9px;color:#7a7d8f">Paga por mes</div><div style="font-size:14px;font-weight:800;color:#a29bfe">$196.300</div></div>
-            <div><div style="font-size:9px;color:#7a7d8f">Capital</div><div style="font-size:14px;font-weight:800">$650.000</div></div>
+        <div style="background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.35);border-radius:12px;padding:12px">
+          <div style="font-size:9px;color:#7a7d8f;margin-bottom:6px;font-weight:700">📊 VISTA PREVIA</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:9px;color:#7a7d8f">Valor cuota</div><div style="font-size:18px;font-weight:800;color:#a29bfe">$140.000</div></div>
+            <div style="text-align:right"><div style="font-size:9px;color:#7a7d8f">Total a cobrar</div><div style="font-size:16px;font-weight:800;color:#ffd166">$840.000</div></div>
           </div>
         </div>
       </div>`,
@@ -8949,170 +8978,208 @@ const TOUR_STEPS_MAIN = [
   },
   {
     title: 'Registrá un pago 💵',
-    desc: 'Abrís el cliente, tocás 💵 Pago e ingresás el monto. Si paga de más, el sobrante se aplica a la siguiente cuota automáticamente.',
+    desc: 'Abrís el cliente, tocás Pago e ingresás el monto. Podés pagar solo el interés y renovar el crédito con un toque.',
     screen: () => `
-      <div>
-        <div class="td-hdr"><span style="font-size:12px;font-weight:700">Dario Videla</span></div>
-        <div style="padding:10px">
-          <div class="td-card" style="border-left:3px solid #a29bfe;margin-bottom:8px">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div>
-                <div style="font-size:9px;color:#a29bfe;font-weight:700">💰 INTERÉS MENSUAL</div>
-                <div style="font-size:12px;font-weight:700">Crédito solo interés</div>
-                <div style="font-size:9px;color:#7a7d8f">Capital $650.000 · $196.300/mes</div>
-              </div>
-              <div style="text-align:right"><div style="font-size:14px;font-weight:800;color:#ff4d6d">$196.300</div></div>
-            </div>
-            <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap" id="tdPagoBtn">
-              <div style="background:#6c63ff;border-radius:8px;padding:6px 10px;font-size:10px;font-weight:700;color:#fff">💵 Interés</div>
-              <div style="background:rgba(0,214,143,.2);border-radius:8px;padding:6px 10px;font-size:10px;font-weight:700;color:#00d68f">⚙️ Capital</div>
-            </div>
-          </div>
-          <div style="background:#1e2030;border-radius:10px;padding:10px">
-            <div style="font-size:9px;color:#7a7d8f;margin-bottom:4px">Monto del pago</div>
-            <div style="font-size:20px;font-weight:800;color:#f0f0f5">$200.000</div>
-            <div style="font-size:9px;color:#00d68f;margin-top:2px">✅ Cuota cubierta + $3.700 a favor</div>
+      <div style="background:#0a0a0f;min-height:420px;padding:14px">
+        <div style="font-family:Syne,sans-serif;font-size:14px;font-weight:800;color:#f0f0f5;margin-bottom:10px">💵 Registrar pago</div>
+        <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px;margin-bottom:8px">
+          <div style="font-size:9px;color:#7a7d8f;margin-bottom:2px">Cliente · Cuota esperada</div>
+          <div style="font-size:12px;font-weight:700;color:#f0f0f5">Roberto Castro</div>
+          <div style="font-size:16px;font-weight:800;color:#a29bfe;margin-top:2px">$280.000</div>
+        </div>
+        <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px;margin-bottom:8px">
+          <div style="font-size:9px;color:#7a7d8f;margin-bottom:6px">Monto abonado</div>
+          <div style="display:flex;gap:6px">
+            <div style="flex:1;background:#12141a;border:1px solid #6c63ff;border-radius:8px;padding:8px;font-size:14px;font-weight:700;color:#f0f0f5">280.000</div>
+            <div style="background:rgba(108,99,255,.2);border:1px solid rgba(108,99,255,.4);border-radius:8px;padding:8px 10px;font-size:10px;font-weight:700;color:#a29bfe;white-space:nowrap">Total c/mora</div>
           </div>
         </div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <div style="flex:1;background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px">
+            <div style="font-size:9px;color:#7a7d8f;margin-bottom:2px">Método</div>
+            <div style="font-size:11px;font-weight:600">💵 Efectivo</div>
+          </div>
+          <div style="flex:1;background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px">
+            <div style="font-size:9px;color:#7a7d8f;margin-bottom:2px">Fecha</div>
+            <div style="font-size:11px;font-weight:600">11/06/2026</div>
+          </div>
+        </div>
+        <div style="background:rgba(0,214,143,.12);border:1px solid rgba(0,214,143,.3);border-radius:12px;padding:12px;text-align:center;font-family:Syne,sans-serif;font-size:14px;font-weight:800;color:#00d68f">✅ Registrar pago</div>
       </div>`,
-    finger: {target:'tdPagoBtn', label:'Tocá para cobrar'}
+    finger: null
   },
   {
-    title: 'Caja del día 💰',
-    desc: 'Todos los pagos del día se registran acá. Ves efectivo vs transferencia, gastos del día y el balance neto.',
+    title: 'Caja — tus movimientos 💰',
+    desc: 'Ves todo separado: lo cobrado, lo prestado y las ventas. Cada sección agrupada por fecha. También podés cargar gastos.',
     screen: () => `
-      <div>
-        <div class="td-hdr"><span class="td-brand">💸 CobroAlDía</span></div>
-        <div style="padding:10px">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
-            <div class="td-card" style="text-align:center"><div style="font-size:9px;color:#7a7d8f">Cobrado hoy</div><div style="font-weight:800;color:#00d68f;font-size:14px">$230.000</div></div>
-            <div class="td-card" style="text-align:center"><div style="font-size:9px;color:#7a7d8f">Gastos</div><div style="font-weight:800;color:#ff4d6d;font-size:14px">$15.000</div></div>
+      <div style="background:#0a0a0f;min-height:420px;display:flex;flex-direction:column">
+        <div style="background:#0b0c10;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e2030">
+          <span style="font-family:Syne,sans-serif;font-weight:800;font-size:13px;color:#f0f0f5">💰 Caja</span>
+          <span style="font-size:11px;color:#7a7d8f">Hoy · Semana · Mes</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 10px 6px">
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px"><div style="font-size:9px;color:#7a7d8f">Total cobrado</div><div style="font-weight:800;font-size:14px;color:#00d68f">$545.000</div></div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px"><div style="font-size:9px;color:#7a7d8f">Balance neto</div><div style="font-weight:800;font-size:14px;color:#a29bfe">$518.000</div></div>
+        </div>
+        <div style="padding:0 10px 6px;display:flex;gap:6px">
+          <div style="flex:1;padding:8px 4px;border-radius:10px;border:2px solid #00d68f;background:rgba(0,214,143,.06);text-align:center;font-size:10px;font-weight:700;color:#00d68f">💵 Cobrado<br><span style="font-size:9px;opacity:.8">6 · $545.000</span></div>
+          <div style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.1);text-align:center;font-size:10px;font-weight:600;color:#7a7d8f">💳 Prestado<br><span style="font-size:9px">2 · $800.000</span></div>
+          <div style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.1);text-align:center;font-size:10px;font-weight:600;color:#7a7d8f">🛒 Ventas<br><span style="font-size:9px">1 · $85.000</span></div>
+        </div>
+        <div style="padding:0 10px;flex:1">
+          <div style="background:rgba(255,255,255,.04);border-radius:6px;padding:5px 8px;margin-bottom:4px;display:flex;justify-content:space-between"><span style="font-size:10px;font-weight:700;color:#7a7d8f">Hoy — 11/06/2026</span><span style="font-size:10px;color:#7a7d8f">3 · $285.000</span></div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:11px;font-weight:600">Roberto Castro · Crédito</div><div style="font-size:9px;color:#7a7d8f">efectivo</div></div>
+            <div style="color:#00d68f;font-weight:800;font-size:12px">+$280.000</div>
           </div>
-          <div style="font-size:10px;color:#7a7d8f;font-weight:700;margin-bottom:4px">HOY</div>
-          <div class="td-card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <div><div style="font-size:11px;font-weight:600">Dario Videla</div><div style="font-size:9px;color:#7a7d8f">Interés mensual</div></div>
-            <div style="font-size:12px;font-weight:800;color:#00d68f">+$200.000</div>
-          </div>
-          <div class="td-card" style="display:flex;justify-content:space-between;align-items:center">
-            <div><div style="font-size:11px;font-weight:600">María González</div><div style="font-size:9px;color:#7a7d8f">Cuota 5/12</div></div>
-            <div style="font-size:12px;font-weight:800;color:#00d68f">+$45.000</div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:11px;font-weight:600">Nicolás Ferreyra · Interés</div><div style="font-size:9px;color:#7a7d8f">transferencia</div></div>
+            <div style="color:#00d68f;font-weight:800;font-size:12px">+$45.000</div>
           </div>
         </div>
-        <div class="td-nav">
-          <div class="td-ni"><span style="font-size:16px">🏠</span></div>
-          <div class="td-ni"><span style="font-size:16px">👥</span></div>
-          <div class="td-ni act"><span style="font-size:16px">💵</span><span>Caja</span></div>
-          <div class="td-ni"><span style="font-size:16px">📅</span></div>
+        <div style="background:#0b0c10;border-top:1px solid #1e2030;display:flex;justify-content:space-around;padding:8px 0 12px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">🏠</span>Inicio</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">👥</span>Clientes</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#a29bfe"><span style="font-size:18px">💰</span>Caja</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">📅</span>Agenda</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">🗺️</span>Ruta</div>
         </div>
       </div>`,
     finger: null
   },
   {
     title: 'Ruta diaria 🗺️',
-    desc: 'Ver todos los cobros del día ordenados. Swipe derecha = cobrado, swipe izquierda = parcial. Si el cliente tiene GPS podés navegar directo en Maps.',
+    desc: 'Todos los cobros del día ordenados. Navegá al cliente por Maps y marcá cobrado o parcial desde la misma pantalla.',
     screen: () => `
-      <div>
-        <div class="td-hdr"><span class="td-brand">🗓️ Ruta del día</span></div>
-        <div style="padding:10px">
-          <div class="td-card" style="border-left:3px solid #ff4d6d;margin-bottom:6px">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div>
-                <div style="font-size:11px;font-weight:700">Dario Videla 🔴</div>
-                <div style="font-size:9px;color:#7a7d8f">$170.000 · 27d mora</div>
-              </div>
-              <div style="display:flex;gap:4px">
-                <div style="background:rgba(0,214,143,.2);border-radius:6px;padding:4px 8px;font-size:9px;color:#00d68f">✓</div>
-                <div style="background:#1e2030;border-radius:6px;padding:4px 8px;font-size:9px">🗺️</div>
-              </div>
-            </div>
-          </div>
-          <div class="td-card" style="border-left:3px solid #ffd166;margin-bottom:6px">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div>
-                <div style="font-size:11px;font-weight:700">María González ⏰</div>
-                <div style="font-size:9px;color:#7a7d8f">$45.000 · vence hoy</div>
-              </div>
-              <div style="display:flex;gap:4px">
-                <div style="background:rgba(0,214,143,.2);border-radius:6px;padding:4px 8px;font-size:9px;color:#00d68f">✓</div>
-                <div style="background:#1e2030;border-radius:6px;padding:4px 8px;font-size:9px">🗺️</div>
-              </div>
-            </div>
-          </div>
-          <div style="font-size:9px;color:#7a7d8f;text-align:center;margin-top:8px">← deslizá para marcar cobrado o parcial →</div>
+      <div style="background:#0a0a0f;min-height:420px;display:flex;flex-direction:column">
+        <div style="background:#0b0c10;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e2030">
+          <span style="font-family:Syne,sans-serif;font-weight:800;font-size:13px;color:#f0f0f5">🗺️ Ruta del día</span>
+          <span style="font-size:11px;color:#7a7d8f">4 pendientes</span>
         </div>
-        <div class="td-nav">
-          <div class="td-ni"><span style="font-size:16px">🏠</span></div>
-          <div class="td-ni"><span style="font-size:16px">👥</span></div>
-          <div class="td-ni"><span style="font-size:16px">💵</span></div>
-          <div class="td-ni act"><span style="font-size:16px">🗺️</span><span>Ruta</span></div>
+        <div style="flex:1;padding:10px">
+          <div style="background:#1a1c24;border:1px solid rgba(255,77,109,.4);border-left:3px solid #ff4d6d;border-radius:10px;padding:10px;margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div><div style="font-size:12px;font-weight:700">Roberto Castro 🔴</div><div style="font-size:9px;color:#7a7d8f">$280.000 · 15d mora</div></div>
+              <div style="font-size:14px;font-weight:800;color:#ff4d6d">$280.000</div>
+            </div>
+            <div style="display:flex;gap:5px">
+              <div style="flex:1;background:rgba(0,214,143,.15);border:1px solid rgba(0,214,143,.3);border-radius:7px;padding:5px;text-align:center;font-size:10px;font-weight:700;color:#00d68f">✓ Cobrado</div>
+              <div style="flex:1;background:#12141a;border:1px solid #2a2d3e;border-radius:7px;padding:5px;text-align:center;font-size:10px;color:#7a7d8f">$ Parcial</div>
+              <div style="background:#12141a;border:1px solid #2a2d3e;border-radius:7px;padding:5px 8px;font-size:14px">🗺️</div>
+            </div>
+          </div>
+          <div style="background:#1a1c24;border:1px solid rgba(255,209,102,.3);border-left:3px solid #ffd166;border-radius:10px;padding:10px;margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div><div style="font-size:12px;font-weight:700">Sandra Villalba ⏰</div><div style="font-size:9px;color:#7a7d8f">$140.000 · vence hoy</div></div>
+              <div style="font-size:14px;font-weight:800;color:#ffd166">$140.000</div>
+            </div>
+            <div style="display:flex;gap:5px">
+              <div style="flex:1;background:rgba(0,214,143,.15);border:1px solid rgba(0,214,143,.3);border-radius:7px;padding:5px;text-align:center;font-size:10px;font-weight:700;color:#00d68f">✓ Cobrado</div>
+              <div style="flex:1;background:#12141a;border:1px solid #2a2d3e;border-radius:7px;padding:5px;text-align:center;font-size:10px;color:#7a7d8f">$ Parcial</div>
+              <div style="background:#12141a;border:1px solid #2a2d3e;border-radius:7px;padding:5px 8px;font-size:14px">🗺️</div>
+            </div>
+          </div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-left:3px solid #00d68f;border-radius:10px;padding:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div><div style="font-size:12px;font-weight:700">Nicolás Ferreyra ✅</div><div style="font-size:9px;color:#7a7d8f">$45.000 · al día</div></div>
+              <div style="font-size:14px;font-weight:800;color:#00d68f">$45.000</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:#0b0c10;border-top:1px solid #1e2030;display:flex;justify-content:space-around;padding:8px 0 12px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">🏠</span>Inicio</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">👥</span>Clientes</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">💰</span>Caja</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">📅</span>Agenda</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#a29bfe"><span style="font-size:18px">🗺️</span>Ruta</div>
         </div>
       </div>`,
     finger: null
   },
   {
     title: 'PDF y WhatsApp 📲',
-    desc: 'Desde la ficha de cada cliente podés enviar el estado de cuenta por WhatsApp o descargar el comprobante en PDF para compartir.',
+    desc: 'Enviá el comprobante de pago o el estado de cuenta directamente por WhatsApp. También podés descargarlo en PDF.',
     screen: () => `
-      <div style="padding:12px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-          <div style="width:40px;height:40px;border-radius:50%;background:#6c63ff;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff">DA</div>
-          <div><div style="font-size:13px;font-weight:800">Dario Videla</div><div style="font-size:9px;color:#7a7d8f">🥈 Plata · 73pts</div></div>
+      <div style="background:#0a0a0f;min-height:420px;padding:14px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#6c63ff,#a29bfe);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff">SV</div>
+          <div>
+            <div style="font-size:14px;font-weight:800;color:#f0f0f5">Sandra Villalba</div>
+            <div style="font-size:10px;color:#7a7d8f">🥇 Oro · 98pts · Excelente</div>
+          </div>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-          <div style="background:rgba(37,211,102,.15);border:1px solid rgba(37,211,102,.3);border-radius:8px;padding:7px 12px;font-size:11px;color:#25d366;font-weight:700">📲 PDF x WA</div>
-          <div style="background:#1e2030;border:1px solid #2a2d3e;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700">✏️ Editar</div>
-          <div style="background:#1e2030;border:1px solid #2a2d3e;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700">📞 Llamar</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px"><div style="font-size:9px;color:#7a7d8f">Saldo pendiente</div><div style="font-weight:800;font-size:13px;color:#ffd166">$560.000</div></div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px"><div style="font-size:9px;color:#7a7d8f">Ganancia cobrada</div><div style="font-weight:800;font-size:13px;color:#ffd166">$112.000</div></div>
         </div>
-        <div style="background:#1a1c24;border-radius:10px;padding:10px;font-size:10px;color:#7a7d8f;line-height:1.7">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+          <div style="background:rgba(37,211,102,.15);border:1px solid rgba(37,211,102,.35);border-radius:10px;padding:9px 14px;font-size:11px;font-weight:700;color:#25d366">📲 PDF x WA</div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:9px 14px;font-size:11px;font-weight:700;color:#f0f0f5">📄 PDF</div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:9px 14px;font-size:11px;font-weight:700;color:#f0f0f5">📞 Llamar</div>
+        </div>
+        <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:12px;padding:12px;font-size:10px;color:#7a7d8f;line-height:1.8">
           El PDF incluye:<br>
-          ✅ Datos del cliente<br>
-          ✅ Historial de pagos<br>
-          ✅ Saldo pendiente<br>
-          ✅ Próximos vencimientos
+          ✅ Datos del cliente y crédito<br>
+          ✅ Historial completo de pagos<br>
+          ✅ Saldo y próximo vencimiento<br>
+          ✅ Logo de tu negocio
         </div>
       </div>`,
     finger: null
   },
   {
     title: 'Reportes y finanzas 📊',
-    desc: 'Gráficos de cobros, análisis de morosidad, clientes más rentables y exportación en Excel. Plan PRO y Premium.',
+    desc: 'Gráficos de cobros, análisis de morosidad, clientes más rentables y exportación a Excel. Disponible en plan PRO.',
     screen: () => `
-      <div>
-        <div class="td-hdr"><span class="td-brand">📊 Reportes</span></div>
-        <div style="padding:10px">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
-            <div class="td-card" style="text-align:center"><div style="font-size:9px;color:#7a7d8f">Morosidad</div><div style="font-weight:800;color:#ff4d6d;font-size:16px">42%</div></div>
-            <div class="td-card" style="text-align:center"><div style="font-size:9px;color:#7a7d8f">ROI</div><div style="font-weight:800;color:#00d68f;font-size:16px">18.4%</div></div>
+      <div style="background:#0a0a0f;min-height:420px;display:flex;flex-direction:column">
+        <div style="background:#0b0c10;padding:10px 14px;border-bottom:1px solid #1e2030">
+          <span style="font-family:Syne,sans-serif;font-weight:800;font-size:13px;color:#f0f0f5">📊 Reportes</span>
+        </div>
+        <div style="flex:1;padding:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+            <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:8px;text-align:center"><div style="font-size:9px;color:#7a7d8f">Morosidad</div><div style="font-weight:800;color:#ff4d6d;font-size:15px">18%</div></div>
+            <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:8px;text-align:center"><div style="font-size:9px;color:#7a7d8f">ROI</div><div style="font-weight:800;color:#00d68f;font-size:15px">24%</div></div>
+            <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:8px;text-align:center"><div style="font-size:9px;color:#7a7d8f">Clientes</div><div style="font-weight:800;color:#a29bfe;font-size:15px">38</div></div>
           </div>
-          <div style="font-size:10px;font-weight:700;color:#7a7d8f;margin-bottom:4px">🏆 MÁS RENTABLES</div>
-          <div class="td-card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <div style="display:flex;align-items:center;gap:6px"><span>🥇</span><div style="font-size:11px;font-weight:600">Tamara Palma</div></div>
-            <div style="font-size:11px;font-weight:800;color:#ffd166">$279.666</div>
+          <div style="font-size:10px;font-weight:700;color:#7a7d8f;margin-bottom:5px;letter-spacing:.4px">🏆 MÁS RENTABLES</div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px">🥇</span><div><div style="font-size:11px;font-weight:700">Lucrecia Mondaca</div><div style="font-size:9px;color:#7a7d8f">5 créditos · score 99</div></div></div>
+            <div style="font-weight:800;color:#ffd166;font-size:12px">$384.000</div>
           </div>
-          <div class="td-card" style="display:flex;justify-content:space-between;align-items:center">
-            <div style="display:flex;align-items:center;gap:6px"><span>🥈</span><div style="font-size:11px;font-weight:600">Manu</div></div>
-            <div style="font-size:11px;font-weight:800;color:#7a7d8f">$98.000</div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px">🥈</span><div><div style="font-size:11px;font-weight:700">Roberto Castro</div><div style="font-size:9px;color:#7a7d8f">3 créditos · score 72</div></div></div>
+            <div style="font-weight:800;color:#7a7d8f;font-size:12px">$210.000</div>
           </div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px">🥉</span><div><div style="font-size:11px;font-weight:700">Sandra Villalba</div><div style="font-size:9px;color:#7a7d8f">2 créditos · score 98</div></div></div>
+            <div style="font-weight:800;color:#7a7d8f;font-size:12px">$112.000</div>
+          </div>
+        </div>
+        <div style="background:#0b0c10;border-top:1px solid #1e2030;display:flex;justify-content:space-around;padding:8px 0 12px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">🏠</span>Inicio</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">👥</span>Clientes</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">💰</span>Caja</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#7a7d8f"><span style="font-size:18px">📅</span>Agenda</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#a29bfe"><span style="font-size:18px">📊</span>Reportes</div>
         </div>
       </div>`,
     finger: null
   },
   {
     title: '¡Listo para empezar! 🎉',
-    desc: 'Ya conocés CobroAlDía. Cualquier duda podés relanzar este tour desde ⚙️ → Configuración. ¡Éxito con tus cobros!',
+    desc: 'Ya conocés CobroAlDía. Podés relanzar este tour desde ⚙️ Configuración cuando quieras. ¡Mucho éxito con tus cobros!',
     screen: () => `
-      <div style="padding:20px;text-align:center">
-        <div style="font-size:56px;margin-bottom:12px">🎉</div>
-        <div style="font-family:Syne,sans-serif;font-size:18px;font-weight:800;color:#a29bfe;margin-bottom:8px">¡Ya sabés todo!</div>
-        <div style="font-size:12px;color:#7a7d8f;line-height:1.7;margin-bottom:16px">Agregá tu primer cliente y empezá a gestionar tus cobros de manera profesional.</div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <div style="background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.3);border-radius:10px;padding:10px;font-size:11px;color:#a29bfe;font-weight:600">👥 Ir a Clientes</div>
-          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:10px;padding:10px;font-size:11px;color:#7a7d8f">❓ Ver ayuda</div>
+      <div style="background:#0a0a0f;min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center">
+        <div style="font-size:64px;margin-bottom:16px">🎉</div>
+        <div style="font-family:Syne,sans-serif;font-size:20px;font-weight:800;color:#a29bfe;margin-bottom:8px">¡Ya sabés todo!</div>
+        <div style="font-size:12px;color:#7a7d8f;line-height:1.8;margin-bottom:24px">Agregá tu primer cliente y<br>empezá a gestionar tus cobros<br>de manera profesional.</div>
+        <div style="width:100%;display:flex;flex-direction:column;gap:8px">
+          <div style="background:linear-gradient(135deg,rgba(108,99,255,.3),rgba(162,155,254,.15));border:1px solid rgba(108,99,255,.4);border-radius:12px;padding:12px;font-size:12px;font-weight:700;color:#a29bfe">👥 Ir a Clientes → agregar el primero</div>
+          <div style="background:#1a1c24;border:1px solid #2a2d3e;border-radius:12px;padding:12px;font-size:12px;color:#7a7d8f">⚙️ Configurá tu negocio primero</div>
         </div>
       </div>`,
     finger: null
   }
-];
 
 function iniciarTour(){
   _tourSteps = TOUR_STEPS_MAIN;
@@ -10241,6 +10308,48 @@ function checkPrimerTour(){
 </html>
 <!-- Capa 1: máscara oscura (no captura toques) -->
 <!-- ══ TOUR DEMO ══ -->
+<!-- BANNER INSTALAR APP -->
+<div id="installBanner" style="display:none;position:fixed;bottom:80px;left:12px;right:12px;z-index:1999;background:linear-gradient(135deg,#1a1040,#1e2030);border:1px solid rgba(108,99,255,.4);border-radius:16px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.5)">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6c63ff,#a29bfe);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">💸</div>
+    <div style="flex:1">
+      <div style="font-family:Syne,sans-serif;font-size:13px;font-weight:800;color:#f0f0f5;margin-bottom:2px">Instalá CobroAlDía</div>
+      <div style="font-size:11px;color:#7a7d8f">Accedé desde tu pantalla de inicio, sin internet</div>
+    </div>
+    <button onclick="document.getElementById('installBanner').style.display='none'" style="background:none;border:none;color:#7a7d8f;font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">✕</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:10px">
+    <button id="installBtnConfirm" style="flex:1;background:linear-gradient(135deg,#6c63ff,#a29bfe);border:none;color:#fff;border-radius:10px;padding:10px;font-family:Syne,sans-serif;font-size:12px;font-weight:700;cursor:pointer">📲 Instalar app</button>
+    <button onclick="document.getElementById('installBanner').style.display='none';localStorage.setItem('pwa_banner_dismissed','1')" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#7a7d8f;border-radius:10px;padding:10px;font-size:12px;cursor:pointer">Ahora no</button>
+  </div>
+</div>
+<script>
+(function(){
+  let _deferredPrompt=null;
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault();
+    _deferredPrompt=e;
+    if(!localStorage.getItem('pwa_banner_dismissed')){
+      setTimeout(()=>{
+        const b=document.getElementById('installBanner');
+        if(b)b.style.display='block';
+      },3000);
+    }
+  });
+  document.getElementById('installBtnConfirm').addEventListener('click',async()=>{
+    if(_deferredPrompt){
+      _deferredPrompt.prompt();
+      const{outcome}=await _deferredPrompt.userChoice;
+      _deferredPrompt=null;
+    }
+    document.getElementById('installBanner').style.display='none';
+  });
+  window.addEventListener('appinstalled',()=>{
+    document.getElementById('installBanner').style.display='none';
+  });
+})();
+</script>
+
 <div id="tourDemo" style="display:none;position:fixed;inset:0;z-index:2000;background:#0a0a0f;flex-direction:column;overflow:hidden">
   <style>
     @keyframes tourFinger{0%{transform:scale(1);opacity:.9}50%{transform:scale(.85);opacity:1}100%{transform:scale(1);opacity:.9}}
@@ -10270,10 +10379,10 @@ function checkPrimerTour(){
   <!-- Dots -->
   <div id="tdDots" style="display:flex;justify-content:center;gap:4px;padding:0 18px 8px;flex-shrink:0"></div>
 
-  <!-- Pantalla simulada -->
-  <div style="flex:1;padding:0 18px;display:flex;align-items:center;justify-content:center;overflow:hidden">
-    <div id="tdScreen" style="width:100%;max-width:320px;max-height:100%;position:relative" class="td-screen">
-      <div id="tdScreenContent" style="min-height:320px"></div>
+  <!-- Pantalla simulada fullscreen -->
+  <div style="flex:1;overflow:hidden;position:relative">
+    <div id="tdScreen" style="width:100%;height:100%;position:relative;overflow:hidden">
+      <div id="tdScreenContent" style="width:100%;height:100%;overflow:hidden"></div>
       <div id="tdFinger" class="td-finger" style="display:none">👆</div>
       <div id="tdHighlight" class="td-highlight" style="display:none"></div>
     </div>
