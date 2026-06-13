@@ -4371,12 +4371,11 @@ async function confirmarReabrirOpCanc(oid){
   const nuevoPag=Math.max(0,Math.min(parseInt(pagInput)||0,op.cuo-1));
   try{
     toast('Intentando reabrir oid='+oid+' uid='+UID().substring(0,8),'info',8000);
-    const {data:rd,error}=await SB.from('operaciones').update({pag:nuevoPag,cancelado:false}).eq('id',oid).eq('user_id',UID()).select();
+    const {data:rd,error}=await SB.from('operaciones').update({pag:nuevoPag}).eq('id',oid).eq('user_id',UID()).select();
     if(error){toast('Error update: '+error.message,'error',8000);throw error;}
-    const {data:opData}=await SB.from('operaciones').select('user_id,pag').eq('id',oid).single();
-    toast('rows='+(rd?rd.length:0)+' op.uid='+(opData?opData.user_id.substring(0,8):'?'),'info',12000);
+    toast('rows='+(rd?rd.length:0),'info',8000);
     if(!rd||rd.length===0){
-      const {error:e2}=await SB.from('operaciones').update({pag:nuevoPag,cancelado:false}).eq('id',oid);
+      const {error:e2}=await SB.from('operaciones').update({pag:nuevoPag}).eq('id',oid);
       if(e2)toast('Error fallback: '+e2.message,'error',8000);
     }
     op.pag=nuevoPag;op.cancelado=false;
