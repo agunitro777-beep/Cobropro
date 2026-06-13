@@ -1716,8 +1716,12 @@ async function cargarTodo(){
   Ps=ps.map(p=>({...p,par:!!p.par,flt:parseFloat(p.flt)||0}));
   // Recalcular pag desde pagos reales para garantizar consistencia
   Ops=ops.map(o=>{
-    const pagReal=Ps.filter(p=>p.oid===o.id&&!p.par&&!(p.not||'').startsWith('🔄 INTERES')).length;
-    const pag=Math.min(pagReal,parseInt(o.cuo)||1);
+    const cuotaV=o.cuota_fija||0;
+    const pagosOp=Ps.filter(p=>p.oid===o.id&&!(p.not||'').startsWith('🔄 INTERES'));
+    const cuotaBase=cuotaV||(o.mon&&o.cuo?(o.mon/o.cuo):0);
+    let cnt=0,acum=0;
+    for(const p of pagosOp){acum+=p.mon;if(cuotaBase>0&&acum>=cuotaBase*0.99){cnt++;acum=0;}}
+    const pag=Math.min(cnt,parseInt(o.cuo)||1);
     return{...o,desc:o.desc_||'',not:o.not_||'',int:(o.int_!==null&&o.int_!==undefined?parseFloat(o.int_):0),tip:o.tip||'simple',mora:(o.mora!==null&&o.mora!==undefined?parseFloat(o.mora):0),pag,moneda:o.moneda||CFG.moneda||'$',fechas_custom:typeof o.fechas_custom==='string'?JSON.parse(o.fechas_custom||'{}'):(o.fechas_custom||{})};
   });
   Gs=gs;EVs=evs.map(e=>({...e,desc:e.desc_||''}));
