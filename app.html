@@ -4370,7 +4370,8 @@ async function confirmarReabrirOpCanc(oid){
   if(pagInput===null)return;
   const nuevoPag=Math.max(0,Math.min(parseInt(pagInput)||0,op.cuo-1));
   try{
-    await dbUpd('operaciones',oid,{pag:nuevoPag,cancelado:false});
+    const {error}=await SB.from('operaciones').update({pag:nuevoPag,cancelado:false}).eq('id',oid);
+    if(error)throw error;
     op.pag=nuevoPag;op.cancelado=false;
     toast('🔄 Operación reabierta · '+nuevoPag+'/'+op.cuo+' cuotas pagadas');
     setTimeout(()=>refrescar(),0);
