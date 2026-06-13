@@ -4505,7 +4505,8 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
     const pp=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);
     const mTag=op.moneda&&op.moneda!==(CFG.moneda||'$')?`<span style="font-size:8px;background:rgba(6,182,212,.15);color:var(--cy);padding:1px 5px;border-radius:4px;margin-left:4px">${op.moneda}</span>`:'';
     const esIntMens=op.tip==='interes_mensual';
-    const metaLabel=esIntMens?`Capital: ${fmtOp(op.mon,op)} · Interés: ${fmtOp(cuota,op)}/mes · vence ${fD(op.fv)}`:`${op.pag}/${op.cuo} · ${op.frq} · vence ${fD(op.fv)}${op.facr?` · acreditado ${fD(op.facr)}`:''}`;
+    const _proxFv=proxFechaOp(op);const _proxFvStr=_proxFv&&!isNaN(_proxFv.getTime())?_proxFv.toISOString().split('T')[0]:op.fv;
+    const metaLabel=esIntMens?`Capital: ${fmtOp(op.mon,op)} · Interés: ${fmtOp(cuota,op)}/mes · vence ${fD(op.fv)}`:`${op.pag}/${op.cuo} · ${op.frq} · vence ${fD(_proxFvStr)}${op.facr?` · acreditado ${fD(op.facr)}`:''}`;
     return`<div class="op-card ${sv?'vc':'pc'}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
         <div><div class="op-tag ${sv?'v':'p'}">${sv?'🛒 VENTA':esIntMens?'💰 INTERÉS MENSUAL':'💳 CRÉDITO'}${mTag}</div><div class="op-name">${lbl}</div>
