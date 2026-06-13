@@ -4044,6 +4044,16 @@ function abrirPago(fixId=null){
       // Ocultar botón solo interés para ventas
       const btn=$('p_btnSoloInt');
       if(btn)btn.style.display=(esVenta(op)||op.tip==='interes_mensual')?'none':'';
+      // ── Auto-detectar parcial pendiente y vincularlo ──
+      const parPend=Ps.find(x=>x.oid===fixId&&x.par&&x.flt>0);
+      if(parPend){
+        $('p_fixPar').value=parPend.id;
+        $('p_esp').textContent=fmt(parPend.flt)+' (falta de cuota parcial)';
+        $('pagoMT').textContent='💵 Completar pago parcial';
+        $('p_mon').value=Math.round(parPend.flt);
+        if($('p_not'))$('p_not').value='Completar cuota';
+        setTimeout(()=>{if(typeof chkParcial==='function')chkParcial();},50);
+      }
       // Para interes_mensual: activar soloInt automáticamente y prellenar monto
       if(op.tip==='interes_mensual'){
         if($('p_soloInt'))$('p_soloInt').value='1';
@@ -4308,6 +4318,8 @@ async function confirmarElimPago(){
     rInicio();
     rCaja();
     if($('page-clientes').classList.contains('active'))rClis();
+    // Re-renderizar detalle del cliente si está abierto
+    if(opId){const op=gO(opId);if(op&&typeof verCli==='function')setTimeout(()=>verCli(op.cid),100);}
   }catch(e){toast('Error: '+e.message,'error')}
 }
 // ══ EDITAR / REABRIR OPERACIÓN CANCELADA ══
