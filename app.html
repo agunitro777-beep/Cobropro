@@ -6170,10 +6170,13 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
   const fd=d=>{if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`};
   const lbl=esVenta(op)?op.prod||'Venta':op.desc||'Crédito';
   const cuota=cvOp(op);
-  // Calcular número de cuota real acumulando pagos
   const pagosOrden=pagoDeOp(oid).filter(p=>!(p.not||'').startsWith('🔄 INTERES')).sort((a,b)=>a.fec.localeCompare(b.fec));
   let _cIdx=0,_acum=0;
-  for(const _p of pagosOrden){if(_p.par){if(_acum===0)_cIdx++;_acum+=_p.mon;}else{if(_acum===0)_cIdx++;_acum=0;}}
+  for(const _p of pagosOrden){
+    if(_acum===0)_cIdx++;
+    _acum+=_p.mon;
+    if(_acum>=cuota*0.99)_acum=0;
+  }
   const numCuota=_cIdx;
   const pagosComp=pagoDeOp(oid).filter(p=>!p.par&&!(p.not||'').startsWith('🔄 INTERES')).sort((a,b)=>a.fec.localeCompare(b.fec));
   const estePago=pagosComp[pagosComp.length-1];
@@ -6316,20 +6319,29 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
     const esSoloInt=(p.not_||p.not||'').startsWith('🔄 INTERES');
     if(esSoloInt){
       filas.push(['—','Interés',fd(p.fec),fm(p.mon),metLabel[p.met]||'—','—']);
-    } else if(p.par){
-      // Pago parcial: abrir cuota si no hay acumulado
-      if(parcialAcumB===0)cuotaIdxB++;
-      parcialAcumB+=p.mon;
+      return;
+    }
+    // Si no hay acumulado abierto, empezar nueva cuota
+    if(parcialAcumB===0)cuotaIdxB++;
+    parcialAcumB+=p.mon;
+    const faltante=cuota-parcialAcumB;
+    if(faltante>0.99){
+      // Sigue siendo parcial
       const diasPar=_diaCuota(cuotaIdxB,p.fec);
       const atrasoStr=diasPar>0?`⚠ ${diasPar}d atraso`:'Al día';
-      filas.push([`${cuotaIdxB}*`,`Parcial · ${atrasoStr}`,fd(p.fec),fm(p.mon),metLabel[p.met]||'—',`Falta: ${fm(cuota-parcialAcumB)}`]);
+      filas.push([`${cuotaIdxB}*`,`Parcial · ${atrasoStr}`,fd(p.fec),fm(p.mon),metLabel[p.met]||'—',`Falta: ${fm(faltante)}`]);
     } else {
-      // Pago completo
-      if(parcialAcumB===0)cuotaIdxB++;
-      parcialAcumB=0;
+      // Cuota completada
       const diasC=_diaCuota(cuotaIdxB,p.fec);
       const atrasoStr=diasC>0?`⚠ ${diasC}d atraso`:'Al día';
-      filas.push([`${cuotaIdxB}`,`Completa · ${atrasoStr}`,fd(p.fec),fm(p.mon),metLabel[p.met]||'—','✅']);
+      // Si había parciales previos de esta cuota, reemplazar la última fila por "completada"
+      if(parcialAcumB>p.mon){
+        // Había parciales — marcar este pago como el que completó
+        filas.push([`${cuotaIdxB}`,`Completa · ${atrasoStr}`,fd(p.fec),fm(p.mon),metLabel[p.met]||'—','✅']);
+      } else {
+        filas.push([`${cuotaIdxB}`,`Completa · ${atrasoStr}`,fd(p.fec),fm(p.mon),metLabel[p.met]||'—','✅']);
+      }
+      parcialAcumB=0;
     }
   });
   // Cuota en curso sin completar
