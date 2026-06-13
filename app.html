@@ -4384,6 +4384,46 @@ async function reabrirOpCanc(){
   closeModal('mEditOpCanc');
   await confirmarReabrirOpCanc(oid);
 }
+function resumenOpTerminado(oid){
+  const op=gO(oid);if(!op)return;
+  const c=gC(op.cid);
+  const pagosOp=pagoDeOp(oid).sort((a,b)=>a.fec.localeCompare(b.fec));
+  const totCobrado=pagosOp.reduce((s,p)=>s+p.mon,0);
+  const cuota=cvOp(op);
+  let pagosHTML='';
+  pagosOp.forEach(function(p){
+    pagosHTML+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">'
+      +'<div><div style="font-size:11px;font-weight:600;color:var(--tx)">'+fD(p.fec)+'</div>'
+      +'<div style="font-size:9px;color:var(--tx2)">'+(p.met||'efectivo')+(p.not?' · '+p.not:'')+'</div></div>'
+      +'<div style="font-size:12px;font-weight:700;color:'+(p.par?'var(--yw)':'var(--gr)')+'">+'+fmt(p.mon)+'</div>'
+      +'</div>';
+  });
+  const html='<div style="padding:4px 0">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+    +'<div><div style="font-size:13px;font-weight:800;color:var(--tx)">'+(c?c.nom:'Cliente')+'</div>'
+    +'<div style="font-size:10px;color:var(--tx2)">'+(op.desc||'Crédito')+' · '+op.cuo+' cuotas '+op.frq+'</div></div>'
+    +'<span class="sb done">✅ Saldado</span></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">'
+    +'<div class="mc"><div class="ml">Capital prestado</div><div class="mv" style="color:var(--ac2)">'+fmt(op.mon)+'</div></div>'
+    +'<div class="mc"><div class="ml">Total cobrado</div><div class="mv" style="color:var(--gr)">'+fmt(totCobrado)+'</div></div>'
+    +'<div class="mc"><div class="ml">Valor cuota</div><div class="mv">'+fmt(cuota)+'</div></div>'
+    +'<div class="mc"><div class="ml">Ganancia</div><div class="mv" style="color:var(--yw)">'+fmt(totCobrado-op.mon)+'</div></div>'
+    +'<div class="mc"><div class="ml">Acreditado</div><div class="mv" style="font-size:11px">'+fD(op.facr||op.fv)+'</div></div>'
+    +'<div class="mc"><div class="ml">Pagos</div><div class="mv">'+pagosOp.length+'</div></div>'
+    +'</div>'
+    +'<div style="font-size:10px;font-weight:700;color:var(--tx2);margin-bottom:6px;letter-spacing:.4px">📋 HISTORIAL</div>'
+    +pagosHTML+'</div>';
+  const d=document.createElement('div');
+  d.id='_resumenModal';
+  d.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:flex;align-items:flex-end;justify-content:center';
+  d.innerHTML='<div style="background:var(--bg2);border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+    +'<div style="font-family:Syne,sans-serif;font-size:15px;font-weight:800">📋 Resumen</div>'
+    +'<button onclick="document.getElementById(\'_resumenModal\').remove()" style="background:none;border:none;color:var(--tx2);font-size:22px;cursor:pointer">✕</button>'
+    +'</div>'+html+'</div>';
+  document.body.appendChild(d);
+  d.addEventListener('click',function(e){if(e.target===d)d.remove();});
+}
 function previewFotoCli(input){
   const file=input.files[0];if(!file)return;
   window._fotoCliBlob=file;
@@ -4593,7 +4633,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
       }catch(e){console.error('historial error',e);return '';}})()}
     </div>`;
   }).join('');
-  const opsCompHTML=opsComp.length?`<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">✅ Terminados (${opsComp.length})</div><button class="btn bs bsm" style="border-color:rgba(34,197,94,.4);color:var(--gr);font-size:10px" onclick="pdfHistorialTodosTerminados(${cid})">🧾 Historial</button></div>${opsComp.map(op=>{const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const tot=sv?op.precio:op.mon;const pagosOp=pagoDeOp(op.id);const totCobrado=pagosOp.reduce((s,p)=>s+p.mon,0);return`<div class="op-card" style="opacity:.7;border-left:3px solid var(--gr)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="op-tag" style="color:var(--gr)">${sv?'🛒':'💳'} ${sv?'VENTA':'CRÉDITO'}</div><div style="font-size:13px;font-weight:700">${lbl}</div><div style="font-size:9px;color:var(--tx2)">${op.pag}/${op.cuo} cuotas · ${op.frq}</div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:var(--gr)">${fmt(tot)}</div><span class="sb done">✅ ${op.pag}/${op.cuo} pagadas</span></div></div><div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap"><button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️ Editar</button><button class="btn bp bsm" style="background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.5);color:var(--yw)" onclick="abrirEditOpCanc(${op.id})">⚙️ Corregir</button><button class="btn bp bsm" style="background:rgba(108,99,255,.15);border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="confirmarReabrirOpCanc(${op.id})">🔄 Reabrir</button><button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfCreditoNuevoWA(gO(${op.id}),gC(${cid}))">📲 PDF</button><button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button></div></div>`}).join('')}</div>`:'';
+  const opsCompHTML=opsComp.length?`<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">✅ Terminados (${opsComp.length})</div><button class="btn bs bsm" style="border-color:rgba(34,197,94,.4);color:var(--gr);font-size:10px" onclick="pdfHistorialTodosTerminados(${cid})">🧾 Historial</button></div>${opsComp.map(op=>{const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const tot=sv?op.precio:op.mon;const pagosOp=pagoDeOp(op.id);const totCobrado=pagosOp.reduce((s,p)=>s+p.mon,0);return`<div class="op-card" style="opacity:.7;border-left:3px solid var(--gr)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="op-tag" style="color:var(--gr)">${sv?'🛒':'💳'} ${sv?'VENTA':'CRÉDITO'}</div><div style="font-size:13px;font-weight:700">${lbl}</div><div style="font-size:9px;color:var(--tx2)">${op.pag}/${op.cuo} cuotas · ${op.frq}</div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:var(--gr)">${fmt(tot)}</div><span class="sb done">✅ ${op.pag}/${op.cuo} pagadas</span></div></div><div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap"><button class="btn bs bsm" onclick="resumenOpTerminado(${op.id})">📋 Resumen</button><button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️ Editar</button><button class="btn bp bsm" style="background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.5);color:var(--yw)" onclick="abrirEditOpCanc(${op.id})">⚙️ Corregir</button><button class="btn bp bsm" style="background:rgba(108,99,255,.15);border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="confirmarReabrirOpCanc(${op.id})">🔄 Reabrir</button><button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfCreditoNuevoWA(gO(${op.id}),gC(${cid}))">📲 PDF</button><button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button></div></div>`}).join('')}</div>`:'';
   const notasHTML=c.not?`<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--tx2)"><span style="font-weight:600;color:var(--tx)">📝 Notas:</span> ${c.not}</div>`:'';
   $('verContent').innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
