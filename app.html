@@ -6170,7 +6170,11 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
   const fd=d=>{if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`};
   const lbl=esVenta(op)?op.prod||'Venta':op.desc||'Crédito';
   const cuota=cvOp(op);
-  const numCuota=op.pag;
+  // Calcular número de cuota real acumulando pagos
+  const pagosOrden=pagoDeOp(oid).filter(p=>!(p.not||'').startsWith('🔄 INTERES')).sort((a,b)=>a.fec.localeCompare(b.fec));
+  let _cIdx=0,_acum=0;
+  for(const _p of pagosOrden){if(_p.par){if(_acum===0)_cIdx++;_acum+=_p.mon;}else{if(_acum===0)_cIdx++;_acum=0;}}
+  const numCuota=_cIdx;
   const pagosComp=pagoDeOp(oid).filter(p=>!p.par&&!(p.not||'').startsWith('🔄 INTERES')).sort((a,b)=>a.fec.localeCompare(b.fec));
   const estePago=pagosComp[pagosComp.length-1];
   const diasMora=estePago?calcMoraPago(estePago,op):0;
@@ -6307,45 +6311,43 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
     return Math.max(0,Math.floor((hoy2-due)/86400000));
   };
   const filas=[];
-  let cuotaIdxB=0,parcialAcumB=0,ultimaFechaPar='';
+  let cuotaIdxB=0,parcialAcumB=0;
   todosLosPagos.forEach(p=>{
     const esSoloInt=(p.not_||p.not||'').startsWith('🔄 INTERES');
     if(esSoloInt){
       filas.push(['—','Interés',fd(p.fec),fm(p.mon),metLabel[p.met]||'—','—']);
     } else if(p.par){
-      cuotaIdxB=cuotaIdxB||cuotaIdxB+1;
-      if(!parcialAcumB)cuotaIdxB++;
+      // Pago parcial: abrir cuota si no hay acumulado
+      if(parcialAcumB===0)cuotaIdxB++;
       parcialAcumB+=p.mon;
-      ultimaFechaPar=p.fec;
       const diasPar=_diaCuota(cuotaIdxB,p.fec);
       const atrasoStr=diasPar>0?`⚠ ${diasPar}d atraso`:'Al día';
-      filas.push([`${cuotaIdxB}*`,`Parcial · ${atrasoStr}`,fd(p.fec),fm(p.mon),metLabel[p.met]||'—',`Falta: ${fm(p.flt)}`]);
+      filas.push([`${cuotaIdxB}*`,`Parcial · ${atrasoStr}`,fd(p.fec),fm(p.mon),metLabel[p.met]||'—',`Falta: ${fm(cuota-parcialAcumB)}`]);
     } else {
-      if(!parcialAcumB)cuotaIdxB++;
+      // Pago completo
+      if(parcialAcumB===0)cuotaIdxB++;
+      parcialAcumB=0;
       const diasC=_diaCuota(cuotaIdxB,p.fec);
       const atrasoStr=diasC>0?`⚠ ${diasC}d atraso`:'Al día';
-      parcialAcumB=0;ultimaFechaPar='';
       filas.push([`${cuotaIdxB}`,`Completa · ${atrasoStr}`,fd(p.fec),fm(p.mon),metLabel[p.met]||'—','✅']);
     }
   });
-  // Cuota en curso sin completar: días desde vencimiento hasta hoy
+  // Cuota en curso sin completar
   if(parcialAcumB>0){
     const diasCurso=_diasHoy(cuotaIdxB);
     const atrasoStr=diasCurso>0?`⚠ ${diasCurso}d atraso`:'Al día';
     filas.push([`${cuotaIdxB}*`,`En curso · ${atrasoStr}`,'—','—','—',`Falta: ${fm(cuota-parcialAcumB)}`]);
   }
-  // Cuotas pendientes futuras: desde cuándo vence cada una
+  // Próxima cuota pendiente
   if(op.tip==='interes_mensual'){
-    // Solo mostrar próximo vencimiento
     const fvDate=op.fv?new Date(op.fv+'T00:00:00'):null;
     if(fvDate&&!isNaN(fvDate.getTime())){
       const hoy2=new Date();hoy2.setHours(0,0,0,0);
       const diasV=Math.floor((fvDate-hoy2)/86400000);
       const vencStr=diasV<0?`Vencida hace ${Math.abs(diasV)}d`:diasV===0?'Vence hoy':`Vence en ${diasV}d`;
-      rowsC.push(['→','Próximo interés',fd(op.fv),fm(op.cuota_fija||cvOp(op)),'—',vencStr]);
+      filas.push(['→','Próximo interés',fd(op.fv),fm(op.cuota_fija||cvOp(op)),'—',vencStr]);
     }
   } else {
-    // Solo mostrar la próxima cuota pendiente
     const nNext=cuotaIdxB+(parcialAcumB>0?0:1)+1;
     if(nNext<=op.cuo){
       const due=fechaDeCuota(op,nNext);
