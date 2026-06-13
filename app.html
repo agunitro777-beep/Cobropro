@@ -4294,7 +4294,11 @@ async function guardarEditPago(){
   const flt=par&&op?(cvOp(op)-mon):0;
   const d={mon,met:$('ep_met').value,fec:$('ep_fec').value,not_:$('ep_not').value.trim(),par,flt:Math.max(0,flt)};
   setBtnLoading('epSaveBtn',true);
-  try{await dbUpd('pagos',pid,d);if(p){p.mon=mon;p.met=d.met;p.fec=d.fec;p.not=d.not_;p.par=par;p.flt=d.flt;}
+  try{
+    // Pagos no siempre tienen user_id — usar update directo con RLS
+    const {error}=await SB.from('pagos').update({mon:d.mon,met:d.met,fec:d.fec,not_:d.not_,par:d.par,flt:d.flt}).eq('id',pid);
+    if(error)throw error;
+    if(p){p.mon=mon;p.met=d.met;p.fec=d.fec;p.not=d.not_;p.par=par;p.flt=d.flt;}
     if(p)await sincPagOp(p.oid).catch(()=>{});
     closeModal('mEditPago');toast('✅ Pago actualizado');setTimeout(()=>refrescar(),0);
   }catch(e){toast('Error: '+e.message,'error')}setBtnLoading('epSaveBtn',false);_guardando=false;
