@@ -6817,6 +6817,36 @@ async function handleResetPass(){
 
 
 // ══ FECHAS PERSONALIZADAS POR CUOTA ══
+function _calcAutoDate(op,numCuota){
+  const b=new Date(op.fv+'T00:00:00'),frq=op.frq,i=numCuota-1;
+  const d=new Date(b);
+  if(frq==='mensual')d.setMonth(b.getMonth()+i);
+  else if(frq==='quincenal')d.setDate(b.getDate()+i*15);
+  else if(frq==='semanal')d.setDate(b.getDate()+i*7);
+  else d.setDate(b.getDate()+i);
+  return d.toISOString().split('T')[0];
+}
+function fcPropagar(numCuota){
+  const oid=parseInt($('fc_oid').value);const op=gO(oid);if(!op)return;
+  const el=$('fc_'+numCuota);if(!el||!el.value)return;
+  // Calcular desde la fecha ingresada según frecuencia
+  const base=new Date(el.value+'T00:00:00');
+  const frq=op.frq;
+  const pending=op.cuo-op.pag;
+  for(let i=1;i<pending;i++){
+    const nCuota=(op.pag||0)+i+1;
+    if(nCuota<=numCuota)continue;
+    const d=new Date(base);
+    const offset=nCuota-numCuota;
+    if(frq==='mensual')d.setMonth(base.getMonth()+offset);
+    else if(frq==='quincenal')d.setDate(base.getDate()+offset*15);
+    else if(frq==='semanal')d.setDate(base.getDate()+offset*7);
+    else d.setDate(base.getDate()+offset);
+    const next=$('fc_'+nCuota);
+    if(next)next.value=d.toISOString().split('T')[0];
+  }
+  toast('📅 Fechas siguientes actualizadas','success',2000);
+}
 function abrirFechasCuotas(oid){
   const op=gO(oid);if(!op)return;
   $('fc_oid').value=oid;
@@ -6825,16 +6855,15 @@ function abrirFechasCuotas(oid){
   let html='';
   for(let i=0;i<pending;i++){
     const numCuota=(op.pag||0)+i+1;
-    // Calcular fecha automática para esta cuota
-    const b=new Date(op.fv+'T00:00:00'),frq=op.frq;
-    const d=new Date(b);
-    if(frq==='mensual')d.setMonth(b.getMonth()+(op.pag||0)+i);
-    else if(frq==='quincenal')d.setDate(b.getDate()+((op.pag||0)+i)*15);
-    else if(frq==='semanal')d.setDate(b.getDate()+((op.pag||0)+i)*7);
-    else d.setDate(b.getDate()+(op.pag||0)+i);
-    const autoDate=d.toISOString().split('T')[0];
+    const autoDate=_calcAutoDate(op,numCuota);
     const val=fc[String(numCuota)]||'';
-    html+=`<div class="ig"><label class="il">Cuota ${numCuota} <span style="color:var(--tx2);font-weight:400">(auto: ${fD(autoDate)})</span></label><input class="inp" type="date" id="fc_${numCuota}" value="${val}" placeholder="${autoDate}"></div>`;
+    html+=`<div class="ig" style="margin-bottom:4px">
+      <label class="il">Cuota ${numCuota} <span style="color:var(--tx2);font-weight:400">(auto: ${fD(autoDate)})</span></label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input class="inp" type="date" id="fc_${numCuota}" value="${val}" placeholder="${autoDate}" style="flex:1">
+        ${i>0?`<button onclick="fcPropagar(${numCuota})" title="Propagar a siguientes" style="background:rgba(108,99,255,.2);border:1px solid rgba(108,99,255,.4);color:var(--ac2);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">↓ Seguir</button>`:''}
+      </div>
+    </div>`;
   }
   $('fc_list').innerHTML=html||'<div style="font-size:11px;color:var(--tx2)">No hay cuotas pendientes.</div>';
   closeModal('mver');
