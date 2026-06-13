@@ -6360,7 +6360,7 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
       filas.push(['→','Próximo interés',fd(op.fv),fm(op.cuota_fija||cvOp(op)),'—',vencStr]);
     }
   } else {
-    const nNext=cuotaIdxB+(parcialAcumB>0?0:1);
+    const nNext=cuotaIdxB+(parcialAcumB>0?0:1)+1;
     if(nNext<=op.cuo){
       const due=fechaDeCuota(op,nNext);
       if(due&&!isNaN(due.getTime())){
