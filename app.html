@@ -1391,10 +1391,6 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <div class="ig"><label class="il">Método</label><select class="inp sel" id="ep_met"><option value="efectivo">💵 Efectivo</option><option value="transferencia">📲 Transferencia</option></select></div>
     <div class="ig"><label class="il">Fecha</label><input class="inp" id="ep_fec" type="date"></div>
     <div class="ig"><label class="il">Notas</label><input class="inp" id="ep_not" placeholder="Notas..."></div>
-    <div class="ig" style="display:flex;align-items:center;gap:8px;padding:8px 0">
-      <input type="checkbox" id="ep_par" style="accent-color:var(--ac2);width:16px;height:16px">
-      <label for="ep_par" style="font-size:12px;color:var(--tx2);cursor:pointer">Marcar como pago parcial (no cierra la cuota)</label>
-    </div>
     <button class="btn bgr" id="epSaveBtn" onclick="guardarEditPago()">💾 Guardar cambios</button>
     <button class="btn brd bsm" style="margin-top:7px;width:100%" onclick="confirmarElimPago()">🗑️ Eliminar pago</button>
     <button class="btn bs" style="margin-top:7px" onclick="closeModal('mEditPago')">Cancelar</button>
@@ -4097,19 +4093,22 @@ function activarSoloInt(){
 // ══ HELPER: sincroniza pag en DB contando pagos reales ══
 async function sincPagOp(oid){
   const op=gO(oid);if(!op)return;
-  // Contar pagos efectivos (no parciales, no pagos de solo interés)
-  const cnt=Ps.filter(p=>p.oid===oid&&!p.par&&!(p.not||'').startsWith('🔄 INTERES')).length;
+  const cuota=cvOp(op);
+  // Agrupar pagos por cuota acumulando montos — un pago cuenta como cuota solo si acumula >= cuota
+  const pagosOp=Ps.filter(p=>p.oid===oid&&!(p.not||'').startsWith('🔄 INTERES'));
+  let cnt=0,acum=0;
+  for(const p of pagosOp){
+    acum+=p.mon;
+    if(acum>=cuota*0.99){cnt++;acum=0;}
+  }
   const nuevoPag=Math.min(cnt,op.cuo);
-  // Intentar update con user_id
   const {data,error}=await SB.from('operaciones').update({pag:nuevoPag}).eq('id',oid).eq('user_id',UID()).select();
   if(error)throw error;
   if(!data||data.length===0){
-    // Fallback: update sin filtro user_id (la RLS de Supabase sigue protegiendo)
     const {error:e2}=await SB.from('operaciones').update({pag:nuevoPag}).eq('id',oid);
     if(e2)throw e2;
   }
   op.pag=nuevoPag;
-  // 🎉 Confetti si el crédito quedó saldado completamente
   if(nuevoPag>=op.cuo){setTimeout(()=>{lanzarConfetti();toast('🎉 ¡Crédito saldado! Felicitaciones','success');},250);}
 }
 
@@ -4288,17 +4287,17 @@ async function guardarEditPago(){
   if(_guardando){return;}_guardando=true;
   const pid=parseInt($('ep_id').value),mon=parseFloat($('ep_mon').value);
   if(!pid||!mon){toast('Completá los datos','error');_guardando=false;return}
-  const par=$('ep_par')&&$('ep_par').checked;
   const p=Ps.find(x=>x.id===pid);
   const op=p?gO(p.oid):null;
-  const flt=par&&op?(cvOp(op)-mon):0;
-  const d={mon,met:$('ep_met').value,fec:$('ep_fec').value,not_:$('ep_not').value.trim(),par,flt:Math.max(0,flt)};
+  const cuota=op?cvOp(op):mon;
+  const par=mon<cuota*0.99;
+  const flt=par?Math.max(0,cuota-mon):0;
+  const d={mon,met:$('ep_met').value,fec:$('ep_fec').value,not_:$('ep_not').value.trim(),par,flt};
   setBtnLoading('epSaveBtn',true);
   try{
-    // Pagos no siempre tienen user_id — usar update directo con RLS
-    const {error}=await SB.from('pagos').update({mon:d.mon,met:d.met,fec:d.fec,not_:d.not_,par:d.par,flt:d.flt}).eq('id',pid);
+    const {error}=await SB.from('pagos').update(d).eq('id',pid);
     if(error)throw error;
-    if(p){p.mon=mon;p.met=d.met;p.fec=d.fec;p.not=d.not_;p.par=par;p.flt=d.flt;}
+    if(p){p.mon=mon;p.met=d.met;p.fec=d.fec;p.not=d.not_;p.par=par;p.flt=flt;}
     if(p)await sincPagOp(p.oid).catch(()=>{});
     closeModal('mEditPago');toast('✅ Pago actualizado');setTimeout(()=>refrescar(),0);
   }catch(e){toast('Error: '+e.message,'error')}setBtnLoading('epSaveBtn',false);_guardando=false;
