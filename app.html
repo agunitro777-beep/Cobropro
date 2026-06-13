@@ -952,6 +952,34 @@ body.light .mo{background:rgba(0,0,0,.5)}
         </div>
       </div>
     </div>
+    <div class="ig" style="background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2);border-radius:12px;padding:12px;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--ac2);margin-bottom:10px">🧾 Opciones del comprobante de pago</div>
+      <div style="font-size:10px;color:var(--tx2);margin-bottom:8px">Elegí qué secciones mostrar en el PDF</div>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer">
+        <input type="checkbox" id="cfg_comp_tel" style="accent-color:var(--ac);width:16px;height:16px">
+        <span style="font-size:12px">📞 Teléfono del cliente</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer">
+        <input type="checkbox" id="cfg_comp_mora" style="accent-color:var(--ac);width:16px;height:16px">
+        <span style="font-size:12px">⚠️ Banner de mora (días de atraso)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer">
+        <input type="checkbox" id="cfg_comp_historial" style="accent-color:var(--ac);width:16px;height:16px">
+        <span style="font-size:12px">📋 Tabla historial de cuotas</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer">
+        <input type="checkbox" id="cfg_comp_saldo" style="accent-color:var(--ac);width:16px;height:16px">
+        <span style="font-size:12px">💰 Cuotas restantes y saldo pendiente</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer">
+        <input type="checkbox" id="cfg_comp_metodo" style="accent-color:var(--ac);width:16px;height:16px">
+        <span style="font-size:12px">💳 Método de pago en historial</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="cfg_comp_footer" style="accent-color:var(--ac);width:16px;height:16px">
+        <span style="font-size:12px">📝 Pie de página (CobroAlDía)</span>
+      </label>
+    </div>
     <button class="btn bp" onclick="guardarCfg()" style="margin-bottom:8px">💾 Guardar configuración</button>
     <div style="margin:14px 0 8px;font-family:Syne,sans-serif;font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">🖼️ Logos <span style="font-size:9px;font-weight:600;color:var(--ac);background:rgba(108,99,255,.15);padding:2px 6px;border-radius:10px;text-transform:none;letter-spacing:0">👑 Premium</span></div>
     <div style="display:flex;gap:10px;margin-bottom:10px">
@@ -1456,7 +1484,7 @@ function requierePlan(feat, planMin='pro'){
 }
 function requierePro(feat){return requierePlan(feat,'pro');}
 let SB = null, currentUser = null;
-let CFG = {nombre:'',moneda:'$',alertaDias:3,redondeo:0,telPropio:'',lang:'es',msgWa:'Hola {nombre}, recordatorio: cuota de {cuota} vence {fecha}. ¡Gracias!',msgMora:'Hola {nombre}, tenés {dias} días de atraso. Tu cuota es de {cuota}. Por favor regularizá. ¡Gracias!'};
+let CFG = {nombre:'',moneda:'$',alertaDias:3,redondeo:0,telPropio:'',lang:'es',msgWa:'Hola {nombre}, recordatorio: cuota de {cuota} vence {fecha}. ¡Gracias!',msgMora:'Hola {nombre}, tenés {dias} días de atraso. Tu cuota es de {cuota}. Por favor regularizá. ¡Gracias!',compTel:true,compHistorial:true,compMora:true,compSaldo:true,compMetodo:true,compFooter:true};
 const LOCALE=()=>CFG.lang==='en'?'en-AU':'es-AR';
 let Cs=[], Ops=[], Ps=[], Gs=[], EVs=[];
 let flt='activos', cajP='todo', finP='semana';
@@ -2311,7 +2339,7 @@ async function pdfHistorialTodosTerminados(cid){
     doc.autoTable({
       startY:y,
       head:[['#','Fecha pago','Monto','Método','Nota']],
-      body:filas,
+      body:CFG.compMetodo!==false?filas:filas.map(r=>[r[0],r[1],r[2],r[3],r[5]]),
       styles:{fontSize:7.5,cellPadding:2,textColor:[40,40,55]},
       headStyles:{fillColor:[80,80,110],textColor:255,fontStyle:'bold'},
       alternateRowStyles:{fillColor:[245,245,250]},
@@ -3253,6 +3281,7 @@ function showModal(id){
     const _mpi=document.querySelector('#mPerfil .modal')||document.querySelector('#mPerfil > div');
     if(_mpi){_mpi.style.transform='';_mpi.style.opacity='';_mpi.style.transition='';}
     $('cfg_n').value=CFG.nombre||'';$('cfg_m').value=CFG.moneda||'$';$('cfg_d').value=CFG.alertaDias||3;$('cfg_w').value=CFG.msgWa||'';$('cfg_mm').value=CFG.msgMora||'';if($('cfg_red'))$('cfg_red').value=CFG.redondeo||0;if($('cfg_lang'))$('cfg_lang').value=CFG.lang||'es';
+    if($('cfg_comp_tel'))$('cfg_comp_tel').checked=CFG.compTel!==false;if($('cfg_comp_mora'))$('cfg_comp_mora').checked=CFG.compMora!==false;if($('cfg_comp_historial'))$('cfg_comp_historial').checked=CFG.compHistorial!==false;if($('cfg_comp_saldo'))$('cfg_comp_saldo').checked=CFG.compSaldo!==false;if($('cfg_comp_metodo'))$('cfg_comp_metodo').checked=CFG.compMetodo!==false;if($('cfg_comp_footer'))$('cfg_comp_footer').checked=CFG.compFooter!==false;
     if($('cfg_aviso_resumen'))$('cfg_aviso_resumen').checked=!!(CFG.avisoResumen);
     if($('cfg_aviso_hora'))$('cfg_aviso_hora').value=CFG.avisoResumenHora||'20:00';
     if($('cfg_aviso_dias')){const dias=CFG.avisoResumenDias||[1,2,3,4,5];$('cfg_aviso_dias').querySelectorAll('input').forEach(cb=>{cb.checked=dias.includes(parseInt(cb.value));});}
@@ -3903,7 +3932,7 @@ async function _pdfCreditoNuevoWA_inner(op,c){
   if(rowsC.length>0){
     doc.autoTable({
       startY:y,
-      head:[['#','Estado','Fecha pago','Abonado','Método','Saldo / Vto.']],
+      head:[CFG.compMetodo!==false?['#','Estado','Fecha pago','Abonado','Método','Saldo / Vto.']:['#','Estado','Fecha pago','Abonado','Saldo / Vto.']],
       body:rowsC,
       styles:{fontSize:7,cellPadding:2.5},
       headStyles:{fillColor:[34,197,94],textColor:255,fontStyle:'bold'},
@@ -4530,7 +4559,7 @@ async function guardarCamFecha(){const oid=parseInt($('cf_oid').value),fv=$('cf_
 
 // ══ CONFIG ══
 async function guardarCfg(){
-  CFG.nombre=$('cfg_n').value||'';CFG.moneda=$('cfg_m').value;CFG.alertaDias=parseInt($('cfg_d').value)||3;CFG.redondeo=parseInt($('cfg_red').value)||0;CFG.lang=$('cfg_lang').value||'es';CFG.msgWa=$('cfg_w').value||CFG.msgWa;CFG.msgMora=$('cfg_mm').value||CFG.msgMora;aplicarIdioma(CFG.lang);
+  CFG.nombre=$('cfg_n').value||'';CFG.moneda=$('cfg_m').value;CFG.alertaDias=parseInt($('cfg_d').value)||3;CFG.redondeo=parseInt($('cfg_red').value)||0;CFG.lang=$('cfg_lang').value||'es';CFG.msgWa=$('cfg_w').value||CFG.msgWa;CFG.msgMora=$('cfg_mm').value||CFG.msgMora;aplicarIdioma(CFG.lang);if($('cfg_comp_tel'))CFG.compTel=$('cfg_comp_tel').checked;if($('cfg_comp_mora'))CFG.compMora=$('cfg_comp_mora').checked;if($('cfg_comp_historial'))CFG.compHistorial=$('cfg_comp_historial').checked;if($('cfg_comp_saldo'))CFG.compSaldo=$('cfg_comp_saldo').checked;if($('cfg_comp_metodo'))CFG.compMetodo=$('cfg_comp_metodo').checked;if($('cfg_comp_footer'))CFG.compFooter=$('cfg_comp_footer').checked;
   // Aviso resumen
   if($('cfg_aviso_resumen')){
     CFG.avisoResumen=$('cfg_aviso_resumen').checked;
@@ -6309,7 +6338,7 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
   doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);doc.setFontSize(11);
   doc.text(c.nom,20,50);doc.text(lbl,105,50);
   doc.setFontSize(9);doc.setTextColor(120,120,140);
-  if(c.tel)doc.text('Tel: '+c.tel,20,58);
+  if(c.tel&&CFG.compTel!==false)doc.text('Tel: '+c.tel,20,58);
   doc.text('Fecha: '+fd(fec),105,58);
 
   // Monto abonado
@@ -6320,7 +6349,7 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
 
   // Mora banner si corresponde
   let y=110;
-  if(diasMora>0){
+  if(diasMora>0&&CFG.compMora!==false){
     doc.setFillColor(254,226,226);doc.setDrawColor(239,68,68);
     doc.roundedRect(14,y,182,14,3,3,'FD');
     doc.setTextColor(185,28,28);doc.setFontSize(9);doc.setFont('helvetica','bold');
@@ -6339,6 +6368,10 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
   const restantes=op.cuo-numCuota;
   doc.setFontSize(9);doc.setTextColor(100,100,120);
   doc.text(`Fecha de pago: ${fd(fec)}`,20,y+27);
+  if(CFG.compSaldo!==false){
+    doc.setFontSize(9);doc.setTextColor(100,100,120);
+    doc.text(`Cuotas restantes: ${restantes} de ${op.cuo}`,115,y+18);
+  }
   if(op.facr){
     doc.setTextColor(80,80,120);doc.setFontSize(8);doc.setFont('helvetica','bold');
     doc.text('Fecha acreditación:',115,y+27);
@@ -6424,7 +6457,7 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
       }
     }
   }
-  if(filas.length>0){
+  if(filas.length>0&&CFG.compHistorial!==false){
     doc.autoTable({
       startY:y,
       head:[['#','Estado','Fecha pago','Abonado','Método','Saldo / Vto.']],
@@ -6463,7 +6496,7 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
   // Footer
   doc.setDrawColor(200,200,220);doc.line(14,y,196,y);
   doc.setTextColor(150,150,170);doc.setFontSize(8);doc.setFont('helvetica','normal');
-  doc.text('CobroAlDía · Documento generado automáticamente · No requiere firma',105,y+7,{align:'center'});
+  if(CFG.compFooter!==false)doc.text('CobroAlDía · Documento generado automáticamente · No requiere firma',105,y+7,{align:'center'});
   return doc;
 }
 
@@ -10435,3 +10468,4 @@ try{
 </script>
 </body>
 </html>
+
