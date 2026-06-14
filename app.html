@@ -3145,7 +3145,7 @@ function chequearAvisoResumen(){
       <div style="font-size:11px;color:var(--tx2);margin-bottom:12px">Es un buen momento para exportar tus datos en Excel y guardarlos.</div>
       <div style="display:flex;gap:8px">
         <button onclick="document.getElementById('backupAviso')?.remove()" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--tx2);border-radius:8px;padding:9px;font-size:12px;cursor:pointer">Ahora no</button>
-        <button onclick="document.getElementById('backupAviso')?.remove();goPage('rep')" style="flex:2;background:var(--ac);border:none;color:#fff;border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer">📊 Ir a Reportes</button>
+        <button onclick="document.getElementById('backupAviso')?.remove();exportarExcel()" style="flex:2;background:var(--ac);border:none;color:#fff;border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer">📊 Exportar Excel</button>
       </div>`;
     document.body.appendChild(av);
     // Desaparecer al tocar cualquier parte de la app (fuera del banner)
