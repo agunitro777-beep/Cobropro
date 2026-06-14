@@ -9268,100 +9268,183 @@ const TOUR_STEPS_MAIN = [
   }
 ];
 
+// ══ TOUR OVERLAY SOBRE APP REAL ══
+const TOUR_OVERLAY_STEPS=[
+  {
+    title:'¡Bienvenido a CobroAlDía! 👋',
+    desc:'Tu app para gestionar préstamos y cobros. Te mostramos todo en segundos.',
+    target:null,
+    page:null,
+    pos:'center'
+  },
+  {
+    title:'Resumen del día 🏠',
+    desc:'Acá ves capital prestado, cobrado hoy, mora y vencimientos de un vistazo.',
+    target:'page-inicio',
+    page:'inicio',
+    pos:'center'
+  },
+  {
+    title:'Tus clientes 👥',
+    desc:'Lista de todos los clientes con su saldo, estado y score de puntualidad.',
+    target:'page-clientes',
+    page:'clientes',
+    pos:'center'
+  },
+  {
+    title:'Botón + agregar cliente',
+    desc:'Tocá acá para agregar un nuevo cliente con nombre, teléfono y dirección.',
+    target:'fabMain',
+    page:'clientes',
+    pos:'top'
+  },
+  {
+    title:'Caja del día 💰',
+    desc:'Todos los movimientos separados por tabs: cobrado, prestado y ventas.',
+    target:'page-caja',
+    page:'caja',
+    pos:'center'
+  },
+  {
+    title:'Agenda 📅',
+    desc:'Todos los vencimientos del día, semana y mes en un solo lugar.',
+    target:'page-agenda',
+    page:'agenda',
+    pos:'center'
+  },
+  {
+    title:'Ruta diaria 🗺️',
+    desc:'Los cobros del día ordenados. Navegá al cliente y marcá cobrado sin salir de la app.',
+    target:'page-ruta',
+    page:'ruta',
+    pos:'center'
+  },
+  {
+    title:'Finanzas 📊',
+    desc:'Gráficos de cobros, análisis de morosidad y clientes más rentables.',
+    target:'page-finanzas',
+    page:'finanzas',
+    pos:'center'
+  },
+  {
+    title:'¡Listo para empezar! 🎉',
+    desc:'Ya conocés todo. Agregá tu primer cliente y empezá a cobrar de forma profesional.',
+    target:null,
+    page:'clientes',
+    pos:'center'
+  }
+];
+
 function iniciarTour(){
-  _tourSteps = TOUR_STEPS_MAIN;
-  _tourStep = 0;
-  document.getElementById('tourDemo').style.display='flex';
-  _renderTourStep();
+  _tourSteps=TOUR_OVERLAY_STEPS;
+  _tourStep=0;
+  // Ocultar tourDemo viejo, usar overlay nuevo
+  const old=document.getElementById('tourDemo');
+  if(old)old.style.display='none';
+  _showTourOverlay();
   localStorage.setItem('cobropro_tour_done','1');
 }
 
-function iniciarMiniTour(key){
-  iniciarTour(); // por ahora usa el tour principal
+let _tourOverlayEl=null;
+function _showTourOverlay(){
+  // Remover overlay anterior
+  if(_tourOverlayEl){_tourOverlayEl.remove();_tourOverlayEl=null;}
+  const s=TOUR_OVERLAY_STEPS[_tourStep];
+  if(!s)return;
+
+  // Navegar a la página correcta
+  if(s.page)goPage(s.page);
+
+  setTimeout(function(){
+    // Crear overlay
+    const ov=document.createElement('div');
+    ov.id='_tourOv';
+    ov.style.cssText='position:fixed;inset:0;z-index:3000;pointer-events:none';
+
+    // Fondo oscuro con spotlight
+    const targetEl=s.target?document.getElementById(s.target):null;
+    let spotStyle='';
+    let tooltipTop='50%';
+    let tooltipTransform='translate(-50%,-50%)';
+
+    if(targetEl&&s.target!==('page-inicio')&&s.target!==('page-clientes')&&s.target!==('page-caja')&&s.target!==('page-agenda')&&s.target!==('page-ruta')&&s.target!==('page-finanzas')){
+      const r=targetEl.getBoundingClientRect();
+      const pad=12;
+      spotStyle='clip-path:polygon(0 0,100% 0,100% 100%,0 100%,'
+        +(r.left-pad)+'px '+(r.bottom+pad)+'px,'
+        +(r.right+pad)+'px '+(r.bottom+pad)+'px,'
+        +(r.right+pad)+'px '+(r.top-pad)+'px,'
+        +(r.left-pad)+'px '+(r.top-pad)+'px,'
+        +(r.left-pad)+'px '+(r.bottom+pad)+'px,'
+        +'0 100%)';
+      // Posicionar tooltip arriba o abajo del target
+      if(r.top>window.innerHeight/2){
+        tooltipTop=(r.top-pad-16)+'px';
+        tooltipTransform='translate(-50%,-100%)';
+      } else {
+        tooltipTop=(r.bottom+pad+16)+'px';
+        tooltipTransform='translate(-50%,0)';
+      }
+      // Highlight ring
+      const ring=document.createElement('div');
+      ring.style.cssText='position:absolute;border:2px solid #6c63ff;border-radius:14px;pointer-events:none;'
+        +'left:'+(r.left-pad)+'px;top:'+(r.top-pad)+'px;'
+        +'width:'+(r.width+pad*2)+'px;height:'+(r.height+pad*2)+'px;'
+        +'box-shadow:0 0 0 4px rgba(108,99,255,.3);animation:tourPulseRing 1.5s infinite';
+      ov.appendChild(ring);
+    }
+
+    // Fondo oscuro
+    const bg=document.createElement('div');
+    bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.7);'+spotStyle;
+    ov.appendChild(bg);
+
+    // Dots
+    const dotsHTML=TOUR_OVERLAY_STEPS.map(function(_,i){
+      return '<div style="width:'+(i===_tourStep?20:6)+'px;height:6px;border-radius:3px;background:'+(i===_tourStep?'#6c63ff':'rgba(255,255,255,.2)')+';transition:.3s"></div>';
+    }).join('');
+
+    const isLast=_tourStep===TOUR_OVERLAY_STEPS.length-1;
+    const isFirst=_tourStep===0;
+
+    // Tooltip
+    const tt=document.createElement('div');
+    tt.style.cssText='position:absolute;left:50%;pointer-events:all;'
+      +'top:'+tooltipTop+';transform:'+tooltipTransform+';'
+      +'width:calc(100% - 40px);max-width:340px;'
+      +'background:#1a1c24;border:1px solid rgba(108,99,255,.4);border-radius:16px;'
+      +'padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.6)';
+    tt.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
+      +'<div style="font-family:Syne,sans-serif;font-size:14px;font-weight:800;color:#f0f0f5">'+s.title+'</div>'
+      +'<button onclick="finalizarTour()" style="background:none;border:none;color:#7a7d8f;font-size:18px;cursor:pointer;padding:0 0 0 8px;line-height:1">✕</button>'
+      +'</div>'
+      +'<div style="font-size:12px;color:#7a7d8f;line-height:1.6;margin-bottom:12px">'+s.desc+'</div>'
+      +'<div style="display:flex;justify-content:center;gap:4px;margin-bottom:12px">'+dotsHTML+'</div>'
+      +'<div style="display:flex;gap:8px">'
+      +(isFirst?'':'<button onclick="_tourNav(-1)" style="flex:1;background:#12141a;border:1px solid #2a2d3e;color:#f0f0f5;border-radius:10px;padding:10px;font-size:12px;font-weight:600;cursor:pointer">← Anterior</button>')
+      +'<button onclick="'+(isLast?'finalizarTour()':'_tourNav(1)')+'" style="flex:2;background:linear-gradient(135deg,#6c63ff,#a29bfe);border:none;color:#fff;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">'+(isLast?'✅ Empezar':'Siguiente →')+'</button>'
+      +'</div>';
+    ov.appendChild(tt);
+
+    document.body.appendChild(ov);
+    _tourOverlayEl=ov;
+  },300);
+}
+
+function _tourNav(dir){
+  _tourStep=Math.max(0,Math.min(TOUR_OVERLAY_STEPS.length-1,_tourStep+dir));
+  _showTourOverlay();
 }
 
 function finalizarTour(){
-  document.getElementById('tourDemo').style.display='none';
+  if(_tourOverlayEl){_tourOverlayEl.remove();_tourOverlayEl=null;}
+  const old=document.getElementById('tourDemo');
+  if(old)old.style.display='none';
   if(_tourFingerTimer){clearInterval(_tourFingerTimer);_tourFingerTimer=null;}
 }
 
-function tourNav(dir){
-  _tourStep = Math.max(0, Math.min(_tourSteps.length-1, _tourStep+dir));
-  _renderTourStep();
-}
-
-function _renderTourStep(){
-  const s = _tourSteps[_tourStep];
-  if(!s) return;
-  if(_tourFingerTimer){clearInterval(_tourFingerTimer);_tourFingerTimer=null;}
-
-  // Contenido pantalla
-  const sc = document.getElementById('tdScreenContent');
-  if(sc){
-    sc.style.animation='none';
-    sc.innerHTML = s.screen();
-    void sc.offsetWidth;
-    sc.style.animation='tourSlideIn .35s ease';
-  }
-
-  // Título y descripción
-  const title=document.getElementById('tdTitle');
-  const desc=document.getElementById('tdDesc');
-  if(title)title.textContent=s.title;
-  if(desc)desc.textContent=s.desc;
-
-  // Label paso
-  const lbl=document.getElementById('tdStepLabel');
-  if(lbl)lbl.textContent=`Paso ${_tourStep+1} de ${_tourSteps.length}`;
-
-  // Botones
-  const prev=document.getElementById('tdBtnPrev');
-  const next=document.getElementById('tdBtnNext');
-  if(prev)prev.style.display=_tourStep===0?'none':'block';
-  const isLast=_tourStep===_tourSteps.length-1;
-  if(next){
-    next.textContent=isLast?'✅ Empezar':'Siguiente →';
-    next.onclick=isLast?finalizarTour:()=>tourNav(1);
-  }
-
-  // Dots
-  const dots=document.getElementById('tdDots');
-  if(dots)dots.innerHTML=_tourSteps.map((_,i)=>
-    `<div style="width:${i===_tourStep?20:6}px;height:6px;border-radius:3px;background:${i===_tourStep?'#6c63ff':'#2a2d3e'};transition:.3s"></div>`
-  ).join('');
-
-  // Finger animado
-  const finger=document.getElementById('tdFinger');
-  const hl=document.getElementById('tdHighlight');
-  if(finger)finger.style.display='none';
-  if(hl)hl.style.display='none';
-  if(s.finger){
-    setTimeout(()=>{
-      const target=document.getElementById(s.finger.target);
-      if(!target||!finger)return;
-      const r=target.getBoundingClientRect();
-      const sc2=document.getElementById('tdScreen').getBoundingClientRect();
-      const x=r.left-sc2.left+r.width/2-14;
-      const y=r.top-sc2.top+r.height/2-14;
-      finger.style.display='block';
-      finger.style.left=x+'px';
-      finger.style.top=y+'px';
-      if(hl){
-        hl.style.display='block';
-        hl.style.left=(r.left-sc2.left-4)+'px';
-        hl.style.top=(r.top-sc2.top-4)+'px';
-        hl.style.width=(r.width+8)+'px';
-        hl.style.height=(r.height+8)+'px';
-      }
-      let tap=false;
-      _tourFingerTimer=setInterval(()=>{
-        tap=!tap;
-        finger.style.transform=tap?'scale(.75)':'scale(1)';
-        finger.style.transition='transform .2s ease';
-      },800);
-    },400);
-  }
-}
+function tourNav(dir){_tourNav(dir);}
+function _renderTourStep(){}
 
 // ══ SISTEMA DE COBRADORES ══
 let _esMiCobrador=false,_ownerIdCobrador=null,_cobradorData=null;
