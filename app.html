@@ -9271,66 +9271,17 @@ const TOUR_STEPS_MAIN = [
 
 // ══ TOUR OVERLAY SOBRE APP REAL ══
 const TOUR_OVERLAY_STEPS=[
-  {
-    title:'¡Bienvenido a CobroAlDía! 👋',
-    desc:'Tu app para gestionar créditos y cobros. Te mostramos las funciones principales sobre la app real.',
-    target:null,page:'inicio',pos:'center'
-  },
-  {
-    title:'Resumen financiero 📊',
-    desc:'Capital activo, ganancia cobrada, mora acumulada y todo lo que vence hoy. Siempre actualizado.',
-    target:'page-inicio',page:'inicio',pos:'center'
-  },
-  {
-    title:'Tus clientes 👥',
-    desc:'Lista de todos tus clientes con saldo, estado y score de puntualidad.',
-    target:'page-clientes',page:'clientes',pos:'center'
-  },
-  {
-    title:'Nuevo cliente ➕',
-    desc:'Tocá el botón + para agregar un nuevo cliente con nombre, teléfono y dirección.',
-    target:'fabMain',page:'clientes',pos:'top'
-  },
-  {
-    title:'Caja 💰',
-    desc:'Movimientos separados en tabs: Cobrado, Prestado y Ventas. Cada uno agrupado por fecha.',
-    target:'cajaTabs',page:'caja',pos:'bottom'
-  },
-  {
-    title:'Agenda 📅',
-    desc:'Vencimientos organizados por fecha. Navegá entre días con las flechas para planificar tus cobros.',
-    target:'page-cal',page:'cal',pos:'center'
-  },
-  {
-    title:'Ruta del día 🗺️',
-    desc:'Cobros del día en orden. Marcá cobrado, parcial o navegá al cliente con Maps sin salir de la app.',
-    target:'page-agenda',page:'agenda',pos:'center'
-  },
-  {
-    title:'Finanzas 💹',
-    desc:'Gráficos de cobros, capital prestado, morosidad y análisis de tu cartera.',
-    target:'page-fin',page:'fin',pos:'center'
-  },
-  {
-    title:'Reportes 📊',
-    desc:'Clientes más rentables, exportación a Excel y análisis completo de tu negocio.',
-    target:'page-rep',page:'rep',pos:'center'
-  },
-  {
-    title:'Exportar Excel 📊',
-    desc:'Descargá todos tus datos en Excel con un toque — también en el botón 📊 del header.',
-    target:'btnExcelHeader',page:'rep',pos:'bottom'
-  },
-  {
-    title:'Configuración ⚙️',
-    desc:'Personalizá tu negocio: nombre, logo, tasa de mora, límites de crédito y PIN de seguridad.',
-    target:null,page:'admin',pos:'center'
-  },
-  {
-    title:'¡Listo para empezar! 🎉',
-    desc:'Ya conocés todo CobroAlDía. Podés volver a este tour desde ⚙️ → Configuración cuando quieras.',
-    target:null,page:'clientes',pos:'center'
-  }
+  {title:'\u00a1Bienvenido a CobroAl\u00edDa! \ud83d\udc4b',desc:'Tu app para gestionar cr\u00e9ditos y cobros. Te mostramos cada secci\u00f3n sobre la app real.',target:null,page:'inicio',pos:'center'},
+  {title:'Inicio \ud83c\udfe0',desc:'Resumen financiero: capital activo, ganancia cobrada, mora y vencimientos de hoy.',target:null,page:'inicio',pos:'center'},
+  {title:'Clientes \ud83d\udc65',desc:'Lista de todos tus clientes con saldo, estado y score de puntualidad.',target:'nav-clientes',page:'clientes',pos:'top'},
+  {title:'Nuevo cliente \u2795',desc:'Toc\u00e1 el bot\u00f3n + para agregar un cliente con nombre, tel\u00e9fono y direcci\u00f3n.',target:'fabMain',page:'clientes',pos:'top'},
+  {title:'Caja \ud83d\udcb0',desc:'Movimientos del d\u00eda separados en tabs: Cobrado, Prestado y Ventas.',target:'nav-caja',page:'caja',pos:'top'},
+  {title:'Agenda \ud83d\udcc5',desc:'Vencimientos organizados por fecha. Naveg\u00e1 entre d\u00edas para planificar tus cobros.',target:'nav-cal',page:'cal',pos:'top'},
+  {title:'Ruta del d\u00eda \ud83d\uddfa\ufe0f',desc:'Cobros del d\u00eda en orden. Marc\u00e1 cobrado o parcial y naveg\u00e1 al cliente con Maps.',target:'nav-agenda',page:'agenda',pos:'top'},
+  {title:'Finanzas \ud83d\udcb9',desc:'Gr\u00e1ficos de cobros, capital prestado, mora y an\u00e1lisis de tu cartera.',target:'nav-fin',page:'fin',pos:'top'},
+  {title:'Reportes \ud83d\udcca',desc:'Clientes m\u00e1s rentables y exportaci\u00f3n completa a Excel.',target:'nav-rep',page:'rep',pos:'top'},
+  {title:'Configuraci\u00f3n \u2699\ufe0f',desc:'Personaliz\u00e1 tu negocio: nombre, logo, tasa de mora y PIN de seguridad.',target:null,page:'admin',pos:'center'},
+  {title:'\u00a1Listo para empezar! \ud83c\udf89',desc:'Ya conoc\u00e9s todo. Pod\u00e9s volver a este tour desde \u2699\ufe0f \u2192 Configuraci\u00f3n.',target:null,page:'inicio',pos:'center'}
 ];
 
 function iniciarTour(){
