@@ -9298,13 +9298,13 @@ const TOUR_OVERLAY_STEPS=[
   },
   {
     title:'Agenda 📅',
-    desc:'Vencimientos del día organizados. Navegá entre fechas con las flechas para planificar tus cobros.',
-    target:'page-agenda',page:'agenda',pos:'center'
+    desc:'Vencimientos organizados por fecha. Navegá entre días con las flechas para planificar tus cobros.',
+    target:'page-cal',page:'cal',pos:'center'
   },
   {
     title:'Ruta del día 🗺️',
     desc:'Cobros del día en orden. Marcá cobrado, parcial o navegá al cliente con Maps sin salir de la app.',
-    target:'page-cal',page:'cal',pos:'center'
+    target:'page-agenda',page:'agenda',pos:'center'
   },
   {
     title:'Finanzas 💹',
@@ -9436,9 +9436,12 @@ function _tourNav(dir){
 
 function finalizarTour(){
   if(_tourOverlayEl){_tourOverlayEl.remove();_tourOverlayEl=null;}
+  // Limpiar cualquier overlay huérfano
+  document.querySelectorAll('#_tourOv').forEach(function(el){el.remove();});
   const old=document.getElementById('tourDemo');
   if(old)old.style.display='none';
   if(_tourFingerTimer){clearInterval(_tourFingerTimer);_tourFingerTimer=null;}
+  goPage('inicio');
 }
 
 function tourNav(dir){_tourNav(dir);}
