@@ -633,7 +633,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
 <div class="hdr">
   <span class="brand">💸 CobroAlDía</span>
   <div class="hdr-r">
-    <div class="ibtn" onclick="exportarExcel()" title="Exportar Excel">📊</div>
+    <div class="ibtn" id="btnExcelHeader" onclick="exportarExcel()" title="Exportar Excel">📊</div>
     <div class="ibtn" onclick="toggleOcul()" id="eyeBtn">👁️</div>
     <div class="ibtn" id="undoBtn" onclick="mostrarColaDeshacer()" style="display:none;position:relative">↩️<span id="undoBadge" style="position:absolute;top:-4px;right:-4px;background:var(--rd);color:#fff;font-size:9px;font-weight:700;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;line-height:1"></span></div>
     <div class="ibtn" onclick="showModal('mPerfil')">⚙️</div>
@@ -645,7 +645,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
 <div id="do" onclick="closeFab()"></div>
 <div class="fabm" id="fabm">
   <div class="fa"><span class="fal">Simular crédito</span><button class="fab2" style="background:#06b6d4" onclick="closeFab();showModal('mSim')">🧮</button></div>
-  <div class="fa"><span class="fal">Nuevo cliente</span><button class="fab2" style="background:#6c63ff" onclick="closeFab();abrirCli()">👤</button></div>
+  <div class="fa"><span class="fal">Nuevo cliente</span><button id="fabMain" class="fab2" style="background:#6c63ff" onclick="closeFab();abrirCli()">👤</button></div>
   <div class="fa"><span class="fal">Agregar crédito/producto</span><button class="fab2" style="background:#a78bfa" onclick="closeFab();abrirOp()">➕</button></div>
   <div class="fa"><span class="fal">Registrar pago</span><button class="fab2" style="background:#22c55e" onclick="closeFab();abrirPago()">💵</button></div>
   <div class="fa"><span class="fal">Nuevo gasto</span><button class="fab2" style="background:#f59e0b" onclick="closeFab();abrirGasto()">🧾</button></div>
@@ -3513,6 +3513,7 @@ function abrirOp(cidFijo=null,oid=null){
     _intModo='mensual';setIntModo('mensual');toggleOpTipo();
     if($('op_tip')){$('op_tip').value='cuota';toggleTipoInteres('cuota');}actualizarTipExplainer();actualizarPreview();
   }
+  _guardando=false;
   showModal('mop');
 }
 async function guardarOp(){
@@ -9272,63 +9273,77 @@ const TOUR_STEPS_MAIN = [
 const TOUR_OVERLAY_STEPS=[
   {
     title:'¡Bienvenido a CobroAlDía! 👋',
-    desc:'Tu app para gestionar préstamos y cobros. Te mostramos todo en segundos.',
+    desc:'Tu app para gestionar créditos y cobros. Te mostramos las funciones principales en segundos — sobre la app real.',
     target:null,
-    page:null,
-    pos:'center'
-  },
-  {
-    title:'Resumen del día 🏠',
-    desc:'Acá ves capital prestado, cobrado hoy, mora y vencimientos de un vistazo.',
-    target:'page-inicio',
     page:'inicio',
     pos:'center'
   },
   {
+    title:'Resumen financiero 📊',
+    desc:'Capital activo, ganancia cobrada, mora acumulada y todo lo que vence hoy. Siempre actualizado.',
+    target:'secResumen',
+    page:'inicio',
+    pos:'bottom'
+  },
+  {
     title:'Tus clientes 👥',
-    desc:'Lista de todos los clientes con su saldo, estado y score de puntualidad.',
-    target:'page-clientes',
+    desc:'Cada cliente tiene su ficha con créditos activos, historial de pagos, score y datos de contacto.',
+    target:null,
     page:'clientes',
     pos:'center'
   },
   {
-    title:'Botón + agregar cliente',
-    desc:'Tocá acá para agregar un nuevo cliente con nombre, teléfono y dirección.',
+    title:'Nuevo cliente ➕',
+    desc:'Tocá acá para agregar un cliente. Nombre, teléfono, dirección y GPS en segundos.',
     target:'fabMain',
     page:'clientes',
     pos:'top'
   },
   {
-    title:'Caja del día 💰',
-    desc:'Todos los movimientos separados por tabs: cobrado, prestado y ventas.',
-    target:'page-caja',
+    title:'Caja 💰',
+    desc:'Movimientos separados en tabs: Cobrado, Prestado y Ventas. Cada uno agrupado por fecha.',
+    target:null,
     page:'caja',
     pos:'center'
   },
   {
+    title:'Filtro de período ⏱️',
+    desc:'Filtrá por hoy, esta semana o este mes para ver exactamente lo que necesitás.',
+    target:'cajaTabs',
+    page:'caja',
+    pos:'bottom'
+  },
+  {
     title:'Agenda 📅',
-    desc:'Todos los vencimientos del día, semana y mes en un solo lugar.',
-    target:'page-agenda',
+    desc:'Vencimientos del día, semana y mes. Nunca más se te pasa una cuota.',
+    target:null,
     page:'agenda',
     pos:'center'
   },
   {
     title:'Ruta diaria 🗺️',
-    desc:'Los cobros del día ordenados. Navegá al cliente y marcá cobrado sin salir de la app.',
-    target:'page-ruta',
+    desc:'Cobros del día en orden. Navegá al cliente con Maps y marcá cobrado sin salir de la app.',
+    target:null,
     page:'ruta',
     pos:'center'
   },
   {
-    title:'Finanzas 📊',
-    desc:'Gráficos de cobros, análisis de morosidad y clientes más rentables.',
-    target:'page-finanzas',
+    title:'Finanzas y reportes 📈',
+    desc:'Gráficos de cobros, morosidad, ROI y clientes más rentables. Exportá todo en Excel.',
+    target:null,
     page:'finanzas',
     pos:'center'
   },
   {
+    title:'Exportar Excel 📊',
+    desc:'Descargá todos tus datos en Excel con un toque — también disponible en el header.',
+    target:'btnExcelHeader',
+    page:'finanzas',
+    pos:'bottom'
+  },
+  {
     title:'¡Listo para empezar! 🎉',
-    desc:'Ya conocés todo. Agregá tu primer cliente y empezá a cobrar de forma profesional.',
+    desc:'Ya conocés todo CobroAlDía. Cualquier duda volvé al tour desde ⚙️ Configuración.',
     target:null,
     page:'clientes',
     pos:'center'
