@@ -9274,7 +9274,7 @@ const TOUR_OVERLAY_STEPS=[
   {title:'\u00a1Bienvenido a CobroAl\u00edDa! \ud83d\udc4b',desc:'Tu app para gestionar cr\u00e9ditos y cobros. Te mostramos cada secci\u00f3n sobre la app real.',target:null,page:'inicio',pos:'center'},
   {title:'Inicio \ud83c\udfe0',desc:'Resumen financiero: capital activo, ganancia cobrada, mora y vencimientos de hoy.',target:null,page:'inicio',pos:'center'},
   {title:'Clientes \ud83d\udc65',desc:'Lista de todos tus clientes con saldo, estado y score de puntualidad.',target:'nav-clientes',page:'clientes',pos:'top'},
-  {title:'Nuevo cliente \u2795',desc:'Toc\u00e1 el bot\u00f3n + para agregar un cliente con nombre, tel\u00e9fono y direcci\u00f3n.',target:'fabMain',page:'clientes',pos:'top'},
+  {title:'Nuevo cliente \u2795',desc:'Toc\u00e1 el bot\u00f3n + para agregar un cliente con nombre, tel\u00e9fono y direcci\u00f3n.',target:'fab',page:'clientes',pos:'top'},
   {title:'Caja \ud83d\udcb0',desc:'Movimientos del d\u00eda separados en tabs: Cobrado, Prestado y Ventas.',target:'nav-caja',page:'caja',pos:'top'},
   {title:'Agenda \ud83d\udcc5',desc:'Vencimientos organizados por fecha. Naveg\u00e1 entre d\u00edas para planificar tus cobros.',target:'nav-cal',page:'cal',pos:'top'},
   {title:'Ruta del d\u00eda \ud83d\uddfa\ufe0f',desc:'Cobros del d\u00eda en orden. Marc\u00e1 cobrado o parcial y naveg\u00e1 al cliente con Maps.',target:'nav-agenda',page:'agenda',pos:'top'},
@@ -9316,31 +9316,33 @@ function _showTourOverlay(){
     let tooltipTop='50%';
     let tooltipTransform='translate(-50%,-50%)';
 
-    if(targetEl&&s.target!==('page-inicio')&&s.target!==('page-clientes')&&s.target!==('page-caja')&&s.target!==('page-agenda')&&s.target!==('page-ruta')&&s.target!==('page-finanzas')){
+    if(targetEl){
       const r=targetEl.getBoundingClientRect();
-      const pad=12;
-      spotStyle='clip-path:polygon(0 0,100% 0,100% 100%,0 100%,'
-        +(r.left-pad)+'px '+(r.bottom+pad)+'px,'
-        +(r.right+pad)+'px '+(r.bottom+pad)+'px,'
-        +(r.right+pad)+'px '+(r.top-pad)+'px,'
-        +(r.left-pad)+'px '+(r.top-pad)+'px,'
-        +(r.left-pad)+'px '+(r.bottom+pad)+'px,'
-        +'0 100%)';
-      // Posicionar tooltip arriba o abajo del target
-      if(r.top>window.innerHeight/2){
-        tooltipTop=(r.top-pad-16)+'px';
-        tooltipTransform='translate(-50%,-100%)';
-      } else {
-        tooltipTop=(r.bottom+pad+16)+'px';
-        tooltipTransform='translate(-50%,0)';
+      if(r.width>0&&r.height>0){
+        const pad=s.target&&s.target.startsWith('nav-')?8:12;
+        spotStyle='clip-path:polygon(0 0,100% 0,100% 100%,0 100%,'
+          +(r.left-pad)+'px '+(r.bottom+pad)+'px,'
+          +(r.right+pad)+'px '+(r.bottom+pad)+'px,'
+          +(r.right+pad)+'px '+(r.top-pad)+'px,'
+          +(r.left-pad)+'px '+(r.top-pad)+'px,'
+          +(r.left-pad)+'px '+(r.bottom+pad)+'px,'
+          +'0 100%)';
+        // Posicionar tooltip — si el target está abajo (nav) poner tooltip arriba
+        if(r.top>window.innerHeight*0.6){
+          tooltipTop=(r.top-pad-12)+'px';
+          tooltipTransform='translate(-50%,-100%)';
+        } else {
+          tooltipTop=(r.bottom+pad+12)+'px';
+          tooltipTransform='translate(-50%,0)';
+        }
+        // Highlight ring
+        const ring=document.createElement('div');
+        ring.style.cssText='position:absolute;border:2.5px solid #6c63ff;border-radius:14px;pointer-events:none;'
+          +'left:'+(r.left-pad)+'px;top:'+(r.top-pad)+'px;'
+          +'width:'+(r.width+pad*2)+'px;height:'+(r.height+pad*2)+'px;'
+          +'box-shadow:0 0 0 4px rgba(108,99,255,.25);animation:tourPulseRing 1.5s infinite';
+        ov.appendChild(ring);
       }
-      // Highlight ring
-      const ring=document.createElement('div');
-      ring.style.cssText='position:absolute;border:2px solid #6c63ff;border-radius:14px;pointer-events:none;'
-        +'left:'+(r.left-pad)+'px;top:'+(r.top-pad)+'px;'
-        +'width:'+(r.width+pad*2)+'px;height:'+(r.height+pad*2)+'px;'
-        +'box-shadow:0 0 0 4px rgba(108,99,255,.3);animation:tourPulseRing 1.5s infinite';
-      ov.appendChild(ring);
     }
 
     // Fondo oscuro
