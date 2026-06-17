@@ -1663,13 +1663,12 @@ async function iniciarApp(){
         if(!localStorage.getItem(bienKey)){
           // Calcular días restantes usando expires_at ya disponible
           const diasRest=p.expires_at?Math.max(0,Math.ceil((new Date(p.expires_at)-new Date())/86400000)):30;
-          setTimeout(()=>{
-            if(p.negocio&&$('bienNegocio'))$('bienNegocio').textContent=p.negocio;
-            const elTrialDiv=document.querySelector('#mBienvenida [data-trial-days]');
-            if(elTrialDiv)elTrialDiv.innerHTML=`Tenés <strong>${diasRest} día${diasRest!==1?'s':''} restantes</strong> de prueba gratuita con <strong>acceso completo</strong> a todas las funciones PRO y Premium.<br><br>📦 <strong>Plan PRO:</strong> hasta 20 clientes + exportar/importar datos<br>🚀 <strong>Plan Premium:</strong> clientes ilimitados + todas las funciones`;
-            showModal('mBienvenida');
-            localStorage.setItem(bienKey,'1');
-          },800);
+          _bienPendiente={negocio:p.negocio,diasRest,bienKey};
+          // Si el tour ya se hizo antes (no es primera vez en este navegador), mostrar ahora.
+          // Si no, se muestra automáticamente al cerrar el tour (ver finalizarTour).
+          if(localStorage.getItem('cobropro_tour_done')){
+            setTimeout(()=>_mostrarBienvenidaPendiente(),800);
+          }
         }
       }
     }catch(e){}
@@ -3311,6 +3310,7 @@ try{if(localStorage.getItem('cobro_ocul')==='1'){ocul=true;}}catch(e){}
 
 // ══ CRUD CLIENTE ══
 function abrirCli(id=null){
+  _guardando=false;
   $('cliMT').textContent=id?'✏️ Editar cliente':'👤 Nuevo cliente';
   $('c_id').value=id||'';
   if(id){
@@ -3405,6 +3405,7 @@ async function guardarCli(){
       rebuildMaps();
       toast(`✅ ${nom} agregado`);
       closeModal('mcli');
+      setBtnLoading('cliSaveBtn',false);_guardando=false;
       setTimeout(()=>{refrescar();setF('todos',document.querySelector('#cliTabs .tab:nth-child(4)'));verCli(r.id);},50);
       return;
     }
@@ -9000,6 +9001,18 @@ function toggleFaq(id){
 let _tourStep = 0;
 let _tourSteps = [];
 let _tourFingerTimer = null;
+let _tourEsPrimeraVez = false;
+let _bienPendiente = null;
+function _mostrarBienvenidaPendiente(){
+  if(!_bienPendiente)return;
+  const {negocio,diasRest,bienKey}=_bienPendiente;
+  if(negocio&&$('bienNegocio'))$('bienNegocio').textContent=negocio;
+  const elTrialDiv=document.querySelector('#mBienvenida [data-trial-days]');
+  if(elTrialDiv)elTrialDiv.innerHTML=`Tenés <strong>${diasRest} día${diasRest!==1?'s':''} restantes</strong> de prueba gratuita con <strong>acceso completo</strong> a todas las funciones PRO y Premium.<br><br>📦 <strong>Plan PRO:</strong> hasta 20 clientes + exportar/importar datos<br>🚀 <strong>Plan Premium:</strong> clientes ilimitados + todas las funciones`;
+  showModal('mBienvenida');
+  localStorage.setItem(bienKey,'1');
+  _bienPendiente=null;
+}
 
 const TOUR_STEPS_MAIN = [
   {
@@ -9395,6 +9408,10 @@ function finalizarTour(){
   if(old)old.style.display='none';
   if(_tourFingerTimer){clearInterval(_tourFingerTimer);_tourFingerTimer=null;}
   goPage('inicio');
+  if(_tourEsPrimeraVez){
+    _tourEsPrimeraVez=false;
+    setTimeout(()=>_mostrarBienvenidaPendiente(),500);
+  }
 }
 
 function tourNav(dir){_tourNav(dir);}
@@ -10253,7 +10270,7 @@ async function renderReporteEquipo(){
 function checkPrimerTour(){
   if(!localStorage.getItem('cobropro_tour_done')){
     setTimeout(()=>{
-      if($('appScreen')&&$('appScreen').style.display!=='none') iniciarTour();
+      if($('appScreen')&&$('appScreen').style.display!=='none'){_tourEsPrimeraVez=true;iniciarTour();}
     }, 1500);
   }
 }
