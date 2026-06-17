@@ -7944,23 +7944,21 @@ function setFontSize(size){
 }
 function _applyFontSize(size){
   const zoom=_FSIZE_ZOOM[size]||1;
-  const targets=['appScreen','cobradorScreen'];
-  targets.forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.style.zoom=zoom;
-  });
+  // Aplicar zoom al body: escala todo proporcionalmente
+  // max-width + overflow-x:hidden en body evita scroll horizontal
+  document.body.style.zoom=zoom;
+  document.body.style.maxWidth=(100/zoom)+'vw';
+  document.body.style.overflowX='hidden';
+  document.documentElement.style.overflowX='hidden';
   document.body.style.setProperty('--fzoom', zoom);
-  // Para modales: zoom solo en el contenido interno, NO en el modal completo
-  // Así max-height sigue siendo relativo al viewport real
+  // Limpiar zoom residual en divs internos
+  ['appScreen','cobradorScreen'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.zoom='';});
   document.querySelectorAll('.mo .modal').forEach(el=>{
-    el.style.zoom=''; // quitar zoom del modal
-    // Aplicar zoom al contenido interno
+    el.style.zoom='';
     const content=el.querySelector('#verContent, .confirm-box-inner, form');
-    if(content)content.style.zoom=zoom;
+    if(content)content.style.zoom='';
   });
-  // confirm-box directamente
-  document.querySelectorAll('.confirm-box').forEach(el=>{el.style.zoom=zoom;});
-  // Guardar para aplicar cuando se abran modales nuevos
+  document.querySelectorAll('.confirm-box').forEach(el=>{el.style.zoom='';});
   document._fzoom=zoom;
 }
 function initFontSize(){
