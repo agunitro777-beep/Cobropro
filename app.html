@@ -2418,6 +2418,8 @@ function toggleOpTipo(){
   if(t!=='prestamo')toggleTipoInteres('simple');
 }
 function toggleTipoInteres(forzar){
+  // No aplicar esta lógica si el tipo de operación es venta
+  if($('op_tipo')&&$('op_tipo').value==='venta')return;
   const tip=forzar||($('op_tip')?$('op_tip').value:'simple');
   const esDiario  = tip==='diario_abierto';
   const esMensual = tip==='interes_mensual';
