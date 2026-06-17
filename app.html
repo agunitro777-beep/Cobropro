@@ -6460,7 +6460,8 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
         const hoy2=new Date();hoy2.setHours(0,0,0,0);
         const diasV=Math.floor((due-hoy2)/86400000);
         const vencStr=diasV<0?`Vencida hace ${Math.abs(diasV)}d`:diasV===0?'Vence hoy':`Vence en ${diasV}d`;
-        filas.push([`${nNext}`,'Pendiente','—','—','—',vencStr]);
+        const dueStr=`${String(due.getDate()).padStart(2,'0')}/${String(due.getMonth()+1).padStart(2,'0')}/${due.getFullYear()}`;
+        filas.push([`${nNext}`,'Pendiente',dueStr,'—','—',vencStr]);
       }
     }
   }
