@@ -1162,8 +1162,8 @@ body.light .mo{background:rgba(0,0,0,.5)}
     </div>
     <div id="opCamposV" style="display:none">
       <div class="ig"><label class="il">Producto *</label><input class="inp" id="op_prod" placeholder="Ej: iPhone 14..."></div>
-      <div class="ig"><label class="il">Costo (lo que pagué)</label><input class="inp" id="op_costo" type="number" placeholder="0.00"></div>
-      <div class="ig"><label class="il">Precio de venta *</label><input class="inp" id="op_precio" type="number" placeholder="0.00"></div>
+      <div class="ig"><label class="il">Costo (lo que pagué)</label><input class="inp" id="op_costo" type="number" placeholder="0.00" oninput="actualizarPreviewVenta()"></div>
+      <div class="ig"><label class="il">Precio de venta *</label><input class="inp" id="op_precio" type="number" placeholder="0.00" oninput="actualizarPreviewVenta()"></div>
     </div>
     <div id="opCamposD" style="display:none">
       <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc_d" placeholder="Ej: Préstamo personal..."></div>
@@ -1179,7 +1179,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px">
         <div>
           <div style="font-size:9px;color:var(--tx2);margin-bottom:3px">Cantidad de cuotas *</div>
-          <input class="inp" id="op_cuo" type="number" placeholder="Ej: 12" oninput="syncInteresOp();syncCuotaFija();actualizarPreview()">
+          <input class="inp" id="op_cuo" type="number" placeholder="Ej: 12" oninput="syncInteresOp();syncCuotaFija();actualizarPreview();actualizarPreviewVenta()">
         </div>
         <div>
           <div style="font-size:9px;color:var(--tx2);margin-bottom:3px">Valor por cuota (opcional)</div>
@@ -2416,6 +2416,43 @@ function toggleOpTipo(){
   $('opCamposV').style.display=t==='venta'?'block':'none';
   // Reset intDiario si cambia tipo
   if(t!=='prestamo')toggleTipoInteres('simple');
+  if(t==='venta'){
+    // Asegurar visibilidad de campos de cuotas/frecuencia/fecha para venta
+    const show=(el)=>{if(el)el.style.display='';};
+    show($('op_cuo')?.closest('.ig'));
+    show($('op_frq')?.closest('.ig'));
+    show($('op_fv')?.closest('.ig'));
+    show($('op_facr')?.closest('.ig'));
+    actualizarPreviewVenta();
+  }
+}
+function actualizarPreviewVenta(){
+  const costo=parseFloat($('op_costo')?.value)||0;
+  const precio=parseFloat($('op_precio')?.value)||0;
+  const cuo=parseInt($('op_cuo')?.value)||1;
+  const ganTotal=precio-costo;
+  const ganCuota=cuo>0?ganTotal/cuo:0;
+  const cuotaVal=cuo>0?precio/cuo:0;
+  let prevEl=$('ventaPreview');
+  if(!prevEl){
+    prevEl=document.createElement('div');
+    prevEl.id='ventaPreview';
+    prevEl.style.cssText='background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.25);border-radius:10px;padding:11px 13px;margin-bottom:10px;font-size:11px';
+    const ref=$('op_costo')?.closest('.ig');
+    if(ref&&ref.parentNode)ref.parentNode.insertBefore(prevEl,ref.nextSibling.nextSibling);
+  }
+  if(precio>0){
+    prevEl.style.display='block';
+    prevEl.innerHTML='<div style="font-weight:700;color:var(--ac2);margin-bottom:6px">📊 VISTA PREVIA</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'
+      +'<div><div style="color:var(--tx2);font-size:9px">Valor cuota</div><div style="font-weight:800;font-size:14px">'+fmt(Math.round(cuotaVal))+'</div></div>'
+      +'<div><div style="color:var(--tx2);font-size:9px">Ganancia por cuota</div><div style="font-weight:800;font-size:14px;color:var(--yw)">'+fmt(Math.round(ganCuota))+'</div></div>'
+      +'<div><div style="color:var(--tx2);font-size:9px">Total a cobrar</div><div style="font-weight:700;font-size:12px">'+fmt(precio)+'</div></div>'
+      +'<div><div style="color:var(--tx2);font-size:9px">Ganancia total</div><div style="font-weight:700;font-size:12px;color:var(--gr)">'+fmt(ganTotal)+'</div></div>'
+      +'</div>';
+  } else {
+    prevEl.style.display='none';
+  }
 }
 function toggleTipoInteres(forzar){
   // No aplicar esta lógica si el tipo de operación es venta
