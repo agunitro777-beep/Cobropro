@@ -2711,14 +2711,15 @@ async function ejecutarDeshacer(idx,btn){
       const {data:rc}=await SB.from('clientes').insert({...entry.data,user_id:UID()}).select().single();
       if(rc){
         Cs.push({...rc,not:rc.not_||''});
-        // Restaurar operaciones
+        // Restaurar operaciones con el nuevo cid del cliente restaurado
         for(const op of entry.ops||[]){
-          const {data:ro}=await SB.from('operaciones').insert({...op,user_id:UID()}).select().single();
+          const oldOpId=op.id;
+          const {data:ro}=await SB.from('operaciones').insert({...op,cid:rc.id,user_id:UID()}).select().single();
           if(ro){
             Ops.push(ro);
-            // Restaurar pagos de esa operación
-            for(const p of entry.pagos?.filter(px=>px.oid===op.id)||[]){
-              await SB.from('pagos').insert({...p,user_id:UID()}).catch(()=>{});
+            // Restaurar pagos usando el nuevo oid de la operación restaurada
+            for(const p of entry.pagos?.filter(px=>px.oid===oldOpId)||[]){
+              await SB.from('pagos').insert({...p,oid:ro.id,user_id:UID()}).catch(()=>{});
             }
           }
         }
