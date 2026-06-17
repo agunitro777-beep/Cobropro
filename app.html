@@ -3572,7 +3572,8 @@ async function guardarOp(){
   const oid=parseInt($('op_id').value)||null;
   let d={cid,tipo,cuo,frq,fv,not_:$('op_not').value.trim(),fa:oid?((Ops.find(o=>o.id===oid)||{}).fa||hoy()):hoy(),moneda,facr:$('op_facr').value||null};
   const tipInt=$('op_tip')?$('op_tip').value:'simple';
-  if(tipInt==='diario_abierto'){
+  if(tipo==='venta'){const precio=parseFloat($('op_precio').value);if(!precio){toast('Ingresá el precio','error');_guardando=false;return}Object.assign(d,{prod:$('op_prod').value.trim(),costo:parseFloat($('op_costo').value)||0,precio,mon:0,int_:0,mora:0,tip:'cuota',desc_:''});}
+  else if(tipInt==='diario_abierto'){
     const monD=parseFloat($('op_mon_d')?.value)||0;
     const intD=parseFloat($('op_int_d')?.value)||0;
     if(!monD){toast('Ingresá el monto prestado','error');_guardando=false;return;}
@@ -3602,7 +3603,9 @@ async function guardarOp(){
     if(!cuoCF){toast('Ingresá la cantidad de cuotas','error');_guardando=false;return;}
     d.cuota_fija=cuotaCF;
     d.mon=monCF;
-  } else if(tipo==='venta'){const precio=parseFloat($('op_precio').value);if(!precio){toast('Ingresá el precio','error');_guardando=false;return}Object.assign(d,{prod:$('op_prod').value.trim(),costo:parseFloat($('op_costo').value)||0,precio,mon:0,int_:0,mora:0,tip:'cuota',desc_:''})}
+  } else if(tipo==='venta'){
+    // ya manejado arriba, no debería llegar acá
+  }
   else{
     const cuotaFija=parseFloat($('op_cuo_fixed').value)||0;
     let mon=parseFloat($('op_mon').value)||0;
