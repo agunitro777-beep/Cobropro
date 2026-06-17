@@ -3688,6 +3688,25 @@ async function guardarOp(){
     }
   }catch(e){toast('Error: '+e.message,'error')}setBtnLoading('opSaveBtn',false);_guardando=false;
 }
+async function marcarCreditoCancelado(oid){
+  const op=gO(oid);if(!op)return;
+  const c=gC(op.cid);
+  const ok=await showConfirm('¿Marcar como saldado?','El crédito de '+(c?c.nom:'')+' se marcará como completado/cancelado manualmente, sin importar las cuotas pagadas.','✅','Sí, marcar saldado','bgr');
+  if(!ok)return;
+  try{
+    const {data:rd,error}=await SB.from('operaciones').update({cancelado:true,pag:op.cuo}).eq('id',oid).eq('user_id',UID()).select();
+    if(error)throw error;
+    if(!rd||rd.length===0){
+      const {error:e2}=await SB.from('operaciones').update({cancelado:true,pag:op.cuo}).eq('id',oid);
+      if(e2)throw e2;
+    }
+    op.cancelado=true;op.pag=op.cuo;
+    toast('✅ Crédito marcado como saldado');
+    closeModal('mver');
+    refrescar();
+    setTimeout(()=>verCli(op.cid),100);
+  }catch(e){toast('Error: '+e.message,'error')}
+}
 async function elimOp(oid){
   const op=gO(oid);
   const ok=await showConfirm('¿Eliminar operación?',`Se eliminará "${op?(esVenta(op)?op.prod||'Venta':op.desc||'Crédito'):'esta operación'}" y todos sus pagos.`,'🗑️','Sí, eliminar','brd');
@@ -4623,7 +4642,7 @@ async function guardarCfg(){
 function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
   const c=gC(cid);if(!c)return;
   const ops=opsDeCli(cid),r=rankCli(cid),saldoT=saldoTotalCli(cid),sTC=stCli(cid);
-  const opsAct=ops.filter(o=>o.pag<o.cuo||o.tip==='interes_mensual'),opsComp=ops.filter(o=>o.pag>=o.cuo&&o.tip!=='interes_mensual');
+  const opsAct=ops.filter(o=>!o.cancelado&&(o.pag<o.cuo||o.tip==='interes_mensual')),opsComp=ops.filter(o=>o.cancelado||(o.pag>=o.cuo&&o.tip!=='interes_mensual'));
   const totInt=ops.reduce((s,o)=>s+intOp(o),0);
   const totIntProy=ops.reduce((s,o)=>{if(esVenta(o))return s+(o.precio&&o.costo?(o.precio-o.costo):0);return s+Math.max(0,cvOp(o)*o.cuo-o.mon);},0);
   
@@ -4655,6 +4674,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
         <button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️</button>
         <button class="btn bs bsm" onclick="abrirCamFecha(${op.id})">📅</button>
         <button class="btn bs bsm" title="Fechas por cuota" onclick="abrirFechasCuotas(${op.id})">📆 Cuotas</button>
+        <button class="btn bp bsm" style="background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.5);color:var(--gr)" onclick="marcarCreditoCancelado(${op.id})">✅ Marcar saldado</button>
         ${c.tel?`<a href="${waLinkOp(op)}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm">💬 WA</button></a>`:''}
         <button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfComprobanteOp(${op.id})">🧾 PDF</button>
         ${(s==='atrasado'||s==='reprogramado')&&c.tel?`<a href="${waMoraLink(op)}" target="_blank" rel="noopener noreferrer"><button class="btn brd bsm">🔴 Mora</button></a>`:''}
@@ -5257,7 +5277,7 @@ function rClis(){
     </div>`;
   }
   el.innerHTML=prefixHTML+l.map((c,i)=>{
-    const ops=opsDeCli(c.id),opsAct=ops.filter(o=>o.pag<o.cuo||o.tip==='interes_mensual'),saldoT=opsAct.reduce((s,o)=>s+deudaActualOp(o),0),sTC=stCli(c.id),r=rankCli(c.id);
+    const ops=opsDeCli(c.id),opsAct=ops.filter(o=>!o.cancelado&&(o.pag<o.cuo||o.tip==='interes_mensual')),saldoT=opsAct.reduce((s,o)=>s+deudaActualOp(o),0),sTC=stCli(c.id),r=rankCli(c.id);
     const nP=opsAct.filter(o=>!esVenta(o)).length,nV=opsAct.filter(o=>esVenta(o)).length;
     const colSt={atrasado:'var(--rd)',porVencer:'var(--yw)',aldía:'var(--gr)',completo:'var(--tx2)',reprogramado:'var(--yw)'};
     const lblSt={atrasado:'⚠️ Mora',porVencer:'⏰ Vence pronto',aldía:'✅ Al día',completo:'✅ Saldado',reprogramado:'⏸ Reprogramado'};
