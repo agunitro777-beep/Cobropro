@@ -4270,7 +4270,10 @@ async function guardarPago(){
       // Mostrar cartel de recordatorio en calendario (si no está desactivado)
       if(!localStorage.getItem('cobropro_norecordParcial')){
         const op2=gO(oid),c2=op2?gC(op2.cid):null;
-        setTimeout(()=>mostrarBannerParcial(oid,c2?c2.nom:'',flt),400);
+        const _nPagos2=(Ps.filter(p=>p.oid===oid&&!p.par&&p.flt===0).length)+1;
+        const _due2=op2?fechaDeCuota(op2,_nPagos2):null;
+        const _dueStr2=_due2&&!isNaN(_due2.getTime())?_due2.toISOString().split('T')[0]:'';
+        setTimeout(()=>mostrarBannerParcial(oid,c2?c2.nom:'',flt,_dueStr2),400);
       }
     }else{
       if(_sobranteMsg){toast(_sobranteMsg,'warn');}
@@ -4775,7 +4778,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
 }
 
 // ══ RENDERS ══
-function mostrarBannerParcial(oid, nomCliente, flt){
+function mostrarBannerParcial(oid, nomCliente, flt, fechaProxima){
   // Si ya hay un banner abierto, no duplicar
   if(document.getElementById('bannerParcial'))return;
   const banner=document.createElement('div');
@@ -4785,7 +4788,7 @@ function mostrarBannerParcial(oid, nomCliente, flt){
     <div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--yw);margin-bottom:4px">📅 Recordá agendar el pago</div>
     <div style="font-size:11px;color:var(--tx2);line-height:1.5">Pago parcial de <strong style="color:var(--tx)">${nomCliente||'cliente'}</strong> — falta <strong style="color:var(--yw)">${fmt(flt)}</strong>. ¿Agendás una fecha para completarlo?</div>
     <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-      <button onclick="goPage('cal');document.getElementById('bannerParcial')?.remove()" style="background:var(--yw);color:#000;border:none;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">📅 Ir al calendario</button>
+      <button onclick="goCalDia('${fechaProxima||''}');document.getElementById('bannerParcial')?.remove()" style="background:var(--yw);color:#000;border:none;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">📅 Ir al calendario</button>
       <button onclick="abrirEvento();document.getElementById('bannerParcial')?.remove()" style="background:var(--card2);border:1px solid var(--border);color:var(--tx);border-radius:7px;padding:5px 10px;font-size:11px;cursor:pointer">+ Evento rápido</button>
     </div>
     <label style="display:flex;align-items:center;gap:5px;margin-top:8px;cursor:pointer;font-size:10px;color:var(--tx2)"><input type="checkbox" onchange="if(this.checked){localStorage.setItem('cobropro_norecordParcial','1')}" style="accent-color:var(--yw)"> No mostrar este aviso más</label></div>
@@ -5867,6 +5870,15 @@ async function setPlan(uid, planActual){
     toast('Plan cambiado a '+labels[nuevoPlan]);
     rAdmin();
   }catch(e){toast('Error: '+e.message,'error')}
+}
+function goCalDia(fechaStr){
+  try{
+    const d=new Date(fechaStr+'T00:00:00');
+    if(isNaN(d.getTime()))return goPage('cal');
+    calM=d.getMonth();calA=d.getFullYear();calDia=fechaStr;
+    goPage('cal');
+    setTimeout(()=>{rCal();const el=document.querySelector('.cal-day.selected,.cal-day[data-ds="'+fechaStr+'"]');if(el)el.scrollIntoView({block:'center',behavior:'smooth'});},100);
+  }catch(e){goPage('cal');}
 }
 function calPrev(){calM--;if(calM<0){calM=11;calA--}calDia='';rCal()}
 function calNext(){calM++;if(calM>11){calM=0;calA++}calDia='';rCal()}
