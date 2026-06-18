@@ -3787,7 +3787,7 @@ async function _pdfCreditoNuevoWA_inner(op,c){
   const pagosOp=pagoDeOp(op.id).filter(p=>!p.par).sort((a,b)=>(a.fec||'').localeCompare(b.fec||''));
   const cuotasPagadas=op.pag||0;
   const cuotasPendientes=op.tip==='interes_mensual'?1:Math.max(0,(op.cuo||0)-cuotasPagadas);
-  const logoUrl=_logoComprobanteUrl||_logoMarcaUrl||null;
+  const logoUrl=_logoComprobanteUrl||null;
 
   // ── Helper para agregar logo: fetch blob primero para evitar CORS/tainted-canvas ──
   async function _addLogo(){
@@ -6284,7 +6284,7 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
   const diasMora=estePago?calcMoraPago(estePago,op):0;
 
   // ── Logo: fetch blob para evitar CORS/tainted-canvas ──
-  const logoUrl=_logoComprobanteUrl||_logoMarcaUrl||null;
+  const logoUrl=_logoComprobanteUrl||null;
   let logoData=null;
   if(logoUrl){
     logoData=await (async()=>{
