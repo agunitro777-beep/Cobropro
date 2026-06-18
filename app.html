@@ -1080,7 +1080,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
       <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc" placeholder="Ej: Crédito personal..."></div>
       <div class="ig"><label class="il" id="op_mon_label">Monto prestado *</label><input class="inp" id="op_mon" type="number" placeholder="Capital que le prestás al cliente" oninput="(function(){const v=parseFloat(document.getElementById('op_mon').value);const h=document.getElementById('op_mon_hint');if(v&&v!==Math.round(v)){h.textContent='⚠️ Se guardará como $'+Math.round(v).toLocaleString(LOCALE());h.style.color='var(--yw)';}else{h.textContent='';}actualizarPreview();})()"><div id="op_mon_hint" style="font-size:10px;min-height:13px;margin-top:3px"></div></div>
       <div class="ig"><label class="il">Tipo de crédito</label><select class="inp sel" id="op_tip" onchange="toggleTipoInteres()">
-        <option value="cuota">🔒 Cuota fija</option>
+        <option value="cuota">🔒 Cuota pactada</option>
         <option value="diario_abierto">📅 Diario (fecha abierta)</option>
         <option value="interes_mensual">💰 Solo interés mensual</option>
       </select></div>
@@ -1104,7 +1104,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
         </div>
       </div>
 
-      <!-- BLOQUE: cuota fija -->
+      <!-- BLOQUE: cuota pactada -->
       <div id="intCuotaBlock" style="display:none">
         <div class="ig">
           <label class="il">Monto prestado *</label>
@@ -1143,7 +1143,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
           <label class="il">Cuota mensual ($)</label>
           <input class="inp" id="op_cuota_im" type="number" placeholder="Ej: 200000" oninput="syncIntMensualCuota()">
         </div>
-        <button type="button" id="btnToggleCuotaIM" onclick="toggleCuotaFijaIM()" style="font-size:11px;background:transparent;border:1px dashed var(--border);color:var(--tx2);border-radius:8px;padding:6px 12px;cursor:pointer;width:100%;margin-bottom:8px">Ingresar cuota fija en $ en vez de %</button>
+        <button type="button" id="btnToggleCuotaIM" onclick="toggleCuotaFijaIM()" style="font-size:11px;background:transparent;border:1px dashed var(--border);color:var(--tx2);border-radius:8px;padding:6px 12px;cursor:pointer;width:100%;margin-bottom:8px">Ingresar cuota pactada en $ en vez de %</button>
         <div class="ig" style="margin-top:4px"><label class="il">Cantidad de cuotas (opcional)</label><input class="inp" id="op_cuo_im" type="number" placeholder="Ej: 12 — dejar vacío si es indefinido" oninput="actualizarPreview()"><div style="font-size:9px;color:var(--tx2);margin-top:3px">Si ponés cuotas, la app avisará cuando se termine el plazo</div></div>
       </div>
 
@@ -1434,7 +1434,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <div class="ig"><label class="il">Cuotas totales</label><input class="inp" id="eoc_cuo" type="number" min="1" placeholder="1"></div>
     <div class="ig"><label class="il">Cuotas pagadas</label><input class="inp" id="eoc_pag" type="number" min="0" placeholder="0"></div>
     <div class="ig"><label class="il">Interés (%)</label><input class="inp" id="eoc_int" type="number" min="0" step="0.1" placeholder="0"></div>
-    <div class="ig"><label class="il">Cuota fija (opcional)</label><input class="inp" id="eoc_cf" type="number" min="0" placeholder="Dejar en 0 para calcular automático"></div>
+    <div class="ig"><label class="il">Cuota pactada (opcional)</label><input class="inp" id="eoc_cf" type="number" min="0" placeholder="Dejar en 0 para calcular automático"></div>
     <div class="ig"><label class="il">Notas</label><input class="inp" id="eoc_not" placeholder="Notas..."></div>
     <button class="btn bgr" onclick="guardarEditOpCanc()">💾 Guardar cambios</button>
     <button class="btn bp" style="margin-top:7px" onclick="reabrirOpCanc()">🔄 Reabrir operación</button>
@@ -1784,7 +1784,7 @@ const ini=n=>n.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
 const esVenta=op=>op.tipo==='venta';
 function cvOp(op){
   if(esVenta(op))return Math.round(op.precio/op.cuo);
-  // Si tiene cuota fija guardada, usarla directamente
+  // Si tiene cuota pactada guardada, usarla directamente
   if(op.cuota_fija&&parseFloat(op.cuota_fija)>0)return Math.round(parseFloat(op.cuota_fija));
   const m=parseFloat(op.mon)||0,i=(parseFloat(op.int)/100)||0,n=parseInt(op.cuo)||1;
   if(op.tip==='simple')return Math.round(m*(1+i*n)/n);
@@ -2450,14 +2450,14 @@ function toggleCuotaFijaIM(){
   if($('op_int_im'))$('op_int_im').value='';
   if($('op_cuota_im'))$('op_cuota_im').value='';
   const btn=$('btnToggleCuotaIM');
-  if(btn)btn.textContent=showingPct?'Ingresar % de interés en vez de cuota':'Ingresar cuota fija en $ en vez de %';
+  if(btn)btn.textContent=showingPct?'Ingresar % de interés en vez de cuota pactada':'Ingresar cuota pactada en $ en vez de %';
   syncIntMensual();
 }
 function syncIntMensual(){
   const mon=parseFloat($('op_mon_im')?.value)||0;
   const int_=parseFloat($('op_int_im')?.value)||0;
   const cuotaFijaIM=parseFloat($('op_cuota_im')?.value)||0;
-  // Si pusieron cuota fija, calcular el % automáticamente
+  // Si pusieron cuota pactada, calcular el % automáticamente
   if(cuotaFijaIM>0&&mon>0){
     const intCalc=(cuotaFijaIM/mon*100);
     const intEl=$('op_int_im');
@@ -2466,7 +2466,7 @@ function syncIntMensual(){
   actualizarPreview();
 }
 function syncIntMensualCuota(){
-  // Al escribir cuota fija, limpiar % para que no choquen
+  // Al escribir cuota pactada, limpiar % para que no choquen
   const intEl=$('op_int_im');
   if(intEl)intEl.value='';
   syncIntMensual();
@@ -2783,17 +2783,17 @@ const TIP_INFO={
     icon:'📐',color:'rgba(108,99,255,.12)',border:'rgba(108,99,255,.3)',
     titulo:'Interés simple',
     desc:'El interés se calcula siempre sobre el capital original. Cada cuota tiene el mismo monto. Ideal para créditos cortos y fáciles de entender.',
-    ejemplo:'$100.000 al 10% en 6 cuotas → cuota fija de $18.333'
+    ejemplo:'$100.000 al 10% en 6 cuotas → cuota pactada de $18.333'
   },
   compuesto:{
     icon:'📈',color:'rgba(6,182,212,.1)',border:'rgba(6,182,212,.3)',
     titulo:'Interés compuesto',
     desc:'El interés se calcula sobre el saldo pendiente. Las primeras cuotas tienen más interés y menos capital. Muy usado en préstamos financieros formales.',
-    ejemplo:'$100.000 al 5% compuesto en 6 cuotas → cuota fija de $19.702'
+    ejemplo:'$100.000 al 5% compuesto en 6 cuotas → cuota pactada de $19.702'
   },
   cuota:{
     icon:'🔒',color:'rgba(34,197,94,.1)',border:'rgba(34,197,94,.3)',
-    titulo:'Cuota fija',
+    titulo:'Cuota pactada',
     desc:'Definís directamente cuánto paga el cliente por cuota, sin calcular porcentaje. Lo más simple para acordar con el cliente de antemano.',
     ejemplo:'12 cuotas de $5.000 → el sistema calcula el capital automáticamente'
   },
@@ -2866,7 +2866,7 @@ function actualizarPreview(){
     const totalCF=cuotaCF*cuoCF;
     const ganancia=monCF>0?totalCF-monCF:null;
     const frqLabel={diario:'días',semanal:'semanas',quincenal:'quincenas',mensual:'meses'}[frq]||'cuotas';
-    html=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Resumen cuota fija</div>
+    html=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Resumen cuota pactada</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
   ${monCF?`<div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Capital prestado</div><div style="font-weight:800;font-size:14px">${mon_}${Math.round(monCF).toLocaleString(LOCALE())}</div></div>`:''}
   <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Cuota</div><div style="font-weight:800;font-size:14px;color:var(--ac)">${mon_}${cuotaCF.toLocaleString(LOCALE())}</div></div>
@@ -2932,7 +2932,7 @@ function syncCuotaFija(){
   if(!hint)return;
   if(cuo>0&&cuotaFija>0){
     const total=cuo*cuotaFija;
-    // Back-calcular el capital (mon) basado en cuota fija e interés
+    // Back-calcular el capital (mon) basado en cuota pactada e interés
     const intV=parseFloat($('op_int').value)||0;
     const tip=$('op_tip')&&$('op_tip').value;
     let capitalEst=total; // sin interés = total
@@ -3476,8 +3476,8 @@ function abrirOp(cidFijo=null,oid=null){
       // Al editar: cargar el monto real y marcar como manual para que syncCuotaFija no lo sobreescriba
       const monField=$('op_mon');
       monField.value=Math.round(op.mon);
-      monField.dataset.autofilled='manual'; // marca como manual — syncCuotaFija no lo pisa salvo que el usuario use cuota fija
-      // Limpiar cuota fija al editar — si el usuario la vuelve a poner, se recalcula solo
+      monField.dataset.autofilled='manual'; // marca como manual — syncCuotaFija no lo pisa salvo que el usuario use cuota pactada
+      // Limpiar cuota pactada al editar — si el usuario la vuelve a poner, se recalcula solo
       const cuoFixed=$('op_cuo_fixed');
       if(cuoFixed){
         cuoFixed.value=op.cuota_fija?Math.round(op.cuota_fija):'';
@@ -3568,7 +3568,7 @@ async function guardarOp(){
     const cuotaFija=parseFloat($('op_cuo_fixed').value)||0;
     let mon=parseFloat($('op_mon').value)||0;
 
-    // Solo recalcular capital desde cuota fija si el monto está vacío o fue autocompletado
+    // Solo recalcular capital desde cuota pactada si el monto está vacío o fue autocompletado
     const monField=$('op_mon');
     const monEsManual = monField.dataset.autofilled !== '1';
     if(cuotaFija>0&&cuo>0&&!monEsManual){
@@ -3592,7 +3592,7 @@ async function guardarOp(){
     const intPorCuota=intMostradoAGuardar(intMostrado,cuo);
     const moraCheck=$('op_mora_check');
     const moraVal=moraCheck&&!moraCheck.checked?0:(parseFloat($('op_mora').value)||0);
-    // Guardar cuota_fija si fue ingresada, para que cvOp la use directamente
+    // Guardar cuota_pactada si fue ingresada, para que cvOp la use directamente
     const cuotaFijaGuardar=cuotaFija>0?Math.round(cuotaFija):null;
     Object.assign(d,{mon,int_:intPorCuota,mora:moraVal,tip:$('op_tip').value,desc_:$('op_desc').value.trim(),prod:'',costo:0,precio:0,cuota_fija:cuotaFijaGuardar});
   }
@@ -8395,7 +8395,7 @@ function calcSim(){
   const r=tasa/100;
   let cuota, tabla=[], totalCobrar, totalIntereses;
   if(sistema==='frances'){
-    // Cuota fija (sistema francés/alemán): PMT
+    // Cuota pactada (sistema francés/alemán): PMT
     if(r===0){ cuota=Math.round(mon/cuotas); }
     else { cuota=Math.round(mon*(r*Math.pow(1+r,cuotas))/(Math.pow(1+r,cuotas)-1)); }
     let saldo=mon;
@@ -8856,7 +8856,7 @@ const FAQ_DATA = [
     { q:'¿Cómo cargo un crédito o préstamo?',
       a:'Abrí el cliente → botón "➕ Op." o usá el "+" flotante → "Nueva operación". Elegí "Crédito/Préstamo", completá monto, tasa de interés, cantidad de cuotas y frecuencia (mensual, quincenal, semanal).' },
     { q:'¿Qué es el sistema Simple vs Francés?',
-      a:'Simple: el interés se calcula siempre sobre el capital original, todas las cuotas tienen el mismo interés. Francés: cuota fija total, el interés va disminuyendo y el capital amortizado va aumentando (como un crédito bancario).' },
+      a:'Simple: el interés se calcula siempre sobre el capital original, todas las cuotas tienen el mismo interés. Francés: cuota pactada total, el interés va disminuyendo y el capital amortizado va aumentando (como un crédito bancario).' },
     { q:'¿Cómo funciona la mora?',
       a:'Si activás "Aplicar mora", se calcula un porcentaje diario sobre la cuota vencida cuando el cliente se atrasa. Podés configurar el porcentaje por operación.' },
     { q:'¿Puedo cargar ventas en cuotas?',
@@ -9109,7 +9109,7 @@ const TOUR_STEPS_MAIN = [
   },
   {
     title: 'Creá un crédito 💳',
-    desc: 'Elegís el tipo: simple, compuesto, cuota fija, diario o solo interés mensual. La app calcula la cuota y muestra un preview antes de guardar.',
+    desc: 'Elegís el tipo: simple, compuesto, cuota pactada, diario o solo interés mensual. La app calcula la cuota y muestra un preview antes de guardar.',
     screen: () => `
       <div style="padding:12px">
         <div style="font-size:12px;font-weight:700;color:#f0f0f5;margin-bottom:10px">➕ Nueva operación</div>
@@ -10343,12 +10343,12 @@ function checkPrimerTour(){
         <label class="il">Sistema de amortización</label>
         <select class="inp sel" id="sim_tip" onchange="calcSim()">
           <option value="simple">Simple (interés fijo)</option>
-          <option value="frances">Francés (cuota fija)</option>
+          <option value="frances">Francés (cuota pactada)</option>
         </select>
       </div>
     </div>
 
-    <!-- MODO 2: Cuota fija × Cantidad -->
+    <!-- MODO 2: Cuota pactada × Cantidad -->
     <div id="simPanelCC" style="display:none">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div class="ig"><label class="il">Monto por cuota *</label><input class="inp" id="sim_cuota_val" type="number" placeholder="300" oninput="calcSimCC()"></div>
