@@ -2153,7 +2153,10 @@ function _buildPdfResumenCli(cid){
     // Pagos parciales no completados
     const parciales=pagosOp.filter(p=>p.par);
     const totalParcial=parciales.reduce((s,p)=>s+p.mon,0);
-    const fecs=fechasOp(op);
+    const esAbierto=op.tip==='interes_mensual';
+    // Créditos abiertos (interés mensual, sin fecha de fin) sólo muestran la próxima cuota.
+    // Al pagar, op.pag avanza y la próxima llamada calcula la siguiente automáticamente ("se renueva" solo).
+    const fecs=esAbierto?fechasOp(op).slice(0,1):fechasOp(op);
 
     // Cabecera operación
     const enMora=st==='atrasado';
@@ -2170,7 +2173,7 @@ function _buildPdfResumenCli(cid){
     doc.setTextColor(100,100,140);doc.setFontSize(7);doc.setFont('helvetica','bold');
     doc.text('CUOTAS',18,y+4.5);doc.text('PENDIENTE',62,y+4.5);doc.text('PRÓX. VENCIM.',108,y+4.5);doc.text('ACREDITADO',158,y+4.5);
     doc.setFont('helvetica','normal');doc.setTextColor(20,20,30);doc.setFontSize(8.5);
-    doc.text(`${op.pag}/${op.cuo}`,18,y+10);
+    doc.text(`${op.pag}/${esAbierto?'∞':op.cuo}`,18,y+10);
     doc.setTextColor(enMora?200:34,enMora?30:140,enMora?30:70);doc.setFont('helvetica','bold');
     doc.text(fm(saldo),62,y+10);
     doc.setFont('helvetica','normal');doc.setTextColor(20,20,30);
