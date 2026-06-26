@@ -1957,7 +1957,7 @@ function stOp(op){
   return'aldía';
 }
 function stCli(cid){
-  const ops=opsDeCli(cid).filter(o=>o.pag<o.cuo);
+  const ops=opsDeCli(cid).filter(o=>!o.cancelado&&(o.pag<o.cuo||o.tip==='interes_mensual'));
   if(!ops.length)return'completo';
   if(ops.some(o=>stOp(o)==='atrasado'))return'atrasado';
   if(ops.some(o=>stOp(o)==='reprogramado'))return'reprogramado';
