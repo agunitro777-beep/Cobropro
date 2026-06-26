@@ -867,6 +867,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
       <div class="agenda-date-sub" id="agendaDateSub">—</div>
     </div>
     <button class="agenda-date-btn" onclick="agendaNavDate(1)">›</button>
+    <button class="agenda-date-btn" onclick="abrirAgendaCalendario()" title="Ver calendario mensual">📅</button>
   </div>
   <div class="agenda-stats" id="agendaStats"></div>
   <div class="agenda-order-hint" id="agendaHint">⠿ Mantenés presionado para reordenar</div>
@@ -7408,6 +7409,92 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 
 // ══ AGENDA DIARIA ══
 let _agendaDate = new Date();
+let _agendaCalDate = null;
+function abrirAgendaCalendario(){
+  if(!_agendaCalDate)_agendaCalDate=new Date(_agendaDate);
+  const modal=document.createElement('div');
+  modal.id='agendaCalModal';
+  modal.style.cssText='position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+  modal.innerHTML=`<div style="background:var(--bg2);border-radius:16px;padding:18px;width:100%;max-width:380px;margin:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:15px;font-weight:800">📅 Calendario de cobros</div>
+      <button onclick="document.getElementById('agendaCalModal').remove()" style="background:none;border:none;color:var(--tx2);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <button class="agenda-date-btn" onclick="agendaCalNavMes(-1)">‹</button>
+      <div id="agendaCalMesLabel" style="font-size:13px;font-weight:700"></div>
+      <button class="agenda-date-btn" onclick="agendaCalNavMes(1)">›</button>
+    </div>
+    <div id="agendaCalGrid"></div>
+    <div style="font-size:9px;color:var(--tx2);margin-top:10px;text-align:center">Tocá un día para ir a esa fecha en la agenda · 💚 monto que debería cobrarse ese día</div>
+  </div>`;
+  document.body.appendChild(modal);
+  renderAgendaCal();
+}
+function agendaCalNavMes(delta){
+  _agendaCalDate.setMonth(_agendaCalDate.getMonth()+delta);
+  renderAgendaCal();
+}
+// Calcula, para cada día del mes visible, el monto total que debería cobrarse según los vencimientos de cuotas activas.
+function montoEsperadoPorDia(year,month){
+  const map={};
+  const add=(k,v)=>{map[k]=(map[k]||0)+v;};
+  const desde=new Date(year,month,1), hasta=new Date(year,month+1,0);
+  Cs.forEach(c=>{
+    opsDeCli(c.id).filter(o=>!o.cancelado&&(o.pag<o.cuo||o.tip==='interes_mensual')).forEach(op=>{
+      if(op.tip==='interes_mensual'){
+        if(!op.fv)return;
+        const d=new Date(op.fv+'T00:00:00');
+        if(isNaN(d.getTime()))return;
+        let it=0;
+        while((d.getFullYear()<year||(d.getFullYear()===year&&d.getMonth()<month))&&it<36){d.setMonth(d.getMonth()+1);it++;}
+        if(d.getFullYear()===year&&d.getMonth()===month)add(d.toISOString().split('T')[0],cvOp(op));
+      } else {
+        fechasOp(op).forEach(fStr=>{
+          const fd=new Date(fStr+'T00:00:00');
+          if(!isNaN(fd.getTime())&&fd>=desde&&fd<=hasta)add(fStr,cvOp(op));
+        });
+      }
+    });
+  });
+  return map;
+}
+function fmtK(n){
+  if(typeof ocul!=='undefined'&&ocul)return'••••';
+  const mon=(CFG.moneda||'$');
+  if(n>=1000000)return mon+(n/1000000).toFixed(1).replace('.0','')+'M';
+  if(n>=1000)return mon+(n/1000).toFixed(1).replace('.0','')+'k';
+  return mon+Math.round(n);
+}
+function renderAgendaCal(){
+  const d=_agendaCalDate,year=d.getFullYear(),month=d.getMonth();
+  const meses2=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  $('agendaCalMesLabel').textContent=`${meses2[month]} ${year}`;
+  const montos=montoEsperadoPorDia(year,month);
+  const primerDia=new Date(year,month,1).getDay();
+  const diasEnMes=new Date(year,month+1,0).getDate();
+  const hoyKey=agendaFechaKey(new Date());
+  let html='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;font-size:9px;color:var(--tx2);text-align:center;margin-bottom:4px">'+['D','L','M','M','J','V','S'].map(x=>`<div>${x}</div>`).join('')+'</div>';
+  html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
+  for(let i=0;i<primerDia;i++)html+='<div></div>';
+  for(let day=1;day<=diasEnMes;day++){
+    const key=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const monto=montos[key]||0;
+    const esHoy=key===hoyKey;
+    html+=`<div onclick="agendaCalIrADia('${key}')" style="cursor:pointer;border-radius:8px;padding:4px 2px;text-align:center;background:${esHoy?'rgba(108,99,255,.18)':'transparent'};border:1px solid ${esHoy?'var(--ac)':'var(--border)'}">
+      <div style="font-size:10px;font-weight:${esHoy?'800':'600'};color:${esHoy?'var(--ac2)':'var(--tx)'}">${day}</div>
+      <div style="font-size:7.5px;color:var(--gr);margin-top:1px">${monto>0?fmtK(monto):''}</div>
+    </div>`;
+  }
+  html+='</div>';
+  $('agendaCalGrid').innerHTML=html;
+}
+function agendaCalIrADia(key){
+  const[y,m,dNum]=key.split('-').map(Number);
+  _agendaDate=new Date(y,m-1,dNum);
+  const modal=document.getElementById('agendaCalModal');if(modal)modal.remove();
+  rAgenda();
+}
 let _agendaOrder = {}; // {fecha: [cid, cid, ...]}
 let _agendaDone = {};  // {fecha: {cid: true}}
 let _dragSrc = null;
