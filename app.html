@@ -1494,7 +1494,10 @@ const LOCALE=()=>CFG.lang==='en'?'en-AU':'es-AR';
 let Cs=[], Ops=[], Ps=[], Gs=[], EVs=[];
 let flt='activos', cajP='todo', finP='semana';
 let calM=new Date().getMonth(), calA=new Date().getFullYear(), calDia='', calVista='eventos';
-function setCalVista(v,el){calVista=v;document.querySelectorAll('#calVistaTabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');rCal()}
+function setCalVista(v,el){
+  if(v==='monto'&&!requierePlan('Vista de monto a cobrar en Calendario','premium'))return;
+  calVista=v;document.querySelectorAll('#calVistaTabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');rCal()
+}
 let ocul=false, fotoTemp='', docsTemp=[];
 const M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MC=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
