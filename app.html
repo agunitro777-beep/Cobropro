@@ -808,6 +808,10 @@ body.light .mo{background:rgba(0,0,0,.5)}
 <!-- CALENDARIO -->
 <div class="pg" id="page-cal">
   <div class="cn2"><button class="cnb" onclick="calPrev()">‹</button><span class="cmt" id="calTitle"></span><button class="cnb" onclick="calNext()">›</button></div>
+  <div class="tabs" id="calVistaTabs" style="margin-bottom:8px">
+    <div class="tab active" onclick="setCalVista('eventos',this)">📌 Eventos</div>
+    <div class="tab" onclick="setCalVista('monto',this)">💰 Monto a cobrar</div>
+  </div>
   <div class="card"><div class="cg" id="calGrid"></div></div>
   <div class="card" id="calDet" style="display:none"><div class="ch"><span class="ct" id="calDetT">Día</span><button class="btn bs bsm" onclick="abrirEvento(calDia)">+ Evento</button></div><div id="calDetList"></div></div>
   <div class="card"><div class="ch"><span class="ct">📋 Próximos 14 días</span></div><div id="proxCob"></div></div>
@@ -1489,7 +1493,8 @@ let CFG = {nombre:'',moneda:'$',alertaDias:3,redondeo:0,telPropio:'',lang:'es',m
 const LOCALE=()=>CFG.lang==='en'?'en-AU':'es-AR';
 let Cs=[], Ops=[], Ps=[], Gs=[], EVs=[];
 let flt='activos', cajP='todo', finP='semana';
-let calM=new Date().getMonth(), calA=new Date().getFullYear(), calDia='';
+let calM=new Date().getMonth(), calA=new Date().getFullYear(), calDia='', calVista='eventos';
+function setCalVista(v,el){calVista=v;document.querySelectorAll('#calVistaTabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');rCal()}
 let ocul=false, fotoTemp='', docsTemp=[];
 const M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MC=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -5962,7 +5967,12 @@ function rCal(){
   for(let d=1;d<=dm;d++){const ds=`${fmesStr}-${String(d).padStart(2,'0')}`;const hC=cobM[ds]&&cobM[ds].length,hV=venM[ds]&&venM[ds].length,hB=cumM[ds]&&cumM[ds].length,hE=evM[ds]&&evM[ds].length,isT=ds===hs,isSel=ds===calDia;
   // cal-sel tiene prioridad visual sobre hc/hv/hb/he
   const bgClass=isSel?'cal-sel':(hV?'hv':hC?'hc':hB?'hb':hE?'he':'');
-  html+=`<div class="${['cd',isT?'today':'',bgClass].filter(Boolean).join(' ')}" onclick="verDia('${ds}')">${d}<div style="position:absolute;bottom:2px;display:flex;gap:1px;justify-content:center;width:100%">${hC?`<span class="dot c"></span>`:''}${hV?`<span class="dot v"></span>`:''}${hB?`<span class="dot b"></span>`:''}${hE?`<span class="dot e"></span>`:''}</div></div>`}
+  if(calVista==='monto'){
+    const montoDia=(cobM[ds]||[]).reduce((s,o)=>s+cvOp(o),0);
+    html+=`<div class="${['cd',isT?'today':'',bgClass].filter(Boolean).join(' ')}" onclick="verDia('${ds}')" style="height:auto;padding-bottom:3px">${d}<div style="font-size:7px;line-height:1.1;color:${hV?'var(--rd)':'var(--gr)'};font-weight:700">${montoDia>0?fmtK(montoDia):''}</div></div>`;
+  } else {
+    html+=`<div class="${['cd',isT?'today':'',bgClass].filter(Boolean).join(' ')}" onclick="verDia('${ds}')">${d}<div style="position:absolute;bottom:2px;display:flex;gap:1px;justify-content:center;width:100%">${hC?`<span class="dot c"></span>`:''}${hV?`<span class="dot v"></span>`:''}${hB?`<span class="dot b"></span>`:''}${hE?`<span class="dot e"></span>`:''}</div></div>`;
+  }}
   $('calGrid').innerHTML=html;$('calDet').style.display='none';
   const h2=new Date();h2.setHours(0,0,0,0);const prx=[];
   for(let i=0;i<14;i++){const d2=new Date(h2);d2.setDate(d2.getDate()+i);const pad=n=>String(n).padStart(2,'0');const ds=`${d2.getFullYear()}-${pad(d2.getMonth()+1)}-${pad(d2.getDate())}`;Ops.filter(o=>o.pag<o.cuo).forEach(o=>{const f=fechasOp(o);if(f.includes(ds)){const c=gC(o.cid);prx.push({fec:ds,o,c,cv:cvOp(o)})}})}
