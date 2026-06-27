@@ -808,10 +808,11 @@ body.light .mo{background:rgba(0,0,0,.5)}
 <!-- CALENDARIO -->
 <div class="pg" id="page-cal">
   <div class="cn2"><button class="cnb" onclick="calPrev()">‹</button><span class="cmt" id="calTitle"></span><button class="cnb" onclick="calNext()">›</button></div>
-  <div class="tabs" id="calVistaTabs" style="margin-bottom:8px">
+  <div class="tabs" id="calVistaTabs" style="margin-bottom:4px">
     <div class="tab active" onclick="setCalVista('eventos',this)">📌 Eventos</div>
     <div class="tab" onclick="setCalVista('monto',this)">💰 Monto a cobrar</div>
   </div>
+  <div id="calVistaLeyenda" style="font-size:9px;color:var(--tx2);margin-bottom:8px;display:none">🩵 cobrado (días pasados) · 💚 a cobrar (al día) · ❤️ a cobrar (vencido)</div>
   <div class="card"><div class="cg" id="calGrid"></div></div>
   <div class="card" id="calDet" style="display:none"><div class="ch"><span class="ct" id="calDetT">Día</span><button class="btn bs bsm" onclick="abrirEvento(calDia)">+ Evento</button></div><div id="calDetList"></div></div>
   <div class="card"><div class="ch"><span class="ct">📋 Próximos 14 días</span></div><div id="proxCob"></div></div>
@@ -1496,7 +1497,9 @@ let flt='activos', cajP='todo', finP='semana';
 let calM=new Date().getMonth(), calA=new Date().getFullYear(), calDia='', calVista='eventos';
 function setCalVista(v,el){
   if(v==='monto'&&!requierePlan('Vista de monto a cobrar en Calendario','premium'))return;
-  calVista=v;document.querySelectorAll('#calVistaTabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');rCal()
+  calVista=v;document.querySelectorAll('#calVistaTabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
+  const ley=document.getElementById('calVistaLeyenda');if(ley)ley.style.display=v==='monto'?'block':'none';
+  rCal()
 }
 let ocul=false, fotoTemp='', docsTemp=[];
 const M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -5971,8 +5974,10 @@ function rCal(){
   // cal-sel tiene prioridad visual sobre hc/hv/hb/he
   const bgClass=isSel?'cal-sel':(hV?'hv':hC?'hc':hB?'hb':hE?'he':'');
   if(calVista==='monto'){
-    const montoDia=(cobM[ds]||[]).reduce((s,o)=>s+cvOp(o),0);
-    html+=`<div class="${['cd',isT?'today':'',bgClass].filter(Boolean).join(' ')}" onclick="verDia('${ds}')" style="height:auto;padding-bottom:3px">${d}<div style="font-size:7px;line-height:1.1;color:${hV?'var(--rd)':'var(--gr)'};font-weight:700">${montoDia>0?fmtK(montoDia):''}</div></div>`;
+    const esPasado=ds<hs;
+    const montoDia=esPasado?Ps.filter(p=>p.fec===ds).reduce((s,p)=>s+p.mon,0):(cobM[ds]||[]).reduce((s,o)=>s+cvOp(o),0);
+    const colorMonto=esPasado?'var(--cy)':(hV?'var(--rd)':'var(--gr)');
+    html+=`<div class="${['cd',isT?'today':'',bgClass].filter(Boolean).join(' ')}" onclick="verDia('${ds}')" style="height:auto;padding-bottom:3px">${d}<div style="font-size:7px;line-height:1.1;color:${colorMonto};font-weight:700">${montoDia>0?fmtK(montoDia):''}</div></div>`;
   } else {
     html+=`<div class="${['cd',isT?'today':'',bgClass].filter(Boolean).join(' ')}" onclick="verDia('${ds}')">${d}<div style="position:absolute;bottom:2px;display:flex;gap:1px;justify-content:center;width:100%">${hC?`<span class="dot c"></span>`:''}${hV?`<span class="dot v"></span>`:''}${hB?`<span class="dot b"></span>`:''}${hE?`<span class="dot e"></span>`:''}</div></div>`;
   }}
