@@ -812,6 +812,11 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <div class="tab active" onclick="setCalVista('eventos',this)">📌 Eventos</div>
     <div class="tab" onclick="setCalVista('monto',this)">💰 Monto a cobrar</div>
   </div>
+  <div class="tabs" id="calMetricaTabs" style="display:none;margin-bottom:4px">
+    <div class="tab active" onclick="setCalMetrica('cobrar',this)">💵 Cobrado</div>
+    <div class="tab" onclick="setCalMetrica('ganancia',this)">📈 Ganancia</div>
+    <div class="tab" onclick="setCalMetrica('prestado',this)">🏦 Prestado</div>
+  </div>
   <div id="calVistaLeyenda" style="font-size:9px;color:var(--tx2);margin-bottom:8px;display:none">🩵 cobrado (días pasados) · 💚 a cobrar (al día) · ❤️ a cobrar (vencido)</div>
   <div class="card"><div class="cg" id="calGrid"></div></div>
   <div class="card" id="calDet" style="display:none"><div class="ch"><span class="ct" id="calDetT">Día</span><button class="btn bs bsm" onclick="abrirEvento(calDia)">+ Evento</button></div><div id="calDetList"></div></div>
@@ -1494,11 +1499,18 @@ let CFG = {nombre:'',moneda:'$',alertaDias:3,redondeo:0,telPropio:'',lang:'es',m
 const LOCALE=()=>CFG.lang==='en'?'en-AU':'es-AR';
 let Cs=[], Ops=[], Ps=[], Gs=[], EVs=[];
 let flt='activos', cajP='todo', finP='semana';
-let calM=new Date().getMonth(), calA=new Date().getFullYear(), calDia='', calVista='eventos';
+let calM=new Date().getMonth(), calA=new Date().getFullYear(), calDia='', calVista='eventos', calMetrica='cobrar';
 function setCalVista(v,el){
   if(v==='monto'&&!requierePlan('Vista de monto a cobrar en Calendario','premium'))return;
   calVista=v;document.querySelectorAll('#calVistaTabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
   const ley=document.getElementById('calVistaLeyenda');if(ley)ley.style.display=v==='monto'?'block':'none';
+  const mt=document.getElementById('calMetricaTabs');if(mt)mt.style.display=v==='monto'?'flex':'none';
+  rCal()
+}
+function setCalMetrica(m,el){
+  calMetrica=m;document.querySelectorAll('#calMetricaTabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
+  const leyendas={cobrar:'🩵 cobrado (días pasados) · 💚 a cobrar (al día) · ❤️ a cobrar (vencido)',ganancia:'📈 ganancia (interés) generada por día, real en días pasados y proyectada en hoy/futuro',prestado:'🏦 capital prestado a clientes ese día (no incluye ventas)'};
+  const ley=document.getElementById('calVistaLeyenda');if(ley)ley.textContent=leyendas[m]||'';
   rCal()
 }
 let ocul=false, fotoTemp='', docsTemp=[];
@@ -5977,8 +5989,21 @@ function rCal(){
   const bgClass=isSel?'cal-sel':(hV?'hv':hC?'hc':hB?'hb':hE?'he':'');
   if(calVista==='monto'){
     const esPasado=ds<hs;
-    const montoDia=esPasado?Ps.filter(p=>p.fec===ds).reduce((s,p)=>s+p.mon,0):(cobM[ds]||[]).reduce((s,o)=>s+cvOp(o),0);
-    const colorMonto=esPasado?'var(--cy)':(hV?'var(--rd)':'var(--gr)');
+    let montoDia,colorMonto;
+    if(calMetrica==='prestado'){
+      montoDia=Ops.filter(o=>!esVenta(o)&&(o.facr||o.fa)===ds).reduce((s,o)=>s+o.mon,0);
+      colorMonto='var(--ac2)';
+    } else if(calMetrica==='ganancia'){
+      if(esPasado){
+        montoDia=Ps.filter(p=>p.fec===ds).reduce((acc,p)=>{const op=gO(p.oid);if(!op||esVenta(op))return acc;const v=cvOp(op),pr=op.mon/op.cuo;return acc+Math.max(0,Math.min(p.mon,v)-pr)},0);
+      } else {
+        montoDia=(cobM[ds]||[]).reduce((acc,op)=>{if(esVenta(op))return acc;const v=cvOp(op),pr=op.mon/op.cuo;return acc+Math.max(0,v-pr)},0);
+      }
+      colorMonto='var(--yw)';
+    } else {
+      montoDia=esPasado?Ps.filter(p=>p.fec===ds).reduce((s,p)=>s+p.mon,0):(cobM[ds]||[]).reduce((s,o)=>s+cvOp(o),0);
+      colorMonto=esPasado?'var(--cy)':(hV?'var(--rd)':'var(--gr)');
+    }
     html+=`<div class="${['cd',isT?'today':'',bgClass].filter(Boolean).join(' ')}" onclick="verDia('${ds}')" style="height:auto;padding-bottom:3px">${d}<div style="font-size:7px;line-height:1.1;color:${colorMonto};font-weight:700">${montoDia>0?fmtK(montoDia):''}</div></div>`;
   } else {
     html+=`<div class="${['cd',isT?'today':'',bgClass].filter(Boolean).join(' ')}" onclick="verDia('${ds}')">${d}<div style="position:absolute;bottom:2px;display:flex;gap:1px;justify-content:center;width:100%">${hC?`<span class="dot c"></span>`:''}${hV?`<span class="dot v"></span>`:''}${hB?`<span class="dot b"></span>`:''}${hE?`<span class="dot e"></span>`:''}</div></div>`;
