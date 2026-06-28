@@ -1802,6 +1802,11 @@ function rebuildMaps(){_cMap=new Map(Cs.map(c=>[c.id,c]));_oMap=new Map(Ops.map(
 const gC=id=>_cMap.get(id);
 const gO=id=>_oMap.get(id);
 const opsDeCli=cid=>Ops.filter(o=>o.cid===cid);
+// Fuente única de verdad: una operación está "activa" si tiene saldo pendiente Y no fue cancelada manualmente.
+// Antes muchas funciones chequeaban solo esOpActiva(o), lo que dejaba pasar créditos cancelados con pag desactualizado
+// (causaba, por ej., que clientes con créditos viejos cancelados aparecieran como Morosos). Usar esta función en vez de
+// repetir la comparación a mano evita que el mismo bug vuelva a aparecer en código nuevo.
+const esOpActiva=o=>!o.cancelado&&o.pag<o.cuo;
 const pagoDeOp=oid=>Ps.filter(p=>p.oid===oid);
 function aCol(n){const col=['#6c63ff','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#8b5cf6'];let h=0;for(let c of n)h=(h+c.charCodeAt(0))%col.length;return col[h]}
 const ini=n=>n.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
@@ -1981,7 +1986,7 @@ function stOp(op){
   return'aldía';
 }
 function stCli(cid){
-  const ops=opsDeCli(cid).filter(o=>!o.cancelado&&(o.pag<o.cuo||o.tip==='interes_mensual'));
+  const ops=opsDeCli(cid).filter(o=>!o.cancelado&&(esOpActiva(o)||o.tip==='interes_mensual'));
   if(!ops.length)return'completo';
   if(ops.some(o=>stOp(o)==='atrasado'))return'atrasado';
   if(ops.some(o=>stOp(o)==='reprogramado'))return'reprogramado';
@@ -2016,7 +2021,7 @@ function intOp(op){
   },0);
   return soloInt+intCuotas;
 }
-const saldoTotalCli=cid=>opsDeCli(cid).filter(o=>o.pag<o.cuo).reduce((s,o)=>s+saldoMOp(o),0);
+const saldoTotalCli=cid=>opsDeCli(cid).filter(o=>esOpActiva(o)).reduce((s,o)=>s+saldoMOp(o),0);
 function fechasOp(op){
   const r=[],b=new Date(op.fv+'T00:00:00'),frq=op.frq,n=op.cuo-op.pag;
   if(isNaN(b.getTime()))return r;
@@ -2150,7 +2155,7 @@ function _buildPdfResumenCli(cid){
   doc.text('Generado: '+new Date().toLocaleDateString(LOCALE()),196,51,{align:'right'});
 
   let y=66;
-  const opsAct=opsDeCli(cid).filter(o=>o.pag<o.cuo);
+  const opsAct=opsDeCli(cid).filter(o=>esOpActiva(o));
   if(!opsAct.length){
     doc.setFontSize(11);doc.setTextColor(120);doc.text('Sin operaciones activas.',14,y);
   }
@@ -2407,7 +2412,7 @@ async function pdfResumenCliWA(cid){
 let _srchT=null;
 function debSearch(){clearTimeout(_srchT);_srchT=setTimeout(rClis,220);}
 function setBtnLoading(id,loading){const b=$(id);if(!b)return;b.disabled=loading;if(loading){b.dataset.orig=b.textContent;b.textContent='⏳ Guardando...'}else{b.textContent=b.dataset.orig||b.textContent}}
-function poblarSelOps(){$('p_op').innerHTML=Ops.filter(o=>o.pag<o.cuo).map(o=>{const c=gC(o.cid);return`<option value="${o.id}">${c?c.nom:'?'} — ${esVenta(o)?o.prod||'Venta':o.desc||'Crédito'} (${fmt(cvOp(o))})</option>`}).join('')}
+function poblarSelOps(){$('p_op').innerHTML=Ops.filter(o=>esOpActiva(o)).map(o=>{const c=gC(o.cid);return`<option value="${o.id}">${c?c.nom:'?'} — ${esVenta(o)?o.prod||'Venta':o.desc||'Crédito'} (${fmt(cvOp(o))})</option>`}).join('')}
 function poblarSelClis(){$('op_cli').innerHTML=Cs.map(c=>`<option value="${c.id}">${c.nom}</option>`).join('')}
 function updCuotaEsp(){
   const fid=parseInt($('p_fixOp').value),oid=fid||parseInt($('p_op').value);
@@ -3764,8 +3769,8 @@ function enviarResumenWA(){
   const mes=hoy2.substring(0,7);
   const pagosMes=Ps.filter(p=>p.fec&&p.fec.startsWith(mes));
   const totMes=pagosMes.reduce((s,p)=>s+p.mon,0);
-  const opsAct=Ops.filter(o=>o.pag<o.cuo);
-  const capTotal=Ops.filter(o=>!esVenta(o)&&o.pag<o.cuo).reduce((s,o)=>s+o.mon,0);
+  const opsAct=Ops.filter(o=>esOpActiva(o));
+  const capTotal=Ops.filter(o=>!esVenta(o)&&esOpActiva(o)).reduce((s,o)=>s+o.mon,0);
   const porCobrar=opsAct.reduce((s,o)=>s+saldoMOp(o),0);
   const enMora=Ops.filter(o=>stOp(o)==='atrasado');
   const totalMora=enMora.reduce((s,o)=>s+saldoMOp(o),0);
@@ -4322,13 +4327,13 @@ async function guardarPago(){
         // ── Sobrante: si pagó más de lo que faltaba, generar parcial para la cuota siguiente ──
         const sobrante=Math.round(mon-base);
         const cuotaSig=cvOp(op);
-        if(sobrante>0&&sobrante<cuotaSig&&op.pag<op.cuo){
+        if(sobrante>0&&sobrante<cuotaSig&&esOpActiva(op)){
           const fltSig=cuotaSig-sobrante;
           const dSob={oid,mon:sobrante,met:d.met,fec,not_:'Sobrante de pago anterior',par:true,flt:fltSig};
           const rSob=await dbIns('pagos',dSob);
           Ps.push({...rSob,not:rSob.not_||''});
           _sobranteMsg=`✅ Cuota ${pagAntes+1} saldada · ${fmt(sobrante)} a favor en cuota ${op.pag+1} (falta ${fmt(fltSig)})`;
-        } else if(sobrante>=cuotaSig&&op.pag<op.cuo){
+        } else if(sobrante>=cuotaSig&&esOpActiva(op)){
           _sobranteMsg=`✅ Cuota ${pagAntes+1} saldada · sobrante ${fmt(sobrante)}, registrá cuota ${op.pag+1}`;
         }
       }
@@ -4338,13 +4343,13 @@ async function guardarPago(){
       // ── Sobrante: si pagó más de la cuota entera, generar parcial para la siguiente ──
       const cuotaVal=cvOp(op);
       const sobrante=Math.round(mon-cuotaVal);
-      if(sobrante>0&&sobrante<cuotaVal&&op.pag<op.cuo){
+      if(sobrante>0&&sobrante<cuotaVal&&esOpActiva(op)){
         const fltSig=cuotaVal-sobrante;
         const dSob={oid,mon:sobrante,met:d.met,fec,not_:'Sobrante de pago anterior',par:true,flt:fltSig};
         const rSob=await dbIns('pagos',dSob);
         Ps.push({...rSob,not:rSob.not_||''});
         _sobranteMsg=`✅ Cuota ${pagAntes2+1} saldada · ${fmt(sobrante)} a favor en cuota ${op.pag+1} (falta ${fmt(fltSig)})`;
-      } else if(sobrante>=cuotaVal&&op.pag<op.cuo){
+      } else if(sobrante>=cuotaVal&&esOpActiva(op)){
         _sobranteMsg=`✅ Cuota ${pagAntes2+1} saldada · sobrante ${fmt(sobrante)}, registrá cuota ${op.pag+1}`;
       }
     }
@@ -4674,7 +4679,7 @@ async function guardarCfg(){
 function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
   const c=gC(cid);if(!c)return;
   const ops=opsDeCli(cid),r=rankCli(cid),saldoT=saldoTotalCli(cid),sTC=stCli(cid);
-  const opsAct=ops.filter(o=>!o.cancelado&&(o.pag<o.cuo||o.tip==='interes_mensual')),opsComp=ops.filter(o=>o.cancelado||(o.pag>=o.cuo&&o.tip!=='interes_mensual'));
+  const opsAct=ops.filter(o=>!o.cancelado&&(esOpActiva(o)||o.tip==='interes_mensual')),opsComp=ops.filter(o=>o.cancelado||(o.pag>=o.cuo&&o.tip!=='interes_mensual'));
   const totInt=ops.reduce((s,o)=>s+intOp(o),0);
   const totIntProy=ops.reduce((s,o)=>{if(esVenta(o))return s+(o.precio&&o.costo?(o.precio-o.costo):0);return s+Math.max(0,cvOp(o)*o.cuo-o.mon);},0);
   
@@ -4785,14 +4790,14 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
     </div>
     ${notasHTML}
     ${(()=>{
-      const _mora=opsDeCli(cid).filter(o=>o.pag<o.cuo).reduce((s,o)=>s+moraOp(o),0);
-      const _saldo=opsDeCli(cid).filter(o=>o.pag<o.cuo).reduce((s,o)=>s+saldoOp(o),0);
+      const _mora=opsDeCli(cid).filter(o=>esOpActiva(o)).reduce((s,o)=>s+moraOp(o),0);
+      const _saldo=opsDeCli(cid).filter(o=>esOpActiva(o)).reduce((s,o)=>s+saldoOp(o),0);
       const _sc=scoreCli(cid);
       const _scColor=_sc===null?'var(--tx2)':(_sc>=80?'var(--gr)':(_sc>=50?'var(--yw)':'var(--rd)'));
       const _scLabel=_sc===null?'Sin historial':(_sc>=80?'Excelente':(_sc>=60?'Bueno':(_sc>=40?'Regular':'Riesgoso')));
       const _limSug=limiteSugeridoCli(cid);
       const _limMax=c.limite||null;
-      const _deuda=opsDeCli(cid).filter(o=>o.pag<o.cuo).reduce((s,o)=>s+o.mon,0);
+      const _deuda=opsDeCli(cid).filter(o=>esOpActiva(o)).reduce((s,o)=>s+o.mon,0);
       const _limAlerta=_limMax&&_deuda>=_limMax;
       const _limSugHTML=_limSug&&!_limMax?'<div style="font-size:9px;color:var(--ac2)">Sug: '+fmt(_limSug)+'</div>':'';
       const _alertaHTML=_limAlerta?'<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:var(--rd)">⚠️ Límite alcanzado: '+fmt(_deuda)+' / '+fmt(_limMax)+'</div>':'';
@@ -4947,7 +4952,7 @@ function rInicio(){
   $('cajSemDisp').textContent=ocul?'••••':fmt(Math.round(disponSem));
   const dispWrap=$('semDisponWrap');
   if(dispWrap){dispWrap.style.background=disponSem>=0?'rgba(34,197,94,.12)':'rgba(239,68,68,.12)';dispWrap.style.borderColor=disponSem>=0?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)';$('cajSemDisp').style.color=disponSem>=0?'var(--gr)':'var(--rd)';}
-  const opsAct=Ops.filter(o=>o.pag<o.cuo),capP=Ops.filter(o=>!esVenta(o)&&o.pag<o.cuo).reduce((s,o)=>s+o.mon,0),porCob=opsAct.reduce((s,o)=>s+saldoMOp(o),0);
+  const opsAct=Ops.filter(o=>esOpActiva(o)),capP=Ops.filter(o=>!esVenta(o)&&esOpActiva(o)).reduce((s,o)=>s+o.mon,0),porCob=opsAct.reduce((s,o)=>s+saldoMOp(o),0);
   const mes=new Date().toISOString().substring(0,7),pMes=Ps.filter(p=>p.fec&&p.fec.startsWith(mes)),cob=pMes.reduce((s,p)=>s+p.mon,0);
   const opsMora=Ops.filter(o=>stOp(o)==='atrasado'),pend=opsMora.reduce((s,o)=>s+moraOp(o),0);
   const intM=pMes.reduce((acc,p)=>{const op=gO(p.oid);if(!op)return acc;if(op.tip==='interes_mensual'||(p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}const v=cvOp(op),pr=op.mon/op.cuo;if(esVenta(op)){const g=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*g;}return acc+Math.max(0,Math.min(p.mon,v)-pr);},0);
@@ -4977,7 +4982,7 @@ function rInicio(){
   } else $('pagosParcCard').style.display='none';
   const mn=man(),hs=hoy();
   // Solo mostrar si la PRÓXIMA cuota vence hoy/mañana (no si ya fue pagada)
-  const ven=Ops.filter(o=>o.pag<o.cuo).filter(o=>{try{const d=proxFechaOp(o);if(!d||isNaN(d.getTime()))return false;const prox=d.toISOString().split('T')[0];return prox===hs||prox===mn;}catch(e){return false;}});
+  const ven=Ops.filter(o=>esOpActiva(o)).filter(o=>{try{const d=proxFechaOp(o);if(!d||isNaN(d.getTime()))return false;const prox=d.toISOString().split('T')[0];return prox===hs||prox===mn;}catch(e){return false;}});
   if(ven.length){$('vCard').style.display='';$('vList').innerHTML=ven.map(o=>{const c=gC(o.cid);return`<div class="ai warning"><span class="ad warning"></span><div class="at"><strong>${ocul?'••••':c?c.nom:'?'}</strong><div class="asub">${o.fv===mn?'Mañana':'Hoy'}: ${fmt(cvOp(o))}</div></div>${c&&c.tel?`<a href="${waLinkOp(o)}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm" style="padding:3px 7px">💬</button></a>`:''}</div>`}).join('')}
   else $('vCard').style.display='none';
   const hoyMD=hoy().substring(5),cumples=Cs.filter(c=>c.cumple&&c.cumple.substring(5)===hoyMD);
@@ -4987,7 +4992,7 @@ function rInicio(){
 function rAlertas(){
   const al=[];
   const dismissed=JSON.parse(localStorage.getItem('cobropro_dismissed_alerts')||'[]');
-  Ops.filter(o=>o.pag<o.cuo).forEach(o=>{
+  Ops.filter(o=>esOpActiva(o)).forEach(o=>{
     const s=stOp(o),c=gC(o.cid),lbl=esVenta(o)?(o.prod||'Venta'):(o.desc||'Crédito');
     const aid=`op_${o.id}_${s}`;
     if(dismissed.includes(aid))return;
@@ -5123,7 +5128,7 @@ async function rCobradores(){
   _equipo.forEach(m=>{
     const entry=m.cobrador_id?cobMap[m.cobrador_id]:null;
     const clis=entry?entry.clientes:[];
-    const activos=clis.filter(c=>opsDeCli(c.id).some(o=>o.pag<o.cuo)).length;
+    const activos=clis.filter(c=>opsDeCli(c.id).some(o=>esOpActiva(o))).length;
     const enMora=clis.filter(c=>stCli(c.id)==='atrasado').length;
     html+=`<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--ra);margin-bottom:10px;overflow:hidden">
       <div style="padding:12px 13px;display:flex;justify-content:space-between;align-items:center">
@@ -5203,8 +5208,8 @@ function _applySortClis(l){
   if(_cliSort==='fechapago'){
     // Ordenar siempre por próxima fecha de vencimiento real (ya considera cuotas pagadas)
     return l.sort((a,b)=>{
-      const opsA=opsDeCli(a.id).filter(o=>o.pag<o.cuo);
-      const opsB=opsDeCli(b.id).filter(o=>o.pag<o.cuo);
+      const opsA=opsDeCli(a.id).filter(o=>esOpActiva(o));
+      const opsB=opsDeCli(b.id).filter(o=>esOpActiva(o));
       // Sin operaciones activas → al final
       if(!opsA.length&&!opsB.length) return a.nom.localeCompare(b.nom,'es',{sensitivity:'base'});
       if(!opsA.length) return 1;
@@ -5240,7 +5245,7 @@ function _applySortClis(l){
 function rClis(){
   // Contadores para los tabs
   const cntTodos=Cs.length;
-  const cntActivos=Cs.filter(c=>opsDeCli(c.id).some(o=>o.pag<o.cuo)).length;
+  const cntActivos=Cs.filter(c=>opsDeCli(c.id).some(o=>esOpActiva(o))).length;
   const cntAtrasado=Cs.filter(c=>stCli(c.id)==='atrasado').length;
   const cntCompleto=Cs.filter(c=>opsDeCli(c.id).length>0&&opsDeCli(c.id).every(o=>o.pag>=o.cuo)).length;
   const bAct=$('cnt-activos'),bAtr=$('cnt-atrasado'),bComp=$('cnt-completo'),bTod=$('cnt-todos');
@@ -5263,7 +5268,7 @@ function rClis(){
     $('cliCustomHint').style.display=_cliSort==='custom'?'block':'none';
   },0);
   let l=[...Cs];const q=($('srch').value||'').toLowerCase();if(q)l=l.filter(c=>c.nom.toLowerCase().includes(q));
-  if(flt==='activos')l=l.filter(c=>opsDeCli(c.id).some(o=>o.pag<o.cuo)&&stCli(c.id)!=='atrasado');
+  if(flt==='activos')l=l.filter(c=>opsDeCli(c.id).some(o=>esOpActiva(o))&&stCli(c.id)!=='atrasado');
   else if(flt==='atrasado')l=l.filter(c=>stCli(c.id)==='atrasado');
   else if(flt==='completo')l=l.filter(c=>opsDeCli(c.id).length>0&&opsDeCli(c.id).every(o=>o.pag>=o.cuo));
   // 'todos': sin filtro, muestra todos los clientes
@@ -5309,7 +5314,7 @@ function rClis(){
     </div>`;
   }
   el.innerHTML=prefixHTML+l.map((c,i)=>{
-    const ops=opsDeCli(c.id),opsAct=ops.filter(o=>!o.cancelado&&(o.pag<o.cuo||o.tip==='interes_mensual')),saldoT=opsAct.reduce((s,o)=>s+deudaActualOp(o),0),sTC=stCli(c.id),r=rankCli(c.id);
+    const ops=opsDeCli(c.id),opsAct=ops.filter(o=>!o.cancelado&&(esOpActiva(o)||o.tip==='interes_mensual')),saldoT=opsAct.reduce((s,o)=>s+deudaActualOp(o),0),sTC=stCli(c.id),r=rankCli(c.id);
     const nP=opsAct.filter(o=>!esVenta(o)).length,nV=opsAct.filter(o=>esVenta(o)).length;
     const colSt={atrasado:'var(--rd)',porVencer:'var(--yw)',aldía:'var(--gr)',completo:'var(--tx2)',reprogramado:'var(--yw)'};
     const lblSt={atrasado:'⚠️ Mora',porVencer:'⏰ Vence pronto',aldía:'✅ Al día',completo:'✅ Saldado',reprogramado:'⏸ Reprogramado'};
@@ -5460,7 +5465,7 @@ function initSwipeAll(){
     item.addEventListener('touchend',()=>{
       item.classList.remove('swiping');
       const cid=parseInt(wrap.dataset.cid);
-      const opsAct=opsDeCli(cid).filter(o=>o.pag<o.cuo);
+      const opsAct=opsDeCli(cid).filter(o=>esOpActiva(o));
       const firstOpId=opsAct.length?opsAct[0].id:0;
       if(curX>THRESHOLD&&firstOpId){
         // Swipe derecha = pago completo
@@ -5979,7 +5984,7 @@ function rCal(){
   const p1=new Date(calA,calM,1),off=(p1.getDay()+6)%7,dm=new Date(calA,calM+1,0).getDate(),hs=hoy();
   const fmesStr=`${calA}-${String(calM+1).padStart(2,'0')}`;
   const cobM={},venM={},cumM={},evM={};
-  Ops.filter(o=>o.pag<o.cuo).forEach(o=>{fechasOp(o).forEach(f=>{if(!f.startsWith(fmesStr))return;if(!cobM[f])cobM[f]=[];cobM[f].push(o)});if(stOp(o)==='atrasado'){if(!venM[o.fv])venM[o.fv]=[];venM[o.fv].push(o)}});
+  Ops.filter(o=>esOpActiva(o)).forEach(o=>{fechasOp(o).forEach(f=>{if(!f.startsWith(fmesStr))return;if(!cobM[f])cobM[f]=[];cobM[f].push(o)});if(stOp(o)==='atrasado'){if(!venM[o.fv])venM[o.fv]=[];venM[o.fv].push(o)}});
   Cs.forEach(c=>{if(!c.cumple)return;const cm=c.cumple.substring(5);const fc=`${calA}-${cm}`;if(fc.startsWith(fmesStr)){if(!cumM[fc])cumM[fc]=[];cumM[fc].push(c)}});
   EVs.forEach(e=>{if(e.fec&&e.fec.startsWith(fmesStr)){if(!evM[e.fec])evM[e.fec]=[];evM[e.fec].push(e)}});
   let html=dias.map(d=>`<div class="chd">${d}</div>`).join('');
@@ -6010,7 +6015,7 @@ function rCal(){
   }}
   $('calGrid').innerHTML=html;$('calDet').style.display='none';
   const h2=new Date();h2.setHours(0,0,0,0);const prx=[];
-  for(let i=0;i<14;i++){const d2=new Date(h2);d2.setDate(d2.getDate()+i);const pad=n=>String(n).padStart(2,'0');const ds=`${d2.getFullYear()}-${pad(d2.getMonth()+1)}-${pad(d2.getDate())}`;Ops.filter(o=>o.pag<o.cuo).forEach(o=>{const f=fechasOp(o);if(f.includes(ds)){const c=gC(o.cid);prx.push({fec:ds,o,c,cv:cvOp(o)})}})}
+  for(let i=0;i<14;i++){const d2=new Date(h2);d2.setDate(d2.getDate()+i);const pad=n=>String(n).padStart(2,'0');const ds=`${d2.getFullYear()}-${pad(d2.getMonth()+1)}-${pad(d2.getDate())}`;Ops.filter(o=>esOpActiva(o)).forEach(o=>{const f=fechasOp(o);if(f.includes(ds)){const c=gC(o.cid);prx.push({fec:ds,o,c,cv:cvOp(o)})}})}
   prx.sort((a,b)=>a.fec.localeCompare(b.fec));
   $('proxCob').innerHTML=prx.length===0?'<div style="font-size:10px;color:var(--tx2)">Sin cobros próximos</div>':prx.slice(0,10).map(p=>`<div class="pi"><div><div style="font-size:11px;font-weight:600">${ocul?'••••':p.c?p.c.nom:'?'} · ${esVenta(p.o)?p.o.prod||'Venta':p.o.desc||'Crédito'}</div><div class="pd">${fD(p.fec)} · ${p.o.frq}</div></div><div style="display:flex;align-items:center;gap:4px"><div class="pm">${fmt(p.cv)}</div>${p.c&&p.c.tel?`<a href="${waLinkOp(p.o)}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm" style="padding:3px 5px">💬</button></a>`:''}</div></div>`).join('');
   $('eventosList').innerHTML=[...EVs].sort((a,b)=>a.fec.localeCompare(b.fec)).map(e=>`<div class="ev-item" id="ev-${e.id}" style="touch-action:pan-y"><div class="ev-dot" style="background:${e.color||'var(--ac)'}"></div><div class="ev-info" style="flex:1"><div class="ev-name">${e.tit}</div><div class="ev-date">${fD(e.fec)}${e.desc?' · '+e.desc:''}</div></div><div style="display:flex;gap:4px;flex-shrink:0"><button class="btn bs bsm" style="padding:3px 7px" onclick="abrirEvento(null,EVs.find(x=>x.id===${e.id}))">✏️</button><button class="btn brd bsm" style="padding:3px 7px" onclick="elimEvento(${e.id})">🗑️</button></div></div>`).join('')||'<div style="font-size:10px;color:var(--tx2)">Sin eventos</div>';
@@ -6021,7 +6026,7 @@ function verDia(ds){
   calDia=ds;
   // Re-renderizar el grid para mostrar el día iluminado
   rCal();
-  const co=[];Ops.filter(o=>o.pag<o.cuo).forEach(o=>{const f=fechasOp(o);if(f.includes(ds)){const c=gC(o.cid);co.push({o,c})}});
+  const co=[];Ops.filter(o=>esOpActiva(o)).forEach(o=>{const f=fechasOp(o);if(f.includes(ds)){const c=gC(o.cid);co.push({o,c})}});
   const pd=Ps.filter(p=>p.fec===ds),ev=EVs.filter(e=>e.fec===ds),cuB=Cs.filter(c=>c.cumple&&c.cumple.substring(5)===ds.substring(5));
   $('calDet').style.display='';$('calDetT').textContent=`📅 ${fD(ds)}`;
   $('calDetList').innerHTML=`${cuB.length?`<div style="font-size:9px;color:var(--gr);margin-bottom:4px;font-weight:600">🎂 CUMPLEAÑOS</div>${cuB.map(c=>`<div class="pi"><div style="font-size:11px;font-weight:600">${c.nom}</div>${c.tel?`<a href="https://wa.me/54${c.tel}?text=${encodeURIComponent('¡Feliz cumpleaños '+c.nom+'! 🎂')}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm">💬 Saludar</button></a>`:''}</div>`).join('')}`:''}${ev.length?`<div style="font-size:9px;color:var(--yw);margin:${cuB.length?'8px':0} 0 4px;font-weight:600">📌 EVENTOS</div>${ev.map(e=>`<div class="pi"><div><div style="font-size:11px;font-weight:600">${e.tit}</div><div class="pd">${e.desc||''}</div></div><button class="btn brd bsm" style="padding:3px 5px" onclick="elimEvento(${e.id})">🗑️</button></div>`).join('')}`:''}${co.length?`<div style="font-size:9px;color:var(--ac2);margin:${ev.length||cuB.length?'8px':0} 0 4px;font-weight:600">💰 CUOTAS</div>${co.map(x=>`<div class="pi"><div><div style="font-size:11px;font-weight:600">${x.c?x.c.nom:'?'} — ${esVenta(x.o)?x.o.prod||'Venta':x.o.desc||'Crédito'}</div><div class="pd">${x.o.frq}</div></div><div style="display:flex;align-items:center;gap:4px"><div class="pm">${fmt(cvOp(x.o))}</div>${x.c&&x.c.tel?`<a href="${waLinkOp(x.o)}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm" style="padding:3px 5px">💬</button></a>`:''}</div></div>`).join('')}`:''}${pd.length?`<div style="font-size:9px;color:var(--gr);margin:${co.length?'8px':0} 0 4px;font-weight:600">✅ PAGOS</div>${pd.map(p=>{const op=gO(p.oid);const c=op?gC(op.cid):null;return`<div class="pi"><div><div style="font-size:11px;font-weight:600">${c?c.nom:'?'}</div><div class="pd">${p.not||''}</div></div><div class="pm">${fmt(p.mon)}</div></div>`}).join('')}`:''}${!co.length&&!pd.length&&!ev.length&&!cuB.length?'<div style="font-size:10px;color:var(--tx2)">Sin actividad</div>':''}`;
@@ -6044,8 +6049,8 @@ function rFin(){
   const ef=pf.filter(p=>p.met==='efectivo').reduce((s,p)=>s+p.mon,0);
   const tr=pf.filter(p=>p.met==='transferencia').reduce((s,p)=>s+p.mon,0);
   const tg=Gs.reduce((s,g)=>s+g.mon,0);
-  const capP=Ops.filter(o=>!esVenta(o)&&o.pag<o.cuo).reduce((s,o)=>s+o.mon,0);
-  const porCob=Ops.filter(o=>o.pag<o.cuo).reduce((s,o)=>s+saldoOp(o),0);
+  const capP=Ops.filter(o=>!esVenta(o)&&esOpActiva(o)).reduce((s,o)=>s+o.mon,0);
+  const porCob=Ops.filter(o=>esOpActiva(o)).reduce((s,o)=>s+saldoOp(o),0);
 
   $('finContent').innerHTML=`
     <div class="fpc" style="background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.07));border-color:rgba(34,197,94,.3)">
@@ -6109,7 +6114,7 @@ function rFinProy(){
   for(let i=0;i<12;i++){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()+i);meses.push(d.toISOString().substring(0,7));}
   const res=meses.map(mes=>{
     let total=0,intereses=0,ganV=0,n=0;
-    Ops.filter(o=>o.pag<o.cuo).forEach(o=>{
+    Ops.filter(o=>esOpActiva(o)).forEach(o=>{
       const cuota=cvOp(o),fecs=fechasOp(o);
       fecs.forEach(f=>{
         if(!f.startsWith(mes))return;
@@ -6161,18 +6166,18 @@ function rFinProy(){
   requestAnimationFrame(()=>drawChart('finChart', chartData));
 }
 function rNotif(){
-  const al=[];Ops.filter(o=>o.pag<o.cuo).forEach(o=>{const s=stOp(o),c=gC(o.cid),lbl=esVenta(o)?o.prod||'Venta':o.desc||'Crédito';if(s==='atrasado'){const d=diasAtrOp(o);al.push({t:'danger',tx:`${c?c.nom:'?'} · ${lbl}`,sub:`${d}d atraso · ${fmt(saldoMOp(o))}`,o,c})}else if(s==='porVencer'){const v=new Date(o.fv+'T00:00:00'),h=new Date();h.setHours(0,0,0,0);const d=Math.ceil((v-h)/86400000);al.push({t:'warning',tx:`${c?c.nom:'?'} · ${lbl}`,sub:`Vence en ${d}d · ${fmt(cvOp(o))}`,o,c})}});
+  const al=[];Ops.filter(o=>esOpActiva(o)).forEach(o=>{const s=stOp(o),c=gC(o.cid),lbl=esVenta(o)?o.prod||'Venta':o.desc||'Crédito';if(s==='atrasado'){const d=diasAtrOp(o);al.push({t:'danger',tx:`${c?c.nom:'?'} · ${lbl}`,sub:`${d}d atraso · ${fmt(saldoMOp(o))}`,o,c})}else if(s==='porVencer'){const v=new Date(o.fv+'T00:00:00'),h=new Date();h.setHours(0,0,0,0);const d=Math.ceil((v-h)/86400000);al.push({t:'warning',tx:`${c?c.nom:'?'} · ${lbl}`,sub:`Vence en ${d}d · ${fmt(cvOp(o))}`,o,c})}});
   Ps.filter(p=>p.par&&p.flt>0).forEach(p=>{const op=gO(p.oid);const c=op?gC(op.cid):null;if(op&&c)al.push({t:'info',tx:`${c.nom} — pago parcial`,sub:`Falta: ${fmt(p.flt)}`,o:op,c})});
   if($('notifContent'))$('notifContent').innerHTML=al.length===0?'<div class="card" style="text-align:center;padding:16px;color:var(--tx2);font-size:12px">✅ Sin alertas</div>':al.map(a=>`<div class="ai ${a.t}" style="cursor:pointer" onclick="verCli(${a.c?a.c.id:0})"><span class="ad ${a.t}"></span><div class="at"><strong>${a.tx}</strong><div class="asub">${a.sub}</div></div>${a.c&&a.c.tel&&a.o?`<a href="${waLinkOp(a.o)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"><button class="btn bgr bsm" style="padding:3px 5px">💬</button></a>`:''}</div>`).join('');
-  const mn=man();const prxMan=[];Ops.filter(o=>o.pag<o.cuo).forEach(o=>{const f=fechasOp(o);if(f.includes(mn)){const c=gC(o.cid);prxMan.push({o,c})}});
+  const mn=man();const prxMan=[];Ops.filter(o=>esOpActiva(o)).forEach(o=>{const f=fechasOp(o);if(f.includes(mn)){const c=gC(o.cid);prxMan.push({o,c})}});
   if($('recList'))$('recList').innerHTML=prxMan.length===0?'<div style="font-size:10px;color:var(--tx2)">No hay vencimientos mañana</div>':prxMan.map(x=>`<div class="pi"><div><div style="font-size:11px;font-weight:600">${x.c?x.c.nom:'?'} · ${esVenta(x.o)?x.o.prod||'Venta':x.o.desc||'Crédito'}</div><div class="pd">Mañana: ${fmt(cvOp(x.o))}</div></div>${x.c&&x.c.tel?`<a href="${waLinkOp(x.o)}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm">Enviar 💬</button></a>`:'<span style="font-size:10px;color:var(--tx2)">Sin tel.</span>'}</div>`).join('');
   const morosos=Ops.filter(o=>stOp(o)==='atrasado');
   if($('morososList'))$('morososList').innerHTML=morosos.length===0?'<div style="font-size:10px;color:var(--tx2)">Sin morosos 🎉</div>':morosos.map(o=>{const c=gC(o.cid);return`<div class="pi"><div><div style="font-size:11px;font-weight:600">${c?c.nom:'?'} · ${esVenta(o)?o.prod||'Venta':o.desc||'Crédito'}</div><div class="pd">${diasAtrOp(o)}d atraso · capital ${fmt(saldoOp(o))} · <span style="color:var(--rd)">mora +${fmt(moraOp(o))}</span></div></div>${c&&c.tel?`<a href="${waMoraLink(o)}" target="_blank" rel="noopener noreferrer"><button class="btn brd bsm">🔴 Recordar</button></a>`:'<span style="font-size:10px;color:var(--tx2)">Sin tel.</span>'}</div>`}).join('');
 }
 function rRep(){
-  const opsAct=Ops.filter(o=>o.pag<o.cuo),opsMora=Ops.filter(o=>stOp(o)==='atrasado');
+  const opsAct=Ops.filter(o=>esOpActiva(o)),opsMora=Ops.filter(o=>stOp(o)==='atrasado');
   const totP=Ps.reduce((s,p)=>s+p.mon,0),totG=Gs.reduce((s,g)=>s+g.mon,0);
-  const cap=Ops.filter(o=>!esVenta(o)&&o.pag<o.cuo).reduce((s,o)=>s+o.mon,0),porCob=opsAct.reduce((s,o)=>s+saldoOp(o),0);
+  const cap=Ops.filter(o=>!esVenta(o)&&esOpActiva(o)).reduce((s,o)=>s+o.mon,0),porCob=opsAct.reduce((s,o)=>s+saldoOp(o),0);
   const mor=opsAct.length>0?Math.round((opsMora.length/opsAct.length)*100):0;
   // intOp() calcula interés real cobrado por operación (cuota - capital puro por pago)
   const totInt=Ops.filter(o=>!esVenta(o)).reduce((s,o)=>s+intOp(o),0);
@@ -6212,7 +6217,7 @@ function exportarExcel(){if(!requierePro('Exportar Excel'))return;
 
   // Clientes — incluye _id para vincular operaciones al importar
   XLSX.utils.book_append_sheet(WB,XLSX.utils.json_to_sheet(Cs.map(c=>{
-    const oa=opsDeCli(c.id).filter(o=>o.pag<o.cuo);
+    const oa=opsDeCli(c.id).filter(o=>esOpActiva(o));
     return{"_id":c.id,"Nombre":c.nom,"Telefono":c.tel||"","Cumpleanos":fd(c.cumple),"Notas":c.not||"","Ops activas":oa.length,"Por cobrar":saldoTotalCli(c.id),"Ranking":rankCli(c.id).lb,"Estado":stCli(c.id)};
   })),"Clientes");
 
@@ -6234,8 +6239,8 @@ function exportarExcel(){if(!requierePro('Exportar Excel'))return;
   XLSX.utils.book_append_sheet(WB,XLSX.utils.json_to_sheet(Gs.length?Gs.map(g=>({"Descripcion":g.des,"Monto":g.mon,"Categoria":g.cat,"Fecha":fd(g.fec)})):[{"Info":"Sin gastos"}]),"Gastos");
 
   // Resumen
-  const oa=Ops.filter(o=>o.pag<o.cuo);
-  const cap=Ops.filter(o=>!esVenta(o)&&o.pag<o.cuo).reduce((s,o)=>s+o.mon,0);
+  const oa=Ops.filter(o=>esOpActiva(o));
+  const cap=Ops.filter(o=>!esVenta(o)&&esOpActiva(o)).reduce((s,o)=>s+o.mon,0);
   const pc=oa.reduce((s,o)=>s+saldoMOp(o),0);
   const tp=Ps.reduce((s,p)=>s+p.mon,0),tg=Gs.reduce((s,g)=>s+g.mon,0);
   const ti=Ops.filter(o=>!esVenta(o)).reduce((s,o)=>s+intOp(o),0);
@@ -6279,8 +6284,8 @@ function exportarPDF(){if(!requierePro('Exportar PDF'))return;
   y=30;
 
   // Resumen
-  const oa=Ops.filter(o=>o.pag<o.cuo);
-  const cap=Ops.filter(o=>!esVenta(o)&&o.pag<o.cuo).reduce((s,o)=>s+o.mon,0);
+  const oa=Ops.filter(o=>esOpActiva(o));
+  const cap=Ops.filter(o=>!esVenta(o)&&esOpActiva(o)).reduce((s,o)=>s+o.mon,0);
   const pc=oa.reduce((s,o)=>s+saldoMOp(o),0);
   const tp=Ps.reduce((s,p)=>s+p.mon,0),tg=Gs.reduce((s,g)=>s+g.mon,0);
   // intOp() = interés real cobrado por operación (suma cuota - capital proporcional por pago)
@@ -6319,7 +6324,7 @@ function exportarPDF(){if(!requierePro('Exportar PDF'))return;
   doc.autoTable({startY:y,
     head:[["Nombre","Telefono","Ops","Por cobrar","Estado","Ranking"]],
     body:Cs.map(c=>{
-      const opsA=opsDeCli(c.id).filter(o=>o.pag<o.cuo);
+      const opsA=opsDeCli(c.id).filter(o=>esOpActiva(o));
       return[c.nom,c.tel||"-",opsA.length,fm(saldoTotalCli(c.id)),stCli(c.id),rankCli(c.id).lb];
     }),
     styles:{fontSize:8},
@@ -7486,7 +7491,7 @@ function montoEsperadoPorDia(year,month){
   const add=(k,v)=>{map[k]=(map[k]||0)+v;};
   const desde=new Date(year,month,1), hasta=new Date(year,month+1,0);
   Cs.forEach(c=>{
-    opsDeCli(c.id).filter(o=>!o.cancelado&&(o.pag<o.cuo||o.tip==='interes_mensual')).forEach(op=>{
+    opsDeCli(c.id).filter(o=>!o.cancelado&&(esOpActiva(o)||o.tip==='interes_mensual')).forEach(op=>{
       if(op.tip==='interes_mensual'){
         if(!op.fv)return;
         const d=new Date(op.fv+'T00:00:00');
@@ -7568,7 +7573,7 @@ function rAgenda(){
   // Construir items — cada op activa = item independiente
   let items=[];
   Cs.forEach(c=>{
-    const opsAct=opsDeCli(c.id).filter(o=>o.pag<o.cuo);
+    const opsAct=opsDeCli(c.id).filter(o=>esOpActiva(o));
     if(opsAct.length){
       opsAct.forEach(op=>{ if(['atrasado','porVencer','aldía'].includes(stOp(op))) items.push({cid:c.id,oid:op.id,c,op}); });
     }
@@ -7773,7 +7778,7 @@ function agendaExportXLS(key){
   const rows=[['Zona','Cliente','Operación','Cuota','Estado','Monto cobrado','Método','Fecha pago']];
   const d=_agendaDate;
   Cs.forEach(c=>{
-    const opsAct=opsDeCli(c.id).filter(o=>o.pag<o.cuo);
+    const opsAct=opsDeCli(c.id).filter(o=>esOpActiva(o));
     opsAct.forEach(op=>{
       const doneKey=`${c.id}_${op.id}`, isDone=!!done[doneKey];
       const ultimoPago=Ps.filter(p=>p.oid===op.id).sort((a,b)=>new Date(b.fec)-new Date(a.fec))[0];
@@ -8092,7 +8097,7 @@ function agendaDesmarcar(doneKey){
 function agendaWA(cid){
   const c=gC(cid); if(!c||!c.tel) return;
   const tel=c.tel.replace(/[^0-9]/g,'');
-  const opsAct=opsDeCli(cid).filter(o=>o.pag<o.cuo);
+  const opsAct=opsDeCli(cid).filter(o=>esOpActiva(o));
   const saldo=opsAct.reduce((s,o)=>s+cvOp(o),0);
   const msg=`Hola ${c.nom}! 👋\nTe paso el detalle de tu cuenta:\n💰 Saldo pendiente: ${fmt(saldo)}\n\nEstamos pasando hoy a cobrar. ¡Muchas gracias!`;
   window.open(`https://wa.me/54${tel}?text=${encodeURIComponent(msg)}`,'_blank');
@@ -9683,7 +9688,7 @@ async function cargarDatosCobrador(){
     const cids=_cobradorClis.map(c=>c.id);
     // Todas las ops de estos clientes, filtrar activas en JS
     const {data:ops}=await SB.from('operaciones').select('*').in('cid',cids);
-    _cobradorOps=(ops||[]).filter(o=>o.pag<o.cuo);
+    _cobradorOps=(ops||[]).filter(o=>esOpActiva(o));
     // Pagos del cobrador
     const {data:ps}=await SB.from('pagos').select('*')
       .in('oid',_cobradorOps.map(o=>o.id))
