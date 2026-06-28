@@ -3040,10 +3040,12 @@ const _navOrder=['inicio','clientes','caja','agenda','cal','fin','rep','admin'];
 
 function goPage(id,pushState=true){
   if(id==='agenda'&&!esPremium()){requierePlan('Ruta diaria','premium');return;}
-  if(id===_lastPage)return;
-  // Cerrar ficha de cliente si está abierta
+  // Si hay un modal abierto (ej. Configuración) y el usuario toca un botón de navegación, cerrarlo primero
   const mver=document.getElementById('mver');
   if(mver&&mver.classList.contains('open'))closeModal('mver');
+  const mPerfil=document.getElementById('mPerfil');
+  if(mPerfil&&mPerfil.classList.contains('open'))closeModal('mPerfil');
+  if(id===_lastPage)return;
   const oldPage=document.getElementById('page-'+_lastPage);
   const newPage=document.getElementById('page-'+id);
   if(!newPage)return;
