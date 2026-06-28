@@ -2023,9 +2023,13 @@ function intOp(op){
 }
 const saldoTotalCli=cid=>opsDeCli(cid).filter(o=>esOpActiva(o)).reduce((s,o)=>s+saldoMOp(o),0);
 function fechasOp(op){
-  const r=[],b=new Date(op.fv+'T00:00:00'),frq=op.frq,n=op.cuo-op.pag;
+  const r=[],b=new Date(op.fv+'T00:00:00');
   if(isNaN(b.getTime()))return r;
-  const fc=op.fechas_custom||{};
+  const frq=op.frq,fc=op.fechas_custom||{};
+  // Los créditos "interés mensual" son abiertos (sin cantidad de cuotas real, cuo=999 es solo un sentinel interno).
+  // Generar las 999 fechas reventaba PDFs y cálculos en cualquier función que no se acordara de capear esto a mano.
+  // Acá lo capeamos en la fuente: solo se devuelven las próximas N ocurrencias mensuales, nunca las 999.
+  const n=op.tip==='interes_mensual'?Math.min(op.cuo-op.pag,36):op.cuo-op.pag;
   for(let i=0;i<n;i++){
     // cuota número = pag+i+1 (1-based)
     const numCuota=String((op.pag||0)+i+1);
