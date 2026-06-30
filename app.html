@@ -3963,7 +3963,14 @@ async function _pdfCreditoNuevoWA_inner(op,c){
   if(c.tel)doc.text(c.tel,120,y+15);
   y+=c.tel?30:24;
 
-  // ── Condiciones del crédito ──
+  // ── Aviso CANCELADO ──
+  if(_cancelado){
+    doc.setFillColor(220,255,220);doc.setDrawColor(34,197,94);
+    doc.roundedRect(14,y,182,14,3,3,'FD');
+    doc.setTextColor(20,120,20);doc.setFontSize(9);doc.setFont('helvetica','bold');
+    doc.text('✓ CRÉDITO CANCELADO / SALDADO MANUALMENTE',105,y+9,{align:'center'});
+    y+=20;
+  }
   const esIM=op.tip==='interes_mensual';
   const boxH=esIM?40:32;
   doc.setFillColor(240,240,255);doc.setDrawColor(200,200,220);
@@ -4009,6 +4016,8 @@ async function _pdfCreditoNuevoWA_inner(op,c){
   let ciC=0,paC=0;
   todosPagosOp.forEach(p=>{
     const esInt=(p.not_||p.not||'').startsWith('🔄 INTERES');
+    // Si el crédito está cancelado, omitir los pagos de solo interés anteriores
+    if(esInt&&_cancelado)return;
     if(esInt){rowsC.push(['—','Interés',fd(p.fec),fm(p.mon),metLabelC[p.met]||'—','—']);}
     else if(p.par){
       if(!paC)ciC++;
