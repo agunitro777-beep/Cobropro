@@ -4307,17 +4307,8 @@ async function guardarPago(){
   const sendWa=$('p_sendWa')&&$('p_sendWa').checked;
   const sendPdf=$('p_sendPdf')&&$('p_sendPdf').checked;
   let waWin=null;
-  // Solo abrir WA directo si NO se va a enviar PDF (comprobantePDFWA ya abre WA)
-  if(sendWa&&!sendPdf){
-    const c=gC(op.cid);
-    if(c&&c.tel){
-      const tel=c.tel.replace(/[^0-9]/g,'');
-      const lbl=esVenta(op)?op.prod||'Venta':op.desc||'Crédito';
-      const saldoEst=Math.max(0,saldoOp(op)-cvOp(op));
-      const msg=`📋 *COMPROBANTE DE PAGO*\n*${CFG.nombre||'CobroAlDía'}*\n\nCliente: ${c.nom}\nConcepto: ${lbl}\nFecha: ${fD(fec)}\nCuota ${op.pag} de ${op.cuo}: ${fmt(cvOp(op))}\nAbonado: ${fmt(mon)}${par?`\nFalta de esta cuota: ${fmt(flt)}`:''}\n\n¡Gracias! 🙏`;
-      waWin=window.open(`https://wa.me/54${tel}?text=${encodeURIComponent(msg)}`,'_blank');
-    }
-  }
+  // El comprobante (con PDF) ahora se envía siempre por WA al final, así que no abrimos
+  // una pestaña de solo-texto acá para evitar duplicar ventanas de WhatsApp.
 
   _sobranteMsg=null;
   setBtnLoading('pagoSaveBtn',true);
@@ -4417,9 +4408,7 @@ async function guardarPago(){
         }
       }catch(e){}
     }
-    const _opFinal=gO(oid);
-    const _creditoCompletado=_opFinal&&_opFinal.tip!=='interes_mensual'&&_opFinal.pag>=_opFinal.cuo&&!soloInt&&!par;
-    if(sendPdf||_creditoCompletado) await comprobantePDFWA(op.id,mon,fec,par,flt);
+    await comprobantePDFWA(op.id,mon,fec,par,flt);
     setTimeout(()=>{
       refrescar();
       if($('page-caja').classList.contains('active')){rCaja();checkMostrarTabEquipo();}
