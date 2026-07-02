@@ -2554,6 +2554,15 @@ function syncIntDiario(){
   else if(hint){hint.textContent='';}
 }
 // Cancelar crédito diario abierto
+// Registra un pago "directo" (sin pasar por el modal de guardarPago) — usado por flujos de
+// cancelación/cierre de crédito (diario abierto, capital de interés mensual). Solo inserta el
+// pago y lo agrega al estado local; cada caller es responsable de actualizar op.pag/cancelado.
+async function registrarPago(oid,mon,fec,met,par,flt,nota){
+  const d={oid,mon:parseFloat(mon)||0,met:met||'efectivo',fec:fec||hoy(),not_:nota||'',par:!!par,flt:parseFloat(flt)||0};
+  const r=await dbIns('pagos',d);
+  Ps.push({...r,not:r.not_||''});
+  return r;
+}
 function cancelarDiarioAbierto(oid){
   const op=gO(oid);const c=op?gC(op.cid):null;if(!op||!c)return;
   const mon=op.mon;const intDia=parseFloat(op.int_)||0;
@@ -2589,7 +2598,9 @@ function cancelarDiarioAbierto(oid){
     // Registrar como pago único y marcar completado
     const fecHoy=hoy();
     await registrarPago(oid,total,fecHoy,'efectivo',false,0,`Cancelación a ${dias} días · ${intDia}%/día`);
+    try{await dbUpd('operaciones',oid,{pag:op.cuo||1,cancelado:true});const op2=gO(oid);if(op2){op2.pag=op.cuo||1;op2.cancelado=true;}}catch(e){}
     toast('✅ Crédito cancelado · '+monLabel+total.toLocaleString(LOCALE())+' cobrados');
+    setTimeout(()=>refrescar(),100);
   };
 }
 function cancelarCapitalMensual(oid){
@@ -2681,7 +2692,7 @@ function cancelarCapitalMensual(oid){
       const totalPago=conInt?op.mon+cuotaInt:op.mon;
       modal.remove();
       await registrarPago(oid,totalPago,hoy(),'efectivo',false,0,`Cancelación de capital${conInt?' + interés del período':''}`);
-      try{await dbUpd('operaciones',oid,{pag:999,tip:'interes_mensual_cancelado'});const op2=gO(oid);if(op2){op2.pag=999;op2.tip='interes_mensual_cancelado';}}catch(e){}
+      try{await dbUpd('operaciones',oid,{pag:999,tip:'interes_mensual_cancelado',cancelado:true});const op2=gO(oid);if(op2){op2.pag=999;op2.tip='interes_mensual_cancelado';op2.cancelado=true;}}catch(e){}
       toast(`✅ Capital cancelado · ${monLabel}${totalPago.toLocaleString(LOCALE())} cobrados`,'success');
     } else {
       const nuevoCap=parseFloat(modal.querySelector('#ccm_nuevo_cap').value)||0;
