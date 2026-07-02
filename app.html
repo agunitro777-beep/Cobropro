@@ -3730,9 +3730,9 @@ async function guardarOp(){
       refrescar();
       const mver=document.getElementById('mver');
       if(mver&&mver.classList.contains('open'))verCli(cid);
-      // Ofrecer enviar detalles del crédito por WA
+      // Compartir automáticamente el PDF con el detalle del crédito por WA
       if(c&&c.tel&&!esVenta(opNueva)){
-        setTimeout(()=>ofrecerWaCreditoNuevo(opNueva,c),400);
+        setTimeout(()=>pdfCreditoNuevoWA(opNueva,c),400);
       }
     }
   }catch(e){toast('Error: '+e.message,'error')}setBtnLoading('opSaveBtn',false);_guardando=false;
