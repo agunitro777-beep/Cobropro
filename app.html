@@ -1221,7 +1221,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <div class="ig"><label class="il">Monto abonado *</label>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <input class="inp" id="p_mon" type="number" placeholder="0.00" oninput="chkParcial()" style="flex:1;min-width:100px">
-        <button type="button" onclick="(function(){const fid=parseInt($('p_fixOp').value),oid=fid||parseInt($('p_op').value);const op=gO(oid);if(op){const mora=moraOp(op);const parPago=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);const base=parPago?parPago.flt:cvOp(op);const redondeo=parseInt(CFG.redondeo)||0;const tot=mora>0?base+mora:base;const totR=redondeo>0?Math.ceil(tot/redondeo)*redondeo:tot;$('p_soloInt').value='';$('p_soloIntBanner').style.display='none';$('p_mon').value=Math.round(totR);chkParcial();}})()" style="background:var(--ac);color:#fff;border:none;border-radius:var(--rs);padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">Total</button>
+        <button type="button" onclick="(function(){const fid=parseInt($('p_fixOp').value),oid=fid||parseInt($('p_op').value);const op=gO(oid);if(op){const mora=moraOp(op);const parPago=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);const base=parPago?parPago.flt:cvOpN(op,(parseInt(op.pag)||0)+1);const redondeo=parseInt(CFG.redondeo)||0;const tot=mora>0?base+mora:base;const totR=redondeo>0?Math.ceil(tot/redondeo)*redondeo:tot;$('p_soloInt').value='';$('p_soloIntBanner').style.display='none';$('p_mon').value=Math.round(totR);chkParcial();}})()" style="background:var(--ac);color:#fff;border:none;border-radius:var(--rs);padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">Total</button>
         <button type="button" id="p_btnSoloInt" onclick="activarSoloInt()" style="background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;border:none;border-radius:var(--rs);padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">🔄 Solo interés</button>
       </div>
     </div>
@@ -1770,10 +1770,16 @@ async function cargarTodo(){
     const cuotaV=o.cuota_fija||0;
     const pagosOp=Ps.filter(p=>p.oid===o.id&&!(p.not||'').startsWith('🔄 INTERES'));
     const cuotaBase=cuotaV||(o.mon&&o.cuo?(o.mon/o.cuo):0);
+    const cvalRaw=typeof o.cval==='string'?JSON.parse(o.cval||'{}'):(o.cval||{});
+    const targetFor=n=>{
+      const ov=cvalRaw[String(n)];
+      if(ov!=null&&ov!==''){const v=parseFloat(ov);if(!isNaN(v)&&v>0)return v;}
+      return cuotaBase;
+    };
     let cnt=0,acum=0;
-    for(const p of pagosOp){acum+=p.mon;if(cuotaBase>0&&acum>=cuotaBase*0.99){cnt++;acum=0;}}
+    for(const p of pagosOp){acum+=p.mon;const target=targetFor(cnt+1);if(target>0&&acum>=target*0.99){cnt++;acum=0;}}
     const pag=Math.min(cnt,parseInt(o.cuo)||1);
-    return{...o,desc:o.desc_||'',not:o.not_||'',int:(o.int_!==null&&o.int_!==undefined?parseFloat(o.int_):0),tip:o.tip||'simple',mora:(o.mora!==null&&o.mora!==undefined?parseFloat(o.mora):0),pag,moneda:o.moneda||CFG.moneda||'$',fechas_custom:typeof o.fechas_custom==='string'?JSON.parse(o.fechas_custom||'{}'):(o.fechas_custom||{})};
+    return{...o,desc:o.desc_||'',not:o.not_||'',int:(o.int_!==null&&o.int_!==undefined?parseFloat(o.int_):0),tip:o.tip||'simple',mora:(o.mora!==null&&o.mora!==undefined?parseFloat(o.mora):0),pag,moneda:o.moneda||CFG.moneda||'$',fechas_custom:typeof o.fechas_custom==='string'?JSON.parse(o.fechas_custom||'{}'):(o.fechas_custom||{}),cval:cvalRaw};
   });
   Gs=gs;EVs=evs.map(e=>({...e,desc:e.desc_||''}));
   // Cargar desde localStorage primero (respaldo inmediato)
@@ -1825,9 +1831,12 @@ function saldoOp(op){
     // Para capital abierto: saldo = capital fijo (nunca se reduce por pagos de interés)
     return Math.round(op.mon);
   }
-  const base=Math.round(cvOp(op)*Math.max(0,(parseInt(op.cuo)||1)-(parseInt(op.pag)||0)));
+  const cuo=parseInt(op.cuo)||1,pag=parseInt(op.pag)||0;
+  let base=0;
+  for(let n=pag+1;n<=cuo;n++)base+=cvOpN(op,n);
+  base=Math.round(base);
   const parPago=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);
-  const yaAbonado=parPago?Math.max(0,Math.round(cvOp(op)-parPago.flt)):0;
+  const yaAbonado=parPago?Math.max(0,Math.round(cvOpN(op,pag+1)-parPago.flt)):0;
   return Math.max(0,base-yaAbonado);
 }
 // Para tarjeta cliente: cuánto debe AHORA (cuota pendiente, no capital)
@@ -1837,7 +1846,7 @@ function deudaActualOp(op){
     return parPago?Math.round(parPago.flt):Math.round(cvOp(op));
   }
   const parPago=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);
-  const cuota=cvOp(op);
+  const cuota=cvOpN(op,(parseInt(op.pag)||0)+1);
   return parPago?Math.round(parPago.flt):cuota;
 }
 function proxFechaOp(op){
@@ -1877,12 +1886,18 @@ function fechaDeCuota(op,numCuota){
   else d.setDate(b.getDate()+i);
   return d;
 }
+// Monto de una cuota específica (1-based), respetando cval (montos personalizados)
+function cvOpN(op,numCuota){
+  const cv=op.cval||{};
+  const key=String(numCuota);
+  if(cv[key]!=null&&cv[key]!==''){const v=parseFloat(cv[key]);if(!isNaN(v)&&v>0)return Math.round(v);}
+  return cvOp(op);
+}
 // Mora total: suma cuota por cuota sobre las vencidas
 function moraOp(op){
   if(!parseFloat(op.mora)||op.pag>=op.cuo)return 0;
   const moraPct=parseFloat(op.mora)/100;
   const h=new Date();h.setHours(0,0,0,0);
-  const cuota=cvOp(op);
   let total=0;
   for(let n=op.pag+1;n<=op.cuo;n++){
     const fec=fechaDeCuota(op,n);
@@ -1890,7 +1905,7 @@ function moraOp(op){
     const dias=Math.floor((h-fec)/86400000);
     if(dias<=0)break;
     const parPago=n===op.pag+1?Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0):null;
-    const base=parPago?parPago.flt:cuota;
+    const base=parPago?parPago.flt:cvOpN(op,n);
     total+=Math.round(base*moraPct*dias);
   }
   return total;
@@ -4194,7 +4209,7 @@ function abrirPago(fixId=null){
   if(fixId){
     const op=gO(fixId);
     if(op){
-      $('p_esp').textContent=fmt(cvOp(op));
+      $('p_esp').textContent=fmt(cvOpN(op,(parseInt(op.pag)||0)+1));
       const c=gC(op.cid);$('p_waWrap').style.display=c&&c.tel?'block':'none';
       // Ocultar botón solo interés para ventas
       const btn=$('p_btnSoloInt');
@@ -4726,6 +4741,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
         <button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️</button>
         <button class="btn bs bsm" onclick="abrirCamFecha(${op.id})">📅</button>
         <button class="btn bs bsm" title="Fechas por cuota" onclick="abrirFechasCuotas(${op.id})">📆 Cuotas</button>
+        ${(op.tip!=='interes_mensual'&&op.tipo!=='diario_abierto')?`<button class="btn bs bsm" title="Montos por cuota" onclick="abrirMontosCuotas(${op.id})">💰 Montos</button>`:''}
         <button class="btn bp bsm" style="background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.5);color:var(--gr)" onclick="marcarCreditoCancelado(${op.id})">✅ Marcar saldado</button>
         ${c.tel?`<a href="${waLinkOp(op)}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm">💬 WA</button></a>`:''}
         <button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfComprobanteOp(${op.id})">🧾 PDF</button>
@@ -6409,7 +6425,7 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
   for(const _p of pagosOrden){
     if(_acum===0)_cIdx++;
     _acum+=_p.mon;
-    if(_acum>=cuota*0.99)_acum=0;
+    if(_acum>=cvOpN(op,_cIdx)*0.99)_acum=0;
   }
   const numCuota=_cIdx;
   const pagosComp=pagoDeOp(oid).filter(p=>!p.par&&!(p.not||'').startsWith('🔄 INTERES')).sort((a,b)=>a.fec.localeCompare(b.fec));
@@ -6516,7 +6532,7 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
   doc.setTextColor(80,80,120);doc.setFontSize(8);doc.setFont('helvetica','bold');
   doc.text('DETALLE DE CUOTA',20,y+8);
   doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);doc.setFontSize(10);
-  doc.text(`Cuota ${numCuota} de ${op.cuo}  ·  ${fm(cuota)} por ${op.frq}`,20,y+18);
+  doc.text(`Cuota ${numCuota} de ${op.cuo}  ·  ${fm(cvOpN(op,numCuota))} por ${op.frq}`,20,y+18);
   const restantes=op.cuo-numCuota;
   doc.setFontSize(9);doc.setTextColor(100,100,120);
   doc.text(`Fecha de pago: ${fd(fec)}`,20,y+27);
@@ -7156,6 +7172,62 @@ async function guardarFechasCuotas(){
     setTimeout(()=>{refrescar();if($('page-cal').classList.contains('active'))rCal();},0);
   }catch(e){toast('Error: '+e.message,'error')}
   setBtnLoading('fcSaveBtn',false);
+}
+
+function abrirMontosCuotas(oid){
+  const op=gO(oid);if(!op)return;
+  $('mc_oid').value=oid;
+  const cv=op.cval||{};
+  const pending=op.cuo-op.pag;
+  let html='';
+  for(let i=0;i<pending;i++){
+    const numCuota=(op.pag||0)+i+1;
+    const base=cvOp(op);
+    const val=cv[String(numCuota)]||'';
+    html+=`<div class="ig" style="margin-bottom:4px">
+      <label class="il">Cuota ${numCuota} <span style="color:var(--tx2);font-weight:400">(estándar: ${fmt(base)})</span></label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input class="inp" type="number" id="mc_${numCuota}" value="${val}" placeholder="${base}" style="flex:1">
+        ${i>0?`<button onclick="mcPropagar(${numCuota})" title="Aplicar a esta y las siguientes" style="background:rgba(108,99,255,.2);border:1px solid rgba(108,99,255,.4);color:var(--ac2);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">↓ Seguir</button>`:''}
+      </div>
+    </div>`;
+  }
+  $('mc_list').innerHTML=html||'<div style="font-size:11px;color:var(--tx2)">No hay cuotas pendientes.</div>';
+  closeModal('mver');
+  showModal('mMontosCuotas');
+}
+function mcPropagar(numCuota){
+  const oid=parseInt($('mc_oid').value);const op=gO(oid);if(!op)return;
+  const el=$('mc_'+numCuota);if(!el||!el.value)return;
+  const val=el.value;
+  const pending=op.cuo-op.pag;
+  for(let i=0;i<pending;i++){
+    const nCuota=(op.pag||0)+i+1;
+    if(nCuota<numCuota)continue;
+    const next=$('mc_'+nCuota);
+    if(next)next.value=val;
+  }
+  toast('💰 Montos siguientes actualizados','success',2000);
+}
+async function guardarMontosCuotas(){
+  const oid=parseInt($('mc_oid').value);
+  const op=gO(oid);if(!op)return;
+  const pending=op.cuo-op.pag;
+  const cv=op.cval||{};
+  for(let i=0;i<pending;i++){
+    const numCuota=(op.pag||0)+i+1;
+    const el=$('mc_'+numCuota);
+    if(el){if(el.value&&parseFloat(el.value)>0)cv[String(numCuota)]=Math.round(parseFloat(el.value));else delete cv[String(numCuota)];}
+  }
+  setBtnLoading('mcSaveBtn',true);
+  try{
+    await dbUpd('operaciones',oid,{cval:JSON.stringify(cv)});
+    op.cval=cv;
+    closeModal('mMontosCuotas');
+    toast('💰 Montos de cuotas actualizados');
+    setTimeout(()=>{refrescar();if($('page-cal').classList.contains('active'))rCal();},0);
+  }catch(e){toast('Error: '+e.message,'error')}
+  setBtnLoading('mcSaveBtn',false);
 }
 
 // ══ INIT ══
@@ -10520,6 +10592,18 @@ function checkPrimerTour(){
     <div id="fc_list"></div>
     <button class="btn bp" id="fcSaveBtn" onclick="guardarFechasCuotas()" style="margin-top:6px">💾 Guardar fechas</button>
     <button class="btn bs" style="margin-top:7px" onclick="closeModal('mFechasCuotas')">Cancelar</button>
+  </div>
+</div>
+
+<div class="mo" id="mMontosCuotas">
+  <div class="modal">
+    <div class="mh"></div>
+    <div class="mt">💰 Montos por cuota</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:12px;line-height:1.5">Personalizá el monto de cada cuota pendiente (por ejemplo, una cuota final más chica). Dejá vacío para usar el monto estándar. Usá "↓ Seguir" para aplicar un monto a esa cuota y a todas las siguientes.</div>
+    <input type="hidden" id="mc_oid">
+    <div id="mc_list"></div>
+    <button class="btn bp" id="mcSaveBtn" onclick="guardarMontosCuotas()" style="margin-top:6px">💾 Guardar montos</button>
+    <button class="btn bs" style="margin-top:7px" onclick="closeModal('mMontosCuotas')">Cancelar</button>
   </div>
 </div>
 
