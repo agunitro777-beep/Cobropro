@@ -4417,7 +4417,9 @@ async function guardarPago(){
         }
       }catch(e){}
     }
-    if(sendPdf) await comprobantePDFWA(op.id,mon,fec,par,flt);
+    const _opFinal=gO(oid);
+    const _creditoCompletado=_opFinal&&_opFinal.tip!=='interes_mensual'&&_opFinal.pag>=_opFinal.cuo&&!soloInt&&!par;
+    if(sendPdf||_creditoCompletado) await comprobantePDFWA(op.id,mon,fec,par,flt);
     setTimeout(()=>{
       refrescar();
       if($('page-caja').classList.contains('active')){rCaja();checkMostrarTabEquipo();}
