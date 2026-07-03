@@ -1864,12 +1864,14 @@ function proxFechaOp(op){
   else d.setDate(b.getDate()+n);
   return d;
 }
+// Días de gracia antes de considerar un pago vencido como "en mora" (default 2, configurable en CFG.diasGracia)
+function diasGracia(){const g=parseInt(CFG?.diasGracia);return g>=0?g:2;}
 function diasAtrOp(op){
   const h=new Date();h.setHours(0,0,0,0);
   // Si está reprogramado, los días de atraso se cuentan desde la fecha ORIGINAL
   const st=stOp(op);
   const v=st==='reprogramado'?proxFechaOpNatural(op):proxFechaOp(op);
-  const d=Math.floor((h-v)/86400000);
+  const d=Math.floor((h-v)/86400000)-diasGracia();
   return d>0?d:0;
 }
 // Fecha de una cuota específica (1-based), respetando fechas_custom
@@ -1898,11 +1900,12 @@ function moraOp(op){
   if(!parseFloat(op.mora)||op.pag>=op.cuo)return 0;
   const moraPct=parseFloat(op.mora)/100;
   const h=new Date();h.setHours(0,0,0,0);
+  const g=diasGracia();
   let total=0;
   for(let n=op.pag+1;n<=op.cuo;n++){
     const fec=fechaDeCuota(op,n);
     if(isNaN(fec.getTime()))continue;
-    const dias=Math.floor((h-fec)/86400000);
+    const dias=Math.floor((h-fec)/86400000)-g;
     if(dias<=0)break;
     const parPago=n===op.pag+1?Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0):null;
     const base=parPago?parPago.flt:cvOpN(op,n);
@@ -1923,7 +1926,7 @@ function scoreCli(cid){
       totalPagos++;
       const due=fechaDeCuota(op,idx+1);
       if(!isNaN(due.getTime())){
-        const dias=Math.floor((new Date(p.fec+'T00:00:00')-due)/86400000);
+        const dias=Math.floor((new Date(p.fec+'T00:00:00')-due)/86400000)-diasGracia();
         if(dias>0)enMora++;
         if(dias>30)pts-=5;
       }
@@ -1983,9 +1986,10 @@ function stOp(op){
   }
   const vNat=proxFechaOpNatural(op); // fecha original del calendario (sin custom)
   if(isNaN(vNat.getTime()))return'aldía'; // fecha inválida: no bloquear la app, tratar como al día
+  const g=diasGracia();
   const dfNat=Math.floor((vNat-h)/86400000);
-  // Si el calendario original venció, es mora siempre — independiente de custom
-  if(dfNat<0){
+  // Si el calendario original venció (más allá del período de gracia), es mora siempre — independiente de custom
+  if(dfNat< -g){
     const v=proxFechaOp(op);
     const df=Math.floor((v-h)/86400000);
     // Solo mostrar "reprogramado" si hay una fecha custom FUTURA para esta cuota
@@ -1996,7 +2000,7 @@ function stOp(op){
   }
   const v=proxFechaOp(op);
   const df=Math.floor((v-h)/86400000);
-  if(df<0)return'atrasado';
+  if(df< -g)return'atrasado';
   if(df<=(CFG.alertaDias||3))return'porVencer';
   return'aldía';
 }
@@ -2134,7 +2138,7 @@ function calcMoraPago(p,op){
     else dueDate.setDate(b.getDate()+idx);
   }
   const fechaPago=new Date(p.fec+'T00:00:00');
-  return Math.max(0,Math.floor((fechaPago-dueDate)/86400000));
+  return Math.max(0,Math.floor((fechaPago-dueDate)/86400000)-diasGracia());
 }
 function comprob(oid){
   const op=gO(oid);const c=op?gC(op.cid):null;
@@ -4036,8 +4040,8 @@ async function _pdfCreditoNuevoWA_inner(op,c){
   // ── Historial de pagos con días de atraso por cuota ──
   const todosPagosOp=pagoDeOp(op.id).sort((a,b)=>(a.fec||'').localeCompare(b.fec||''));
   const metLabelC={efectivo:'Efectivo',transferencia:'Transf.',otro:'Otro'};
-  const _dcC=(n,fStr)=>{const due=fechaDeCuota(op,n);if(!due||isNaN(due.getTime()))return 0;const fp=new Date(fStr+'T00:00:00');return Math.max(0,Math.floor((fp-due)/86400000));};
-  const _dhC=(n)=>{const due=fechaDeCuota(op,n);if(!due||isNaN(due.getTime()))return 0;const h=new Date();h.setHours(0,0,0,0);return Math.max(0,Math.floor((h-due)/86400000));};
+  const _dcC=(n,fStr)=>{const due=fechaDeCuota(op,n);if(!due||isNaN(due.getTime()))return 0;const fp=new Date(fStr+'T00:00:00');return Math.max(0,Math.floor((fp-due)/86400000)-diasGracia());};
+  const _dhC=(n)=>{const due=fechaDeCuota(op,n);if(!due||isNaN(due.getTime()))return 0;const h=new Date();h.setHours(0,0,0,0);return Math.max(0,Math.floor((h-due)/86400000)-diasGracia());};
   const rowsC=[];
   let ciC=0,paC=0;
   todosPagosOp.forEach(p=>{
@@ -4312,7 +4316,7 @@ async function guardarPago(){
       fechaVencMora=proxFechaOp(op);
     }
     const fechaPago=new Date(fec+'T00:00:00');
-    diasMoraPago=Math.max(0,Math.floor((fechaPago-fechaVencMora)/86400000));
+    diasMoraPago=Math.max(0,Math.floor((fechaPago-fechaVencMora)/86400000)-diasGracia());
   }
   const moraTag=diasMoraPago>0?`[MORA:${diasMoraPago}d] `:'';
   const not_=soloInt?('🔄 INTERES'+(notaBase?': '+notaBase:'')):(moraTag+notaBase);
@@ -6432,7 +6436,7 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
     const due=fechaDeCuota(op,numCuota);
     if(!due||isNaN(due.getTime())||!fec)return 0;
     const fp=new Date(fec+'T00:00:00');
-    return Math.max(0,Math.floor((fp-due)/86400000));
+    return Math.max(0,Math.floor((fp-due)/86400000)-diasGracia());
   })();
 
   // ── Logo: fetch blob para evitar CORS/tainted-canvas ──
@@ -6562,13 +6566,13 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
     const due=fechaDeCuota(op,n);
     if(!due||isNaN(due.getTime()))return 0;
     const fp=new Date(fechaPagoStr+'T00:00:00');
-    return Math.max(0,Math.floor((fp-due)/86400000));
+    return Math.max(0,Math.floor((fp-due)/86400000)-diasGracia());
   };
   const _diasHoy=(n)=>{
     const due=fechaDeCuota(op,n);
     if(!due||isNaN(due.getTime()))return 0;
     const hoy2=new Date();hoy2.setHours(0,0,0,0);
-    return Math.max(0,Math.floor((hoy2-due)/86400000));
+    return Math.max(0,Math.floor((hoy2-due)/86400000)-diasGracia());
   };
   const filas=[];
   let cuotaIdxB=0,parcialAcumB=0;
