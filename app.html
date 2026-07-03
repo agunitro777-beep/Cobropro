@@ -6428,9 +6428,12 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
     if(_acum>=cvOpN(op,_cIdx)*0.99)_acum=0;
   }
   const numCuota=_cIdx;
-  const pagosComp=pagoDeOp(oid).filter(p=>!p.par&&!(p.not||'').startsWith('🔄 INTERES')).sort((a,b)=>a.fec.localeCompare(b.fec));
-  const estePago=pagosComp[pagosComp.length-1];
-  const diasMora=estePago?calcMoraPago(estePago,op):0;
+  const diasMora=(()=>{
+    const due=fechaDeCuota(op,numCuota);
+    if(!due||isNaN(due.getTime())||!fec)return 0;
+    const fp=new Date(fec+'T00:00:00');
+    return Math.max(0,Math.floor((fp-due)/86400000));
+  })();
 
   // ── Logo: fetch blob para evitar CORS/tainted-canvas ──
   const logoUrl=_logoComprobanteUrl||null;
