@@ -1095,6 +1095,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
         <option value="cuota">🔒 Cuota pactada</option>
         <option value="diario_abierto">📅 Diario (fecha abierta)</option>
         <option value="interes_mensual">💰 Solo interés mensual</option>
+        <option value="saldo_abierto">🗓️ Saldo abierto (pagos libres)</option>
       </select></div>
       <!-- Explicación del tipo seleccionado -->
       <div id="tipExplainer" style="border-radius:10px;padding:11px 13px;margin-bottom:8px;font-size:11px;line-height:1.6;display:none"></div>
@@ -1157,6 +1158,13 @@ body.light .mo{background:rgba(0,0,0,.5)}
         </div>
         <button type="button" id="btnToggleCuotaIM" onclick="toggleCuotaFijaIM()" style="font-size:11px;background:transparent;border:1px dashed var(--border);color:var(--tx2);border-radius:8px;padding:6px 12px;cursor:pointer;width:100%;margin-bottom:8px">Ingresar cuota pactada en $ en vez de %</button>
         <div class="ig" style="margin-top:4px"><label class="il">Cantidad de cuotas (opcional)</label><input class="inp" id="op_cuo_im" type="number" placeholder="Ej: 12 — dejar vacío si es indefinido" oninput="actualizarPreview()"><div style="font-size:9px;color:var(--tx2);margin-top:3px">Si ponés cuotas, la app avisará cuando se termine el plazo</div></div>
+      </div>
+
+      <!-- BLOQUE: saldo abierto (pagos libres, sin interés) -->
+      <div id="intSaldoAbiertoBlock" style="display:none">
+        <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc_sa" placeholder="Ej: Saldo pendiente..."></div>
+        <div class="ig"><label class="il">Monto total adeudado *</label><input class="inp" id="op_mon_sa" type="number" placeholder="Ej: 100000" oninput="actualizarPreview()"></div>
+        <div class="ig"><label class="il">Próximo pago estimado *</label><input class="inp" id="op_fv_sa" type="date"><div style="font-size:9px;color:var(--tx2);margin-top:3px">El cliente va pagando montos y fechas libres. Vos vas actualizando esta fecha manualmente (con el botón 📅) cada vez que acuerden el próximo pago.</div></div>
       </div>
 
       <!-- Preview dinámico unificado -->
@@ -2517,24 +2525,27 @@ function toggleTipoInteres(forzar){
   const esDiario  = tip==='diario_abierto';
   const esMensual = tip==='interes_mensual';
   const esCuota   = tip==='cuota';
+  const esSaldoAbierto = tip==='saldo_abierto';
   const show=(el,v)=>{if(el)el.style.display=v?'':'none';};
-  show($('intNormalBlock'), !esDiario&&!esMensual&&!esCuota);
+  show($('intNormalBlock'), !esDiario&&!esMensual&&!esCuota&&!esSaldoAbierto);
   show($('intCuotaBlock'),  esCuota);
   show($('intDiarioBlock'), esDiario);
   show($('intMensualBlock'),esMensual);
-  show($('op_mon')?.closest('.ig'),   !esDiario&&!esMensual&&!esCuota);
-  show($('op_desc')?.closest('.ig'), !esDiario&&!esMensual);
-  show($('op_cuo')?.closest('.ig'),  !esDiario&&!esMensual&&!esCuota);
-  show($('op_frq')?.closest('.ig'),  !esDiario&&!esMensual);
-  show($('op_fv')?.closest('.ig'),   !esDiario);
-  show($('op_facr')?.closest('.ig'), !esDiario);
-  show($('op_mora')?.closest('.ig'), !esDiario&&!esMensual);
+  show($('intSaldoAbiertoBlock'),esSaldoAbierto);
+  show($('op_mon')?.closest('.ig'),   !esDiario&&!esMensual&&!esCuota&&!esSaldoAbierto);
+  show($('op_desc')?.closest('.ig'), !esDiario&&!esMensual&&!esSaldoAbierto);
+  show($('op_cuo')?.closest('.ig'),  !esDiario&&!esMensual&&!esCuota&&!esSaldoAbierto);
+  show($('op_frq')?.closest('.ig'),  !esDiario&&!esMensual&&!esSaldoAbierto);
+  show($('op_fv')?.closest('.ig'),   !esDiario&&!esSaldoAbierto);
+  show($('op_facr')?.closest('.ig'), !esDiario&&!esSaldoAbierto);
+  show($('op_mora')?.closest('.ig'), !esDiario&&!esMensual&&!esSaldoAbierto);
   if(esCuota){
     const mc=$('op_mora_check');
     if(mc){mc.checked=false;toggleMoraField();}
   }
   if(esDiario&&$('op_facr_d'))$('op_facr_d').value=hoy();
   if(esMensual)syncIntMensual();
+  if(esSaldoAbierto&&$('op_fv_sa')&&!$('op_fv_sa').value)$('op_fv_sa').value=hoy();
   actualizarTipExplainer();
   actualizarPreview();
 }
@@ -2914,6 +2925,12 @@ const TIP_INFO={
     titulo:'Solo interés mensual (capital abierto)',
     desc:'El cliente paga solo el interés cada mes. El capital no se reduce. Cuando quiera cancelar, devuelve el capital completo. Ideal para préstamos indefinidos.',
     ejemplo:'$650.000 al 30.2% → paga $196.300/mes; devuelve $650.000 al cancelar'
+  },
+  saldo_abierto:{
+    icon:'🗓️',color:'rgba(34,197,94,.1)',border:'rgba(34,197,94,.3)',
+    titulo:'Saldo abierto (pagos libres)',
+    desc:'Sin interés y sin cuotas fijas. El cliente debe un total y va pagando montos y fechas libres. Vos anotás manualmente el próximo pago estimado cada vez (botón 📅), y el saldo se va achicando con cada pago.',
+    ejemplo:'Debe $100.000 → paga $20.000 el día 2, $2.000 el día 15, $20.000 el mes siguiente... hasta saldar'
   }
 };
 function actualizarTipExplainer(){
@@ -2938,6 +2955,15 @@ function actualizarPreview(){
   const mon_=(CFG.moneda||'$');
   const pr=$('opPreview');
   if(!pr)return;
+  if(tip==='saldo_abierto'){
+    const monSA=parseFloat($('op_mon_sa')?.value)||0;
+    if(!monSA){pr.style.display='none';return;}
+    pr.style.display='block';
+    pr.innerHTML=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Saldo abierto</div>
+<div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Total adeudado</div><div style="font-weight:800;font-size:14px">${(CFG.moneda||'$')}${Math.round(monSA).toLocaleString(LOCALE())}</div></div>
+<div style="margin-top:8px;font-size:10px;color:var(--tx2);line-height:1.6">Sin interés. Registrá pagos libres (💵 Pago) y actualizá el próximo pago estimado (📅) cada vez que acuerden con el cliente.</div>`;
+    return;
+  }
   let html='';
   if(tip==='interes_mensual'){
     const cuota=cuotaFijaIM>0?cuotaFijaIM:(mon&&int_?Math.round(mon*int_/100):0);
@@ -3623,12 +3649,19 @@ function abrirOp(cidFijo=null,oid=null){
         if($('op_int_im'))$('op_int_im').value=parseFloat(op.int_)||0;
         if($('op_cuota_im'))$('op_cuota_im').value='';
         syncIntMensual();
+      } else if(op.tip==='cuota_abierta'){
+        $('op_tip').value='saldo_abierto';toggleTipoInteres('saldo_abierto');
+        if($('op_desc_sa'))$('op_desc_sa').value=op.desc||'';
+        if($('op_mon_sa'))$('op_mon_sa').value=Math.round(op.mon);
+        if($('op_fv_sa'))$('op_fv_sa').value=op.fv||hoy();
+        actualizarPreview();
       } else {
         $('op_tip').value=op.tip||'simple';syncInteresOp();
       }
     }
   } else {
-    ['op_desc','op_mon','op_int','op_cuo','op_cuo_fixed','op_cuo_cf','op_not','op_prod','op_costo','op_precio'].forEach(f=>{const el=document.getElementById(f);if(el){el.value='';el.dataset.autofilled='';el.style.borderColor='';}});
+    ['op_desc','op_mon','op_int','op_cuo','op_cuo_fixed','op_cuo_cf','op_not','op_prod','op_costo','op_precio','op_desc_sa','op_mon_sa'].forEach(f=>{const el=document.getElementById(f);if(el){el.value='';el.dataset.autofilled='';el.style.borderColor='';}});
+    if($('op_fv_sa'))$('op_fv_sa').value='';
     $('op_mora').value='0';$('op_mora').disabled=true;$('op_mora').style.opacity='.4';
     if($('op_mora_check'))$('op_mora_check').checked=false;
     $('op_fv').value=hoy();$('op_frq').value='quincenal';$('op_tipo').value='prestamo';$('op_moneda').value=CFG.moneda||'$';if($('op_facr'))$('op_facr').value=hoy();autoFechaOp();
@@ -3671,6 +3704,12 @@ async function guardarOp(){
     // si ingresaron cuotas usar ese número, si no 999 = abierto
     const cuoIM=parseInt($('op_cuo_im')?.value)||999;
     Object.assign(d,{mon:monIM,int_:intIMfinal,mora:0,tip:'interes_mensual',desc_:descIM,prod:'',costo:0,precio:0,cuo:cuoIM,pag:0,frq:'mensual',fv:fvIM,facr:$('op_facr')?.value||null,cuota_fija:cuotaIM});
+  } else if(tipInt==='saldo_abierto'){
+    const monSA=parseFloat($('op_mon_sa')?.value)||0;
+    const fvSA=$('op_fv_sa')?.value||hoy();
+    if(!monSA){toast('Ingresá el monto total adeudado','error');_guardando=false;return;}
+    const descSA=($('op_desc_sa')?.value||'Saldo abierto').trim();
+    Object.assign(d,{mon:monSA,int_:0,mora:0,tip:'cuota_abierta',desc_:descSA,prod:'',costo:0,precio:0,cuo:1,pag:0,frq:'mensual',fv:fvSA,facr:null,cuota_fija:0});
   } else if(tipInt==='cuota'){
     const cuotaCF=parseFloat($('op_cuo_fixed_cf')?.value)||0;
     const cuoCF=parseInt($('op_cuo_cf')?.value)||parseInt($('op_cuo')?.value)||0;
@@ -4734,27 +4773,30 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
     const pp=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);
     const mTag=op.moneda&&op.moneda!==(CFG.moneda||'$')?`<span style="font-size:8px;background:rgba(6,182,212,.15);color:var(--cy);padding:1px 5px;border-radius:4px;margin-left:4px">${op.moneda}</span>`:'';
     const esIntMens=op.tip==='interes_mensual';
+    const esSaldoAb=op.tip==='cuota_abierta';
     const _proxFv=proxFechaOp(op);const _proxFvStr=_proxFv&&!isNaN(_proxFv.getTime())?_proxFv.toISOString().split('T')[0]:op.fv;
-    const metaLabel=esIntMens?`Capital: ${fmtOp(op.mon,op)} · Interés: ${fmtOp(cuota,op)}/mes · vence ${fD(op.fv)}`:`${op.pag}/${op.cuo} · ${op.frq} · vence ${fD(_proxFvStr)}${op.facr?` · acreditado ${fD(op.facr)}`:''}`;
+    const pctSA=esSaldoAb&&op.mon>0?Math.round(Math.max(0,Math.min(1,(op.mon-saldoOp(op))/op.mon))*100):pct;
+    const metaLabel=esIntMens?`Capital: ${fmtOp(op.mon,op)} · Interés: ${fmtOp(cuota,op)}/mes · vence ${fD(op.fv)}`:esSaldoAb?`Próximo pago estimado: ${fD(_proxFvStr)}`:`${op.pag}/${op.cuo} · ${op.frq} · vence ${fD(_proxFvStr)}${op.facr?` · acreditado ${fD(op.facr)}`:''}`;
     return`<div class="op-card ${sv?'vc':'pc'}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-        <div><div class="op-tag ${sv?'v':'p'}">${sv?'🛒 VENTA':esIntMens?'💰 INTERÉS MENSUAL':'💳 CRÉDITO'}${mTag}</div><div class="op-name">${lbl}</div>
+        <div><div class="op-tag ${sv?'v':'p'}">${sv?'🛒 VENTA':esIntMens?'💰 INTERÉS MENSUAL':esSaldoAb?'🗓️ SALDO ABIERTO':'💳 CRÉDITO'}${mTag}</div><div class="op-name">${lbl}</div>
         <div class="op-meta">${metaLabel}</div>
         ${pp?`<span class="pb" style="margin-top:3px;display:inline-block">Falta ${fmtOp(pp.flt,op)}</span>`:''}</div>
         <div style="text-align:right"><div class="op-saldo" style="color:${col}">${fmtOp(sm,op)}</div>
-        <div style="font-size:9px;color:var(--tx2)">cuota: ${fmtOp(cuota,op)}</div>
-        ${!sv?`<div style="font-size:9px;color:var(--tx2)">prestado: ${fmtOp(op.mon,op)}</div>`:''}
+        ${esSaldoAb?'':`<div style="font-size:9px;color:var(--tx2)">cuota: ${fmtOp(cuota,op)}</div>`}
+        ${!sv&&!esSaldoAb?`<div style="font-size:9px;color:var(--tx2)">prestado: ${fmtOp(op.mon,op)}</div>`:''}
+        ${esSaldoAb?`<div style="font-size:9px;color:var(--tx2)">total: ${fmtOp(op.mon,op)}</div>`:''}
         <div style="margin-top:2px">${bmap[s]||''}</div></div>
       </div>
-      <div class="op-pt"><div class="op-pf" style="width:${pct}%;background:${col}"></div></div>
+      <div class="op-pt"><div class="op-pf" style="width:${esSaldoAb?pctSA:pct}%;background:${col}"></div></div>
       ${sv?`<div style="font-size:9px;color:var(--tx2);margin-top:4px">Precio: ${fmtOp(op.precio,op)} · Costo: ${fmtOp(op.costo,op)} · Gan: <span style="color:var(--gr)">${fmtOp(op.precio-op.costo,op)}</span></div>`:''}
       <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
         ${op.tipo==='diario_abierto'?`<button class="btn bp bsm" style="background:var(--gr)" onclick="cancelarDiarioAbierto(${op.id})">💰 Cancelar</button>`:op.tip==='interes_mensual'?`<button class="btn bp bsm" onclick="abrirPagoParaOp(${op.id})">💵 Interés</button><button class="btn bp bsm" style="background:var(--gr);margin-left:0" onclick="cancelarCapitalMensual(${op.id})">⚙️ Capital</button>`:`<button class="btn bp bsm" onclick="abrirPagoParaOp(${op.id})">💵 Pago</button>`}
         ${pp?`<button class="btn byw bsm" onclick="completarPar(${op.id})">⚠ Parcial</button>`:''}
         <button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️</button>
-        <button class="btn bs bsm" onclick="abrirCamFecha(${op.id})">📅</button>
-        <button class="btn bs bsm" title="Fechas por cuota" onclick="abrirFechasCuotas(${op.id})">📆 Cuotas</button>
-        ${(op.tip!=='interes_mensual'&&op.tipo!=='diario_abierto')?`<button class="btn bs bsm" title="Montos por cuota" onclick="abrirMontosCuotas(${op.id})">💰 Montos</button>`:''}
+        <button class="btn bs bsm" title="${esSaldoAb?'Actualizar próximo pago estimado':'Cambiar fecha'}" onclick="abrirCamFecha(${op.id})">📅</button>
+        ${esSaldoAb?'':`<button class="btn bs bsm" title="Fechas por cuota" onclick="abrirFechasCuotas(${op.id})">📆 Cuotas</button>`}
+        ${(op.tip!=='interes_mensual'&&op.tipo!=='diario_abierto'&&!esSaldoAb)?`<button class="btn bs bsm" title="Montos por cuota" onclick="abrirMontosCuotas(${op.id})">💰 Montos</button>`:''}
         <button class="btn bp bsm" style="background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.5);color:var(--gr)" onclick="marcarCreditoCancelado(${op.id})">✅ Marcar saldado</button>
         ${c.tel?`<a href="${waLinkOp(op)}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm">💬 WA</button></a>`:''}
         <button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfComprobanteOp(${op.id})">🧾 PDF</button>
