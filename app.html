@@ -9114,7 +9114,60 @@ function animCount(el,targetText,dur=700){
 
 init();
 
-// Verificar acceso cada 60 segundos
+// ══ FORMATO DE MILES EN VIVO (para campos de montos) ══
+// Da formato "1.000.000" mientras se escribe, sin romper el resto del código:
+// se sobreescribe .value en la instancia del input para que parseFloat/parseInt
+// sigan funcionando normal (reciben el número "limpio", sin puntos).
+function _formatMilesStr(input){
+  let s=String(input==null?'':input).trim();
+  if(s==='')return '';
+  const neg=s.trim().startsWith('-');
+  // Si viene como número JS estándar con punto decimal (ej "1500.5"), convertir a coma
+  if(/^-?\d+\.\d+$/.test(s)&&!s.includes(',')) s=s.replace('.',',');
+  s=s.replace(/[^\d,]/g,'');
+  let [intPart,decPart]=s.split(',');
+  intPart=(intPart||'').replace(/^0+(?=\d)/,'');
+  if(intPart==='')intPart='0';
+  intPart=intPart.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  let out=(neg?'-':'')+intPart;
+  if(decPart!==undefined) out+=','+decPart.slice(0,2);
+  return out;
+}
+function habilitarMilesLive(id){
+  const el=document.getElementById(id);
+  if(!el||el._milesLive)return;
+  el._milesLive=true;
+  el.type='text';
+  el.setAttribute('inputmode','decimal');
+  const nativeDesc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
+  Object.defineProperty(el,'value',{
+    get(){
+      const disp=nativeDesc.get.call(el);
+      if(disp==='')return '';
+      return disp.replace(/\./g,'').replace(',','.');
+    },
+    set(v){
+      nativeDesc.set.call(el,_formatMilesStr(v));
+    },
+    configurable:true
+  });
+  el.addEventListener('input',function(){
+    const selStart=el.selectionStart;
+    const before=nativeDesc.get.call(el);
+    const digitsBeforeCursor=before.slice(0,selStart).replace(/[^\d,]/g,'').length;
+    const formatted=_formatMilesStr(before);
+    nativeDesc.set.call(el,formatted);
+    let count=0,pos=formatted.length;
+    for(let i=0;i<formatted.length;i++){
+      if(/[\d,]/.test(formatted[i]))count++;
+      if(count===digitsBeforeCursor){pos=i+1;break;}
+    }
+    el.setSelectionRange(pos,pos);
+  });
+}
+['op_mon','op_mon_cf','op_cuo_fixed_cf','op_mon_d','op_mon_im','op_cuota_im','op_costo','op_precio','op_cuo_fixed','p_mon','g_mon','c_limite','ep_mon','eoc_mon','eoc_cf','sim_mon','sim_cuota_val','sim_cc_capital','cobPagoMon','cobEditMon'].forEach(habilitarMilesLive);
+
+
 setInterval(async()=>{
   if(!currentUser||!SB)return;
   if(_IS_ADMIN)return;
