@@ -3404,7 +3404,15 @@ function showModal(id){
     if(pc){pc.innerHTML=_logoComprobanteUrl?`<img src="${_logoComprobanteUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:6px">`:'<span style="font-size:20px">📄</span>';}
   }
 }
-function closeModal(id){document.getElementById(id).classList.remove('open')}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  // Sincronizar el historial: si el estado actual corresponde a este modal, consumirlo
+  // para que el botón/gesto "atrás" no termine mandando a inicio por una entrada obsoleta.
+  const st=history.state;
+  if(st&&st.modal===id){
+    history.replaceState({page:_lastPage},'',window.location.pathname+'#'+_lastPage);
+  }
+}
 document.querySelectorAll('.mo').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
 function toggleFab(){
   const isOpen=$('fabm').classList.contains('open');
