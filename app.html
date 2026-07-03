@@ -931,6 +931,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <div class="ig"><label class="il" id="lbl_moneda">Moneda</label><select class="inp sel" id="cfg_m"><option value="$">$ (Peso)</option><option value="U$S">U$S</option><option value="R$">R$</option><option value="A$">A$ (AUD)</option></select></div>
     <div class="ig"><label class="il">Idioma / Language</label><select class="inp sel" id="cfg_lang" onchange="aplicarIdioma(this.value)"><option value="es">Español</option><option value="en">English</option></select></div>
     <div class="ig"><label class="il" id="lbl_dias_alerta">Días de alerta anticipada</label><input class="inp" id="cfg_d" type="number" min="1" max="30"></div>
+    <div class="ig"><label class="il" id="lbl_dias_gracia">⏰ Días de gracia antes de marcar mora</label><input class="inp" id="cfg_gracia" type="number" min="0" max="60" placeholder="2"><div style="font-size:9px;color:var(--tx2);margin-top:2px">Cuántos días después del vencimiento se espera antes de considerar el pago atrasado/en mora.</div></div>
     <div class="ig"><label class="il" id="lbl_redondeo">🔢 Redondeo de cobros</label><select class="inp sel" id="cfg_red"><option value="0">Sin redondeo</option><option value="50">Redondear a $50</option><option value="100">Redondear a $100</option><option value="500">Redondear a $500</option><option value="1000">Redondear a $1000</option></select></div>
     <div class="ig"><label class="il" id="lbl_msg_wa">Mensaje recordatorio WhatsApp</label><textarea class="inp" id="cfg_w" rows="3"></textarea><div style="font-size:9px;color:var(--tx2);margin-top:2px">Variables: {nombre} {cuota} {fecha}</div></div>
     <div class="ig"><label class="il" id="lbl_msg_mora">Mensaje morosos</label><textarea class="inp" id="cfg_mm" rows="3"></textarea><div style="font-size:9px;color:var(--tx2);margin-top:2px">Variables: {nombre} {dias} {cuota} {deuda}</div></div>
@@ -1495,7 +1496,7 @@ function requierePlan(feat, planMin='pro'){
 }
 function requierePro(feat){return requierePlan(feat,'pro');}
 let SB = null, currentUser = null;
-let CFG = {nombre:'',moneda:'$',alertaDias:3,redondeo:0,telPropio:'',lang:'es',msgWa:'Hola {nombre}, recordatorio: cuota de {cuota} vence {fecha}. ¡Gracias!',msgMora:'Hola {nombre}, tenés {dias} días de atraso. Tu cuota es de {cuota}. Por favor regularizá. ¡Gracias!',compTel:true,compHistorial:true,compMora:true,compSaldo:true,compMetodo:true,compFooter:true};
+let CFG = {nombre:'',moneda:'$',alertaDias:3,diasGracia:2,redondeo:0,telPropio:'',lang:'es',msgWa:'Hola {nombre}, recordatorio: cuota de {cuota} vence {fecha}. ¡Gracias!',msgMora:'Hola {nombre}, tenés {dias} días de atraso. Tu cuota es de {cuota}. Por favor regularizá. ¡Gracias!',compTel:true,compHistorial:true,compMora:true,compSaldo:true,compMetodo:true,compFooter:true};
 const LOCALE=()=>CFG.lang==='en'?'en-AU':'es-AR';
 let Cs=[], Ops=[], Ps=[], Gs=[], EVs=[];
 let flt='activos', cajP='todo', finP='semana';
@@ -3391,7 +3392,7 @@ function showModal(id){
     // Resetear estilos del swipe-down por si quedaron del cierre anterior
     const _mpi=document.querySelector('#mPerfil .modal')||document.querySelector('#mPerfil > div');
     if(_mpi){_mpi.style.transform='';_mpi.style.opacity='';_mpi.style.transition='';}
-    $('cfg_n').value=CFG.nombre||'';$('cfg_m').value=CFG.moneda||'$';$('cfg_d').value=CFG.alertaDias||3;$('cfg_w').value=CFG.msgWa||'';$('cfg_mm').value=CFG.msgMora||'';if($('cfg_red'))$('cfg_red').value=CFG.redondeo||0;if($('cfg_lang'))$('cfg_lang').value=CFG.lang||'es';
+    $('cfg_n').value=CFG.nombre||'';$('cfg_m').value=CFG.moneda||'$';$('cfg_d').value=CFG.alertaDias||3;if($('cfg_gracia'))$('cfg_gracia').value=(CFG.diasGracia!=null?CFG.diasGracia:2);$('cfg_w').value=CFG.msgWa||'';$('cfg_mm').value=CFG.msgMora||'';if($('cfg_red'))$('cfg_red').value=CFG.redondeo||0;if($('cfg_lang'))$('cfg_lang').value=CFG.lang||'es';
     if($('cfg_comp_tel'))$('cfg_comp_tel').checked=CFG.compTel!==false;if($('cfg_comp_mora'))$('cfg_comp_mora').checked=CFG.compMora!==false;if($('cfg_comp_historial'))$('cfg_comp_historial').checked=CFG.compHistorial!==false;if($('cfg_comp_saldo'))$('cfg_comp_saldo').checked=CFG.compSaldo!==false;if($('cfg_comp_metodo'))$('cfg_comp_metodo').checked=CFG.compMetodo!==false;if($('cfg_comp_footer'))$('cfg_comp_footer').checked=CFG.compFooter!==false;
     if($('cfg_aviso_resumen'))$('cfg_aviso_resumen').checked=!!(CFG.avisoResumen);
     if($('cfg_aviso_hora'))$('cfg_aviso_hora').value=CFG.avisoResumenHora||'20:00';
@@ -4706,7 +4707,7 @@ async function guardarCamFecha(){const oid=parseInt($('cf_oid').value),fv=$('cf_
 
 // ══ CONFIG ══
 async function guardarCfg(){
-  CFG.nombre=$('cfg_n').value||'';CFG.moneda=$('cfg_m').value;CFG.alertaDias=parseInt($('cfg_d').value)||3;CFG.redondeo=parseInt($('cfg_red').value)||0;CFG.lang=$('cfg_lang').value||'es';CFG.msgWa=$('cfg_w').value||CFG.msgWa;CFG.msgMora=$('cfg_mm').value||CFG.msgMora;aplicarIdioma(CFG.lang);if($('cfg_comp_tel'))CFG.compTel=$('cfg_comp_tel').checked;if($('cfg_comp_mora'))CFG.compMora=$('cfg_comp_mora').checked;if($('cfg_comp_historial'))CFG.compHistorial=$('cfg_comp_historial').checked;if($('cfg_comp_saldo'))CFG.compSaldo=$('cfg_comp_saldo').checked;if($('cfg_comp_metodo'))CFG.compMetodo=$('cfg_comp_metodo').checked;if($('cfg_comp_footer'))CFG.compFooter=$('cfg_comp_footer').checked;
+  CFG.nombre=$('cfg_n').value||'';CFG.moneda=$('cfg_m').value;CFG.alertaDias=parseInt($('cfg_d').value)||3;if($('cfg_gracia'))CFG.diasGracia=Math.max(0,parseInt($('cfg_gracia').value));if(isNaN(CFG.diasGracia))CFG.diasGracia=2;CFG.redondeo=parseInt($('cfg_red').value)||0;CFG.lang=$('cfg_lang').value||'es';CFG.msgWa=$('cfg_w').value||CFG.msgWa;CFG.msgMora=$('cfg_mm').value||CFG.msgMora;aplicarIdioma(CFG.lang);if($('cfg_comp_tel'))CFG.compTel=$('cfg_comp_tel').checked;if($('cfg_comp_mora'))CFG.compMora=$('cfg_comp_mora').checked;if($('cfg_comp_historial'))CFG.compHistorial=$('cfg_comp_historial').checked;if($('cfg_comp_saldo'))CFG.compSaldo=$('cfg_comp_saldo').checked;if($('cfg_comp_metodo'))CFG.compMetodo=$('cfg_comp_metodo').checked;if($('cfg_comp_footer'))CFG.compFooter=$('cfg_comp_footer').checked;
   // Aviso resumen
   if($('cfg_aviso_resumen')){
     CFG.avisoResumen=$('cfg_aviso_resumen').checked;
