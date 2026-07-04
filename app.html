@@ -3658,7 +3658,14 @@ function abrirOp(cidFijo=null,oid=null){
         if($('op_fv_sa'))$('op_fv_sa').value=op.fv||hoy();
         actualizarPreview();
       } else {
-        $('op_tip').value=op.tip||'simple';syncInteresOp();
+        const tipVal=op.tip||'simple';
+        if($('op_tip')&&!$('op_tip').querySelector(`option[value="${tipVal}"]`)){
+          const opt=document.createElement('option');
+          opt.value=tipVal;
+          opt.textContent=tipVal==='compuesto'?'📈 Interés compuesto (clásico)':'📊 Interés simple (clásico)';
+          $('op_tip').appendChild(opt);
+        }
+        $('op_tip').value=tipVal;toggleTipoInteres(tipVal);syncInteresOp();
       }
     }
   } else {
