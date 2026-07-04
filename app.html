@@ -3611,7 +3611,7 @@ function abrirOp(cidFijo=null,oid=null){
   $('op_cliGrp').style.display=cidFijo?'none':'block';if(!cidFijo)poblarSelClis();
   if(oid){
     const op=gO(oid);if(!op)return;
-    $('op_tipo').value=op.tipo;toggleOpTipo();$('op_cuo').value=op.cuo;if(op.tip==='cuota'&&$('op_cuo_cf')){$('op_cuo_cf').value=op.cuo;if($('op_cuo_fixed_cf'))$('op_cuo_fixed_cf').value=op.cuota_fija||'';if($('op_mon_cf'))$('op_mon_cf').value=op.mon||'';}$('op_frq').value=op.frq;$('op_fv').value=op.fv;$('op_not').value=op.not||'';$('op_moneda').value=op.moneda||CFG.moneda||'$';$('op_facr').value=op.facr||'';
+    $('op_tipo').value=op.tipo;toggleOpTipo();$('op_cuo').value=op.cuo;if(op.tip==='cuota'&&$('op_cuo_cf')){$('op_cuo_cf').value=op.cuo;if($('op_cuo_fixed_cf'))$('op_cuo_fixed_cf').value=op.cuota_fija||'';if($('op_mon_cf'))$('op_mon_cf').value=op.mon||'';$('op_tip').value='cuota';toggleTipoInteres('cuota');}$('op_frq').value=op.frq;$('op_fv').value=op.fv;$('op_not').value=op.not||'';$('op_moneda').value=op.moneda||CFG.moneda||'$';$('op_facr').value=op.facr||'';
     if(op.tipo==='venta'){$('op_prod').value=op.prod||'';$('op_costo').value=op.costo||0;$('op_precio').value=op.precio||0}
     else{
       $('op_desc').value=op.desc||'';
@@ -3632,10 +3632,12 @@ function abrirOp(cidFijo=null,oid=null){
         const moraDB = data ? parseFloat(data.mora) : parseFloat(op.mora);
         const intDB  = data ? parseFloat(data.int_)  : parseFloat(op.int);
         $('op_int').value = isNaN(intDB) ? 0 : intDB;
-        if(moraDB===0||isNaN(moraDB)){
-          $('op_mora_check').checked=false;$('op_mora').value='0';$('op_mora').disabled=true;$('op_mora').style.opacity='.4';
-        } else {
-          $('op_mora_check').checked=true;$('op_mora').value=moraDB;$('op_mora').disabled=false;$('op_mora').style.opacity='1';
+        if(op.tip!=='cuota'){
+          if(moraDB===0||isNaN(moraDB)){
+            $('op_mora_check').checked=false;$('op_mora').value='0';$('op_mora').disabled=true;$('op_mora').style.opacity='.4';
+          } else {
+            $('op_mora_check').checked=true;$('op_mora').value=moraDB;$('op_mora').disabled=false;$('op_mora').style.opacity='1';
+          }
         }
         // Actualizar array local con valores reales
         op.int=isNaN(intDB)?0:intDB;
