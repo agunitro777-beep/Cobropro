@@ -4394,6 +4394,38 @@ async function sincPagOp(oid){
   if(nuevoPag>=op.cuo){setTimeout(()=>{lanzarConfetti();toast('🎉 ¡Crédito saldado! Felicitaciones','success');},250);}
 }
 
+// Aplica un sobrante (lo que quedó de un pago después de completar la cuota actual)
+// a las cuotas siguientes: completa todas las que el sobrante alcance a cubrir entero,
+// y si queda un resto menor a una cuota completa, lo deja como parcial en la próxima.
+async function aplicarSobranteAutomatico(oid,sobranteInicial,met,fec){
+  let sobrante=Math.round(sobranteInicial);
+  let op=gO(oid);
+  const mensajes=[];
+  while(sobrante>0&&op&&esOpActiva(op)){
+    const cuotaVal=cvOp(op);
+    if(cuotaVal<=0)break;
+    if(sobrante>=Math.round(cuotaVal)-0.5){
+      const numCuota=op.pag+1;
+      const dFull={oid,mon:cuotaVal,met,fec,not_:'Sobrante de pago anterior',par:false,flt:0};
+      const rFull=await dbIns('pagos',dFull);
+      Ps.push({...rFull,not:rFull.not_||''});
+      await sincPagOp(oid);
+      op=gO(oid);
+      sobrante=Math.round(sobrante-cuotaVal);
+      mensajes.push(`cuota ${numCuota} saldada con el sobrante`);
+    } else {
+      const numCuota=op.pag+1;
+      const flt=Math.round(cuotaVal-sobrante);
+      const dPar={oid,mon:sobrante,met,fec,not_:'Sobrante de pago anterior',par:true,flt};
+      const rPar=await dbIns('pagos',dPar);
+      Ps.push({...rPar,not:rPar.not_||''});
+      mensajes.push(`${fmt(sobrante)} a favor en cuota ${numCuota} (falta ${fmt(flt)})`);
+      sobrante=0;
+    }
+  }
+  if(sobrante>0)mensajes.push(`crédito saldado — sobran ${fmt(sobrante)} sin aplicar`);
+  return mensajes;
+}
 async function guardarPago(){
   if(_guardando){return;}_guardando=true;
   const fid=parseInt($('p_fixOp').value),oid=fid||parseInt($('p_op').value),mon=parseFloat($('p_mon').value);
@@ -4462,33 +4494,22 @@ async function guardarPago(){
         if(pPrev){pPrev.par=false;pPrev.flt=0;await dbUpd('pagos',parPrevId,{par:false,flt:0})}
         const pagAntes=op.pag;
         await sincPagOp(oid);
-        // ── Sobrante: si pagó más de lo que faltaba, generar parcial para la cuota siguiente ──
+        // ── Sobrante: aplicarlo a las cuotas siguientes, completando todas las que alcance ──
         const sobrante=Math.round(mon-base);
-        const cuotaSig=cvOp(op);
-        if(sobrante>0&&sobrante<cuotaSig&&esOpActiva(op)){
-          const fltSig=cuotaSig-sobrante;
-          const dSob={oid,mon:sobrante,met:d.met,fec,not_:'Sobrante de pago anterior',par:true,flt:fltSig};
-          const rSob=await dbIns('pagos',dSob);
-          Ps.push({...rSob,not:rSob.not_||''});
-          _sobranteMsg=`✅ Cuota ${pagAntes+1} saldada · ${fmt(sobrante)} a favor en cuota ${op.pag+1} (falta ${fmt(fltSig)})`;
-        } else if(sobrante>=cuotaSig&&esOpActiva(op)){
-          _sobranteMsg=`✅ Cuota ${pagAntes+1} saldada · sobrante ${fmt(sobrante)}, registrá cuota ${op.pag+1}`;
+        if(sobrante>0){
+          const msgs=await aplicarSobranteAutomatico(oid,sobrante,d.met,fec);
+          _sobranteMsg=`✅ Cuota ${pagAntes+1} saldada`+(msgs.length?' · '+msgs.join(' · '):'');
         }
       }
     } else if(!par){
       const pagAntes2=op.pag;
       await sincPagOp(oid);
-      // ── Sobrante: si pagó más de la cuota entera, generar parcial para la siguiente ──
+      // ── Sobrante: aplicarlo a las cuotas siguientes, completando todas las que alcance ──
       const cuotaVal=cvOp(op);
       const sobrante=Math.round(mon-cuotaVal);
-      if(sobrante>0&&sobrante<cuotaVal&&esOpActiva(op)){
-        const fltSig=cuotaVal-sobrante;
-        const dSob={oid,mon:sobrante,met:d.met,fec,not_:'Sobrante de pago anterior',par:true,flt:fltSig};
-        const rSob=await dbIns('pagos',dSob);
-        Ps.push({...rSob,not:rSob.not_||''});
-        _sobranteMsg=`✅ Cuota ${pagAntes2+1} saldada · ${fmt(sobrante)} a favor en cuota ${op.pag+1} (falta ${fmt(fltSig)})`;
-      } else if(sobrante>=cuotaVal&&esOpActiva(op)){
-        _sobranteMsg=`✅ Cuota ${pagAntes2+1} saldada · sobrante ${fmt(sobrante)}, registrá cuota ${op.pag+1}`;
+      if(sobrante>0){
+        const msgs=await aplicarSobranteAutomatico(oid,sobrante,d.met,fec);
+        _sobranteMsg=`✅ Cuota ${pagAntes2+1} saldada`+(msgs.length?' · '+msgs.join(' · '):'');
       }
     }
     closeModal('mpago');$('p_fixOp').value='';$('p_fixPar').value='';$('p_opGrp').style.display='block';
