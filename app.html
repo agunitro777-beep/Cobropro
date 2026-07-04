@@ -1091,12 +1091,14 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <div id="opCamposP">
       <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc" placeholder="Ej: Crédito personal..."></div>
       <div class="ig"><label class="il" id="op_mon_label">Monto prestado *</label><input class="inp" id="op_mon" type="number" placeholder="Capital que le prestás al cliente" oninput="(function(){const v=parseFloat(document.getElementById('op_mon').value);const h=document.getElementById('op_mon_hint');if(v&&v!==Math.round(v)){h.textContent='⚠️ Se guardará como $'+Math.round(v).toLocaleString(LOCALE());h.style.color='var(--yw)';}else{h.textContent='';}actualizarPreview();})()"><div id="op_mon_hint" style="font-size:10px;min-height:13px;margin-top:3px"></div></div>
-      <div class="ig"><label class="il">Tipo de crédito</label><select class="inp sel" id="op_tip" onchange="toggleTipoInteres()">
+      <div class="ig"><label class="il">Tipo de crédito</label><div id="op_tip_wrap" style="position:relative" onclick="if($('op_tip').disabled)explicarTipoBloqueado()"><select class="inp sel" id="op_tip" onchange="toggleTipoInteres()">
         <option value="cuota">🔒 Cuota pactada</option>
         <option value="diario_abierto">📅 Diario (fecha abierta)</option>
         <option value="interes_mensual">💰 Solo interés mensual</option>
         <option value="saldo_abierto">🗓️ Saldo abierto (pagos libres)</option>
-      </select></div>
+      </select><div id="op_tip_lock_overlay" style="display:none;position:absolute;inset:0;cursor:pointer"></div></div>
+      <div id="op_tip_lock_msg" style="display:none;font-size:9px;color:var(--tx2);margin-top:4px" onclick="explicarTipoBloqueado()">🔒 No se puede cambiar en un crédito ya cargado. <span style="color:var(--ac2);text-decoration:underline">¿Por qué?</span></div>
+      </div>
       <!-- Explicación del tipo seleccionado -->
       <div id="tipExplainer" style="border-radius:10px;padding:11px 13px;margin-bottom:8px;font-size:11px;line-height:1.6;display:none"></div>
 
@@ -2528,6 +2530,16 @@ function actualizarPreviewVenta(){
     prevEl.style.display='none';
   }
 }
+function explicarTipoBloqueado(){
+  toast('🔒 El tipo de crédito no se puede cambiar una vez cargado, para evitar que el saldo, la mora y el progreso queden mal calculados. Si necesitás otra estructura: marcá este crédito como saldado (✅) y cargá uno nuevo con el tipo que necesites.','error');
+}
+function bloquearTipoCredito(bloquear){
+  const sel=$('op_tip');if(!sel)return;
+  sel.disabled=!!bloquear;
+  if($('op_tip_lock_overlay'))$('op_tip_lock_overlay').style.display=bloquear?'block':'none';
+  if($('op_tip_lock_msg'))$('op_tip_lock_msg').style.display=bloquear?'block':'none';
+  sel.style.opacity=bloquear?'.55':'1';
+}
 function toggleTipoInteres(forzar){
   // No aplicar esta lógica si el tipo de operación es venta
   if($('op_tipo')&&$('op_tipo').value==='venta')return;
@@ -3634,6 +3646,7 @@ function autoFechaOp(){
 function abrirOp(cidFijo=null,oid=null){
   $('opMT').textContent=oid?'✏️ Editar operación':'➕ Nueva operación';$('op_id').value=oid||'';$('op_cidFijo').value=cidFijo||'';
   $('op_cliGrp').style.display=cidFijo?'none':'block';if(!cidFijo)poblarSelClis();
+  bloquearTipoCredito(!!oid);
   if(oid){
     const op=gO(oid);if(!op)return;
     // Créditos viejos (de antes del rediseño) que tienen 0% interés y un "valor por cuota" fijo
