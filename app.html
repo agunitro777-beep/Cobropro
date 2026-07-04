@@ -5013,9 +5013,11 @@ function rInicio(){
     prestLabel='Prestado (año)';
   } else {
     const lu=new Date(h);lu.setDate(h.getDate()-((h.getDay()+6)%7));lu.setHours(0,0,0,0);
+    const primerDiaMes=new Date(h.getFullYear(),h.getMonth(),1);primerDiaMes.setHours(0,0,0,0);
+    const inicioSemana=lu<primerDiaMes?primerDiaMes:lu;
     const do2=new Date(lu);do2.setDate(lu.getDate()+6);do2.setHours(23,59,59,999);
-    desde=lu;hasta=do2;
-    labelTxt=fD(lu.toISOString().split('T')[0])+'–'+fD(do2.toISOString().split('T')[0]);
+    desde=inicioSemana;hasta=do2;
+    labelTxt=fD(inicioSemana.toISOString().split('T')[0])+'–'+fD(do2.toISOString().split('T')[0]);
     prestLabel='Prestado';
   }
   desdeStr=desde.toISOString().split('T')[0];
