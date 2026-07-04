@@ -9165,19 +9165,34 @@ init();
 // sigan funcionando normal (reciben el número "limpio", sin puntos).
 // Solo números enteros (los montos de esta app no usan centavos) — así se evita
 // cualquier ambigüedad con separadores decimales.
+function _agruparMiles(digitos,neg){
+  digitos=digitos.replace(/^0+(?=\d)/,'');
+  if(digitos==='')return neg?'-0':'0';
+  digitos=digitos.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  return (neg?'-':'')+digitos;
+}
+// Usada mientras se está TIPEANDO: el string ya puede traer puntos de miles
+// puestos por nosotros mismos (ej "1.720") — acá NUNCA se interpretan como decimales,
+// solo se dejan los dígitos.
 function _formatMilesStr(input){
   let s=String(input==null?'':input).trim();
   if(s==='')return '';
   const neg=s.startsWith('-');
-  if(/^-?\d+(\.\d+)?$/.test(s)){
+  s=s.replace(/[^\d]/g,'');
+  return _agruparMiles(s,neg);
+}
+// Usada cuando el VALOR se asigna por código (ej desde una operación guardada),
+// ahí sí puede venir un número JS con punto decimal real (ej 1500.5) y hay que redondear.
+function _formatMilesDesdeValor(input){
+  let s=String(input==null?'':input).trim();
+  if(s==='')return '';
+  const neg=s.startsWith('-');
+  if(/^-?\d+\.\d+$/.test(s)){
     s=String(Math.round(Math.abs(parseFloat(s))));
   } else {
     s=s.replace(/[^\d]/g,'');
   }
-  s=s.replace(/^0+(?=\d)/,'');
-  if(s==='')return neg?'-0':'0';
-  s=s.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-  return (neg?'-':'')+s;
+  return _agruparMiles(s,neg);
 }
 function habilitarMilesLive(id){
   const el=document.getElementById(id);
@@ -9193,7 +9208,7 @@ function habilitarMilesLive(id){
       return disp.replace(/\./g,'');
     },
     set(v){
-      nativeDesc.set.call(el,_formatMilesStr(v));
+      nativeDesc.set.call(el,_formatMilesDesdeValor(v));
     },
     configurable:true
   });
@@ -9218,6 +9233,7 @@ function habilitarMilesLive(id){
   });
 }
 ['op_mon','op_mon_cf','op_cuo_fixed_cf','op_mon_d','op_mon_im','op_cuota_im','op_costo','op_precio','op_cuo_fixed','p_mon','g_mon','c_limite','ep_mon','eoc_mon','eoc_cf','sim_mon','sim_cuota_val','sim_cc_capital','cobPagoMon','cobEditMon'].forEach(habilitarMilesLive);
+
 
 
 
