@@ -9168,7 +9168,11 @@ function _formatMilesStr(input){
   // Si viene como número JS estándar con punto decimal (ej "1500.5"), convertir a coma
   if(/^-?\d+\.\d+$/.test(s)&&!s.includes(',')) s=s.replace('.',',');
   s=s.replace(/[^\d,]/g,'');
-  let [intPart,decPart]=s.split(',');
+  // Tomar la ÚLTIMA coma como separador decimal (por si quedó alguna suelta) y descartar el resto
+  const lastComma=s.lastIndexOf(',');
+  let intPart,decPart;
+  if(lastComma===-1){intPart=s;decPart=undefined;}
+  else{intPart=s.slice(0,lastComma).replace(/,/g,'');decPart=s.slice(lastComma+1).replace(/,/g,'');}
   intPart=(intPart||'').replace(/^0+(?=\d)/,'');
   if(intPart==='')intPart='0';
   intPart=intPart.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
@@ -9194,6 +9198,25 @@ function habilitarMilesLive(id){
     },
     configurable:true
   });
+  // Interceptar qué carácter se inserta ANTES de que llegue al campo:
+  // así el punto/coma decimal no se mezcla con los puntos de miles que ya están puestos.
+  el.addEventListener('beforeinput',function(e){
+    if(e.data==null)return; // borrados, etc. — dejar pasar
+    if(e.data.length>1)return; // pegado de texto largo — se limpia igual en 'input'
+    const actual=nativeDesc.get.call(el);
+    if(e.data==='.'||e.data===','){
+      if(actual.includes(',')){e.preventDefault();return;} // ya hay separador decimal, ignorar otro
+      if(e.data==='.'){
+        // normalizar el punto del teclado numérico a coma decimal
+        e.preventDefault();
+        const start=el.selectionStart,end=el.selectionEnd;
+        nativeDesc.set.call(el,actual.slice(0,start)+','+actual.slice(end));
+        el.setSelectionRange(start+1,start+1);
+      }
+      return;
+    }
+    if(!/^\d$/.test(e.data)){e.preventDefault();} // bloquear cualquier otro caracter no numérico
+  });
   el.addEventListener('input',function(){
     const selStart=el.selectionStart;
     const before=nativeDesc.get.call(el);
@@ -9209,6 +9232,7 @@ function habilitarMilesLive(id){
   });
 }
 ['op_mon','op_mon_cf','op_cuo_fixed_cf','op_mon_d','op_mon_im','op_cuota_im','op_costo','op_precio','op_cuo_fixed','p_mon','g_mon','c_limite','ep_mon','eoc_mon','eoc_cf','sim_mon','sim_cuota_val','sim_cc_capital','cobPagoMon','cobEditMon'].forEach(habilitarMilesLive);
+
 
 
 setInterval(async()=>{
