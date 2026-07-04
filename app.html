@@ -6126,21 +6126,35 @@ function verDia(ds){
 function setFinP(p,el){finP=p;document.querySelectorAll('#finTabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');rFin()}
 function rFin(){
   if(finP==='proyeccion'){rFinProy();return}
-  const h=new Date();let pf=[],label='';
+  const h=new Date();let pf=[],label='',gDesde=null,gHasta=null;
   if(finP==='semana'){
     const lu=new Date(h);lu.setDate(h.getDate()-((h.getDay()+6)%7));lu.setHours(0,0,0,0);
+    const primerDiaMes=new Date(h.getFullYear(),h.getMonth(),1);primerDiaMes.setHours(0,0,0,0);
+    const inicioSemana=lu<primerDiaMes?primerDiaMes:lu;
     const do2=new Date(lu);do2.setDate(lu.getDate()+6);do2.setHours(23,59,59,999);
-    pf=Ps.filter(p=>{const d=new Date(p.fec+'T00:00:00');return d>=lu&&d<=do2});label='Esta semana';
+    pf=Ps.filter(p=>{const d=new Date(p.fec+'T00:00:00');return d>=inicioSemana&&d<=do2});label='Esta semana';
+    gDesde=inicioSemana.toISOString().split('T')[0];gHasta=do2.toISOString().split('T')[0];
   } else if(finP==='mes'){
     pf=Ps.filter(p=>p.fec&&p.fec.startsWith(h.toISOString().substring(0,7)));label='Este mes';
+    gDesde=h.toISOString().substring(0,7)+'-01';gHasta=h.toISOString().substring(0,7)+'-31';
   } else {
     pf=Ps.filter(p=>p.fec&&p.fec.startsWith(h.getFullYear().toString()));label='Este año';
+    gDesde=h.getFullYear()+'-01-01';gHasta=h.getFullYear()+'-12-31';
   }
   const tc=pf.reduce((s,p)=>s+p.mon,0);
-  const int=pf.reduce((acc,p)=>{const op=gO(p.oid);return op&&!esVenta(op)?acc+Math.max(0,cvOp(op)-op.mon/op.cuo):acc},0);
+  // Ganancia real por pago: acotada al monto efectivamente pagado (no a la cuota completa),
+  // igual que en el resumen de Inicio — evita inflar el número con pagos parciales.
+  const int=pf.reduce((acc,p)=>{
+    const op=gO(p.oid);if(!op)return acc;
+    if(op.tip==='interes_mensual'||(p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}
+    const v=cvOp(op),pr=op.mon/op.cuo;
+    if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*gan;}
+    return acc+Math.max(0,Math.min(p.mon,v)-pr);
+  },0);
   const ef=pf.filter(p=>p.met==='efectivo').reduce((s,p)=>s+p.mon,0);
   const tr=pf.filter(p=>p.met==='transferencia').reduce((s,p)=>s+p.mon,0);
-  const tg=Gs.reduce((s,g)=>s+g.mon,0);
+  const tg=Gs.filter(g=>g.fec&&g.fec>=gDesde&&g.fec<=gHasta).reduce((s,g)=>s+g.mon,0);
+  const ganNetaFin=int-tg;
   const capP=Ops.filter(o=>!esVenta(o)&&esOpActiva(o)).reduce((s,o)=>s+o.mon,0);
   const porCob=Ops.filter(o=>esOpActiva(o)).reduce((s,o)=>s+saldoOp(o),0);
 
@@ -6151,7 +6165,7 @@ function rFin(){
     </div>
     <div class="sg">
       <div class="sc yw"><div class="sl">Intereses</div><div class="sv yw" style="font-size:14px">${fmt(int)}</div></div>
-      <div class="sc ${tc-tg>=0?'bl':'rd'}"><div class="sl">Ganancia neta</div><div class="sv ${tc-tg>=0?'bl':'rd'}" style="font-size:14px">${fmt(tc-tg)}</div></div>
+      <div class="sc ${ganNetaFin>=0?'bl':'rd'}"><div class="sl">Ganancia neta</div><div class="sv ${ganNetaFin>=0?'bl':'rd'}" style="font-size:14px">${fmt(ganNetaFin)}</div></div>
       <div class="sc gr"><div class="sl">💵 Efectivo</div><div class="sv gr" style="font-size:14px">${fmt(ef)}</div></div>
       <div class="sc bl"><div class="sl">📲 Transf.</div><div class="sv bl" style="font-size:14px">${fmt(tr)}</div></div>
       <div class="sc bl"><div class="sl">Total prestado</div><div class="sv bl" style="font-size:14px">${fmt(capP)}</div></div>
