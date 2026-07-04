@@ -3611,7 +3611,11 @@ function abrirOp(cidFijo=null,oid=null){
   $('op_cliGrp').style.display=cidFijo?'none':'block';if(!cidFijo)poblarSelClis();
   if(oid){
     const op=gO(oid);if(!op)return;
-    $('op_tipo').value=op.tipo;toggleOpTipo();$('op_cuo').value=op.cuo;if(op.tip==='cuota'&&$('op_cuo_cf')){$('op_cuo_cf').value=op.cuo;if($('op_cuo_fixed_cf'))$('op_cuo_fixed_cf').value=op.cuota_fija||'';if($('op_mon_cf'))$('op_mon_cf').value=op.mon||'';$('op_tip').value='cuota';toggleTipoInteres('cuota');}$('op_frq').value=op.frq;$('op_fv').value=op.fv;$('op_not').value=op.not||'';$('op_moneda').value=op.moneda||CFG.moneda||'$';$('op_facr').value=op.facr||'';
+    // Créditos viejos (de antes del rediseño) que tienen 0% interés y un "valor por cuota" fijo
+    // cargado son, en la práctica, créditos de "Cuota pactada" — aunque internamente quedaron
+    // guardados con tip='simple'/'compuesto'. Los tratamos como Cuota pactada al editar.
+    const esCuotaEfectiva = op.tip==='cuota' || (op.tip!=='interes_mensual' && op.tip!=='cuota_abierta' && (parseFloat(op.int)||0)===0 && parseFloat(op.cuota_fija)>0);
+    $('op_tipo').value=op.tipo;toggleOpTipo();$('op_cuo').value=op.cuo;if(esCuotaEfectiva&&$('op_cuo_cf')){$('op_cuo_cf').value=op.cuo;if($('op_cuo_fixed_cf'))$('op_cuo_fixed_cf').value=op.cuota_fija||'';if($('op_mon_cf'))$('op_mon_cf').value=op.mon||'';$('op_tip').value='cuota';toggleTipoInteres('cuota');}$('op_frq').value=op.frq;$('op_fv').value=op.fv;$('op_not').value=op.not||'';$('op_moneda').value=op.moneda||CFG.moneda||'$';$('op_facr').value=op.facr||'';
     if(op.tipo==='venta'){$('op_prod').value=op.prod||'';$('op_costo').value=op.costo||0;$('op_precio').value=op.precio||0}
     else{
       $('op_desc').value=op.desc||'';
@@ -3632,7 +3636,7 @@ function abrirOp(cidFijo=null,oid=null){
         const moraDB = data ? parseFloat(data.mora) : parseFloat(op.mora);
         const intDB  = data ? parseFloat(data.int_)  : parseFloat(op.int);
         $('op_int').value = isNaN(intDB) ? 0 : intDB;
-        if(op.tip!=='cuota'){
+        if(!esCuotaEfectiva){
           if(moraDB===0||isNaN(moraDB)){
             $('op_mora_check').checked=false;$('op_mora').value='0';$('op_mora').disabled=true;$('op_mora').style.opacity='.4';
           } else {
@@ -3656,6 +3660,9 @@ function abrirOp(cidFijo=null,oid=null){
         if($('op_desc_sa'))$('op_desc_sa').value=op.desc||'';
         if($('op_mon_sa'))$('op_mon_sa').value=Math.round(op.mon);
         if($('op_fv_sa'))$('op_fv_sa').value=op.fv||hoy();
+        actualizarPreview();
+      } else if(esCuotaEfectiva){
+        // ya quedó cargado más arriba como Cuota pactada — solo refrescar el resumen
         actualizarPreview();
       } else {
         const tipVal=op.tip||'simple';
