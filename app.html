@@ -1121,16 +1121,21 @@ body.light .mo{background:rgba(0,0,0,.5)}
       <div id="intCuotaBlock" style="display:none">
         <div class="ig">
           <label class="il">Monto prestado *</label>
-          <input class="inp" id="op_mon_cf" type="number" placeholder="Ej: 500000" oninput="syncCuotaFijaDirecta()">
+          <input class="inp" id="op_mon_cf" type="number" placeholder="Ej: 500000" oninput="calcCuotaDesdePct()">
+        </div>
+        <div class="ig">
+          <label class="il">% de interés (calculadora, opcional)</label>
+          <input class="inp" id="op_pct_cf" type="number" placeholder="Ej: 28" oninput="calcCuotaDesdePct()">
+          <div style="font-size:9px;color:var(--tx2);margin-top:3px">Si lo completás, calcula solo el valor de cuota (capital/cuotas + % sobre el monto prestado en cada cuota). Podés borrarlo y cargar la cuota a mano si preferís.</div>
+        </div>
+        <div class="ig">
+          <label class="il">Cantidad de cuotas *</label>
+          <input class="inp" id="op_cuo_cf" type="number" placeholder="Ej: 12" oninput="calcCuotaDesdePct()">
         </div>
         <div class="ig">
           <label class="il">Valor de cuota *</label>
           <input class="inp" id="op_cuo_fixed_cf" type="number" placeholder="Ej: 635000" oninput="syncCuotaFijaDirecta()">
           <div id="op_cf_hint" style="font-size:10px;color:var(--ac2);margin-top:3px;min-height:14px"></div>
-        </div>
-        <div class="ig">
-          <label class="il">Cantidad de cuotas *</label>
-          <input class="inp" id="op_cuo_cf" type="number" placeholder="Ej: 12" oninput="syncCuotaFijaDirecta()">
         </div>
       </div>
 
@@ -3041,6 +3046,16 @@ function syncInteresOp(){
   }
   actualizarPreview();
 }
+function calcCuotaDesdePct(){
+  const mon=parseFloat($('op_mon_cf')?.value)||0;
+  const cuo=parseInt($('op_cuo_cf')?.value)||0;
+  const pct=parseFloat($('op_pct_cf')?.value)||0;
+  if(mon>0&&cuo>0&&pct>0){
+    const cuota=Math.round(mon/cuo+mon*(pct/100));
+    if($('op_cuo_fixed_cf'))$('op_cuo_fixed_cf').value=cuota;
+  }
+  syncCuotaFijaDirecta();
+}
 function syncCuotaFijaDirecta(){
   const mon=parseFloat($('op_mon_cf')?.value)||0;
   const cuotaFija=parseFloat($('op_cuo_fixed_cf')?.value)||0;
@@ -3615,7 +3630,7 @@ function abrirOp(cidFijo=null,oid=null){
     // cargado son, en la práctica, créditos de "Cuota pactada" — aunque internamente quedaron
     // guardados con tip='simple'/'compuesto'. Los tratamos como Cuota pactada al editar.
     const esCuotaEfectiva = op.tip==='cuota' || (op.tip!=='interes_mensual' && op.tip!=='cuota_abierta' && (parseFloat(op.int)||0)===0 && parseFloat(op.cuota_fija)>0);
-    $('op_tipo').value=op.tipo;toggleOpTipo();$('op_cuo').value=op.cuo;if(esCuotaEfectiva&&$('op_cuo_cf')){$('op_cuo_cf').value=op.cuo;if($('op_cuo_fixed_cf'))$('op_cuo_fixed_cf').value=op.cuota_fija||'';if($('op_mon_cf'))$('op_mon_cf').value=op.mon||'';$('op_tip').value='cuota';toggleTipoInteres('cuota');}$('op_frq').value=op.frq;$('op_fv').value=op.fv;$('op_not').value=op.not||'';$('op_moneda').value=op.moneda||CFG.moneda||'$';$('op_facr').value=op.facr||'';
+    $('op_tipo').value=op.tipo;toggleOpTipo();$('op_cuo').value=op.cuo;if(esCuotaEfectiva&&$('op_cuo_cf')){if($('op_pct_cf'))$('op_pct_cf').value='';$('op_cuo_cf').value=op.cuo;if($('op_cuo_fixed_cf'))$('op_cuo_fixed_cf').value=op.cuota_fija||'';if($('op_mon_cf'))$('op_mon_cf').value=op.mon||'';$('op_tip').value='cuota';toggleTipoInteres('cuota');}$('op_frq').value=op.frq;$('op_fv').value=op.fv;$('op_not').value=op.not||'';$('op_moneda').value=op.moneda||CFG.moneda||'$';$('op_facr').value=op.facr||'';
     if(op.tipo==='venta'){$('op_prod').value=op.prod||'';$('op_costo').value=op.costo||0;$('op_precio').value=op.precio||0}
     else{
       $('op_desc').value=op.desc||'';
@@ -3676,7 +3691,7 @@ function abrirOp(cidFijo=null,oid=null){
       }
     }
   } else {
-    ['op_desc','op_mon','op_int','op_cuo','op_cuo_fixed','op_cuo_cf','op_not','op_prod','op_costo','op_precio','op_desc_sa','op_mon_sa'].forEach(f=>{const el=document.getElementById(f);if(el){el.value='';el.dataset.autofilled='';el.style.borderColor='';}});
+    ['op_desc','op_mon','op_int','op_cuo','op_cuo_fixed','op_cuo_cf','op_not','op_prod','op_costo','op_precio','op_desc_sa','op_mon_sa','op_pct_cf','op_cuo_fixed_cf','op_mon_cf'].forEach(f=>{const el=document.getElementById(f);if(el){el.value='';el.dataset.autofilled='';el.style.borderColor='';}});
     if($('op_fv_sa'))$('op_fv_sa').value='';
     $('op_mora').value='0';$('op_mora').disabled=true;$('op_mora').style.opacity='.4';
     if($('op_mora_check'))$('op_mora_check').checked=false;
