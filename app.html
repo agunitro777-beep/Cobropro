@@ -9163,77 +9163,62 @@ init();
 // Da formato "1.000.000" mientras se escribe, sin romper el resto del código:
 // se sobreescribe .value en la instancia del input para que parseFloat/parseInt
 // sigan funcionando normal (reciben el número "limpio", sin puntos).
+// Solo números enteros (los montos de esta app no usan centavos) — así se evita
+// cualquier ambigüedad con separadores decimales.
 function _formatMilesStr(input){
   let s=String(input==null?'':input).trim();
   if(s==='')return '';
-  const neg=s.trim().startsWith('-');
-  // Si viene como número JS estándar con punto decimal (ej "1500.5"), convertir a coma
-  if(/^-?\d+\.\d+$/.test(s)&&!s.includes(',')) s=s.replace('.',',');
-  s=s.replace(/[^\d,]/g,'');
-  // Tomar la ÚLTIMA coma como separador decimal (por si quedó alguna suelta) y descartar el resto
-  const lastComma=s.lastIndexOf(',');
-  let intPart,decPart;
-  if(lastComma===-1){intPart=s;decPart=undefined;}
-  else{intPart=s.slice(0,lastComma).replace(/,/g,'');decPart=s.slice(lastComma+1).replace(/,/g,'');}
-  intPart=(intPart||'').replace(/^0+(?=\d)/,'');
-  if(intPart==='')intPart='0';
-  intPart=intPart.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-  let out=(neg?'-':'')+intPart;
-  if(decPart!==undefined) out+=','+decPart.slice(0,2);
-  return out;
+  const neg=s.startsWith('-');
+  if(/^-?\d+(\.\d+)?$/.test(s)){
+    s=String(Math.round(Math.abs(parseFloat(s))));
+  } else {
+    s=s.replace(/[^\d]/g,'');
+  }
+  s=s.replace(/^0+(?=\d)/,'');
+  if(s==='')return neg?'-0':'0';
+  s=s.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  return (neg?'-':'')+s;
 }
 function habilitarMilesLive(id){
   const el=document.getElementById(id);
   if(!el||el._milesLive)return;
   el._milesLive=true;
   el.type='text';
-  el.setAttribute('inputmode','decimal');
+  el.setAttribute('inputmode','numeric');
   const nativeDesc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
   Object.defineProperty(el,'value',{
     get(){
       const disp=nativeDesc.get.call(el);
       if(disp==='')return '';
-      return disp.replace(/\./g,'').replace(',','.');
+      return disp.replace(/\./g,'');
     },
     set(v){
       nativeDesc.set.call(el,_formatMilesStr(v));
     },
     configurable:true
   });
-  // Interceptar qué carácter se inserta ANTES de que llegue al campo:
-  // así el punto/coma decimal no se mezcla con los puntos de miles que ya están puestos.
+  // Bloquear cualquier caracter que no sea un dígito (nada de coma/punto decimal)
   el.addEventListener('beforeinput',function(e){
     if(e.data==null)return; // borrados, etc. — dejar pasar
     if(e.data.length>1)return; // pegado de texto largo — se limpia igual en 'input'
-    const actual=nativeDesc.get.call(el);
-    if(e.data==='.'||e.data===','){
-      if(actual.includes(',')){e.preventDefault();return;} // ya hay separador decimal, ignorar otro
-      if(e.data==='.'){
-        // normalizar el punto del teclado numérico a coma decimal
-        e.preventDefault();
-        const start=el.selectionStart,end=el.selectionEnd;
-        nativeDesc.set.call(el,actual.slice(0,start)+','+actual.slice(end));
-        el.setSelectionRange(start+1,start+1);
-      }
-      return;
-    }
-    if(!/^\d$/.test(e.data)){e.preventDefault();} // bloquear cualquier otro caracter no numérico
+    if(!/^\d$/.test(e.data)){e.preventDefault();}
   });
   el.addEventListener('input',function(){
     const selStart=el.selectionStart;
     const before=nativeDesc.get.call(el);
-    const digitsBeforeCursor=before.slice(0,selStart).replace(/[^\d,]/g,'').length;
+    const digitsBeforeCursor=before.slice(0,selStart).replace(/[^\d]/g,'').length;
     const formatted=_formatMilesStr(before);
     nativeDesc.set.call(el,formatted);
     let count=0,pos=formatted.length;
     for(let i=0;i<formatted.length;i++){
-      if(/[\d,]/.test(formatted[i]))count++;
+      if(/\d/.test(formatted[i]))count++;
       if(count===digitsBeforeCursor){pos=i+1;break;}
     }
     el.setSelectionRange(pos,pos);
   });
 }
 ['op_mon','op_mon_cf','op_cuo_fixed_cf','op_mon_d','op_mon_im','op_cuota_im','op_costo','op_precio','op_cuo_fixed','p_mon','g_mon','c_limite','ep_mon','eoc_mon','eoc_cf','sim_mon','sim_cuota_val','sim_cc_capital','cobPagoMon','cobEditMon'].forEach(habilitarMilesLive);
+
 
 
 
