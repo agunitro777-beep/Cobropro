@@ -1169,6 +1169,7 @@ body.light .mo{background:rgba(0,0,0,.5)}
       <div id="intSaldoAbiertoBlock" style="display:none">
         <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc_sa" placeholder="Ej: Saldo pendiente..."></div>
         <div class="ig"><label class="il">Monto total adeudado *</label><input class="inp" id="op_mon_sa" type="number" placeholder="Ej: 100000" oninput="actualizarPreview()"></div>
+        <div class="ig"><label class="il">Capital prestado (opcional)</label><input class="inp" id="op_costo_sa" type="number" placeholder="Ej: 80000" oninput="actualizarPreview()"><div style="font-size:9px;color:var(--tx2);margin-top:3px">Si lo completás, la app calcula tu ganancia (monto total − capital prestado) a medida que va cobrando. Dejalo vacío si no lo necesitás.</div></div>
         <div class="ig"><label class="il">Próximo pago estimado *</label><input class="inp" id="op_fv_sa" type="date"><div style="font-size:9px;color:var(--tx2);margin-top:3px">El cliente va pagando montos y fechas libres. Vos vas actualizando esta fecha manualmente (con el botón 📅) cada vez que acuerden el próximo pago.</div></div>
       </div>
 
@@ -1831,6 +1832,10 @@ const pagoDeOp=oid=>Ps.filter(p=>p.oid===oid);
 function aCol(n){const col=['#6c63ff','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#8b5cf6'];let h=0;for(let c of n)h=(h+c.charCodeAt(0))%col.length;return col[h]}
 const ini=n=>n.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
 const esVenta=op=>op.tipo==='venta';
+// Saldo abierto con "capital prestado" cargado se calcula la ganancia igual que una venta
+// (precio de venta = monto total adeudado, costo = capital prestado).
+const tieneGananciaTipoVenta=op=>esVenta(op)||(op.tip==='cuota_abierta'&&op.costo>0);
+const precioEfectivoOp=op=>esVenta(op)?op.precio:op.mon;
 function cvOp(op){
   if(esVenta(op))return Math.round(op.precio/op.cuo);
   // Si tiene cuota pactada guardada, usarla directamente
@@ -2039,7 +2044,7 @@ function rankCli(cid){
 }
 function intOp(op){
   const pagos=pagoDeOp(op.id).filter(p=>!p.par);
-  if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return pagos.filter(p=>!(p.not||'').startsWith('🔄 INTERES')).reduce((s,p)=>s+Math.min(p.mon/cvOp(op),1)*gan,0)}
+  if(tieneGananciaTipoVenta(op)){const gan=(precioEfectivoOp(op)-op.costo)/op.cuo;return pagos.filter(p=>!(p.not||'').startsWith('🔄 INTERES')).reduce((s,p)=>s+Math.min(p.mon/cvOp(op),1)*gan,0)}
   const soloInt=pagos.filter(p=>(p.not||'').startsWith('🔄 INTERES')).reduce((s,p)=>s+p.mon,0);
   const v=cvOp(op),pr=op.mon/op.cuo;
   const ganPorCuota=v-pr; // interés embebido por cuota
@@ -2963,10 +2968,15 @@ function actualizarPreview(){
   if(tip==='saldo_abierto'){
     const monSA=parseFloat($('op_mon_sa')?.value)||0;
     if(!monSA){pr.style.display='none';return;}
+    const costoSA=parseFloat($('op_costo_sa')?.value)||0;
+    const ganSA=costoSA>0?monSA-costoSA:null;
     pr.style.display='block';
     pr.innerHTML=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Saldo abierto</div>
+<div style="display:grid;grid-template-columns:${ganSA!==null?'1fr 1fr':'1fr'};gap:8px">
 <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Total adeudado</div><div style="font-weight:800;font-size:14px">${(CFG.moneda||'$')}${Math.round(monSA).toLocaleString(LOCALE())}</div></div>
-<div style="margin-top:8px;font-size:10px;color:var(--tx2);line-height:1.6">Sin interés. Registrá pagos libres (💵 Pago) y actualizá el próximo pago estimado (📅) cada vez que acuerden con el cliente.</div>`;
+${ganSA!==null?`<div style="background:rgba(34,197,94,.12);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Tu ganancia</div><div style="font-weight:800;font-size:14px;color:var(--gr)">${(CFG.moneda||'$')}${Math.round(ganSA).toLocaleString(LOCALE())}</div></div>`:''}
+</div>
+<div style="margin-top:8px;font-size:10px;color:var(--tx2);line-height:1.6">Sin interés. Registrá pagos libres (💵 Pago) y actualizá el próximo pago estimado (📅) cada vez que acuerden con el cliente.${ganSA!==null?' La ganancia se va contabilizando a medida que el cliente paga.':''}</div>`;
     return;
   }
   let html='';
@@ -3674,6 +3684,7 @@ function abrirOp(cidFijo=null,oid=null){
         $('op_tip').value='saldo_abierto';toggleTipoInteres('saldo_abierto');
         if($('op_desc_sa'))$('op_desc_sa').value=op.desc||'';
         if($('op_mon_sa'))$('op_mon_sa').value=Math.round(op.mon);
+        if($('op_costo_sa'))$('op_costo_sa').value=op.costo>0?Math.round(op.costo):'';
         if($('op_fv_sa'))$('op_fv_sa').value=op.fv||hoy();
         actualizarPreview();
       } else if(esCuotaEfectiva){
@@ -3691,7 +3702,7 @@ function abrirOp(cidFijo=null,oid=null){
       }
     }
   } else {
-    ['op_desc','op_mon','op_int','op_cuo','op_cuo_fixed','op_cuo_cf','op_not','op_prod','op_costo','op_precio','op_desc_sa','op_mon_sa','op_pct_cf','op_cuo_fixed_cf','op_mon_cf'].forEach(f=>{const el=document.getElementById(f);if(el){el.value='';el.dataset.autofilled='';el.style.borderColor='';}});
+    ['op_desc','op_mon','op_int','op_cuo','op_cuo_fixed','op_cuo_cf','op_not','op_prod','op_costo','op_precio','op_desc_sa','op_mon_sa','op_pct_cf','op_cuo_fixed_cf','op_mon_cf','op_costo_sa'].forEach(f=>{const el=document.getElementById(f);if(el){el.value='';el.dataset.autofilled='';el.style.borderColor='';}});
     if($('op_fv_sa'))$('op_fv_sa').value='';
     $('op_mora').value='0';$('op_mora').disabled=true;$('op_mora').style.opacity='.4';
     if($('op_mora_check'))$('op_mora_check').checked=false;
@@ -3740,7 +3751,8 @@ async function guardarOp(){
     const fvSA=$('op_fv_sa')?.value||hoy();
     if(!monSA){toast('Ingresá el monto total adeudado','error');_guardando=false;return;}
     const descSA=($('op_desc_sa')?.value||'Saldo abierto').trim();
-    Object.assign(d,{mon:monSA,int_:0,mora:0,tip:'cuota_abierta',desc_:descSA,prod:'',costo:0,precio:0,cuo:1,pag:0,frq:'mensual',fv:fvSA,facr:null,cuota_fija:0});
+    const costoSA=parseFloat($('op_costo_sa')?.value)||0;
+    Object.assign(d,{mon:monSA,int_:0,mora:0,tip:'cuota_abierta',desc_:descSA,prod:'',costo:costoSA,precio:0,cuo:1,pag:0,frq:'mensual',fv:fvSA,facr:null,cuota_fija:0});
   } else if(tipInt==='cuota'){
     const cuotaCF=parseFloat($('op_cuo_fixed_cf')?.value)||0;
     const cuoCF=parseInt($('op_cuo_cf')?.value)||parseInt($('op_cuo')?.value)||0;
@@ -4821,6 +4833,7 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
       </div>
       <div class="op-pt"><div class="op-pf" style="width:${esSaldoAb?pctSA:pct}%;background:${col}"></div></div>
       ${sv?`<div style="font-size:9px;color:var(--tx2);margin-top:4px">Precio: ${fmtOp(op.precio,op)} · Costo: ${fmtOp(op.costo,op)} · Gan: <span style="color:var(--gr)">${fmtOp(op.precio-op.costo,op)}</span></div>`:''}
+      ${esSaldoAb&&op.costo>0?`<div style="font-size:9px;color:var(--tx2);margin-top:4px">Capital prestado: ${fmtOp(op.costo,op)} · Gan. proyectada: <span style="color:var(--gr)">${fmtOp(op.mon-op.costo,op)}</span></div>`:''}
       <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
         ${op.tipo==='diario_abierto'?`<button class="btn bp bsm" style="background:var(--gr)" onclick="cancelarDiarioAbierto(${op.id})">💰 Cancelar</button>`:op.tip==='interes_mensual'?`<button class="btn bp bsm" onclick="abrirPagoParaOp(${op.id})">💵 Interés</button><button class="btn bp bsm" style="background:var(--gr);margin-left:0" onclick="cancelarCapitalMensual(${op.id})">⚙️ Capital</button>`:`<button class="btn bp bsm" onclick="abrirPagoParaOp(${op.id})">💵 Pago</button>`}
         ${pp?`<button class="btn byw bsm" onclick="completarPar(${op.id})">⚠ Parcial</button>`:''}
@@ -5059,10 +5072,10 @@ function rInicio(){
     const op=gO(p.oid);if(!op)return acc;
     if(op.tip==='interes_mensual'||(p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}
     const v=cvOp(op),pr=op.mon/op.cuo;
-    if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*gan;}
+    if(tieneGananciaTipoVenta(op)){const gan=(precioEfectivoOp(op)-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*gan;}
     return acc+Math.max(0,Math.min(p.mon,v)-pr);
   },0);
-  const prestSem=Ops.filter(o=>!esVenta(o)&&o.facr&&o.facr>=desdeStr&&o.facr<=hastaStr).reduce((s,o)=>s+o.mon,0);
+  const prestSem=Ops.filter(o=>!esVenta(o)&&o.facr&&o.facr>=desdeStr&&o.facr<=hastaStr).reduce((s,o)=>s+(o.tip==='cuota_abierta'&&o.costo>0?o.costo:o.mon),0);
   const disponSem=cobSem-prestSem;
   $('cajSemTot').textContent=ocul?'••••':fmt(Math.round(ganSem));
   $('cajSemSub').textContent=`${ps.length} pago${ps.length!==1?'s':''}`;
@@ -6177,14 +6190,14 @@ function rFin(){
     const op=gO(p.oid);if(!op)return acc;
     if(op.tip==='interes_mensual'||(p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}
     const v=cvOp(op),pr=op.mon/op.cuo;
-    if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*gan;}
+    if(tieneGananciaTipoVenta(op)){const gan=(precioEfectivoOp(op)-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*gan;}
     return acc+Math.max(0,Math.min(p.mon,v)-pr);
   },0);
   const ef=pf.filter(p=>p.met==='efectivo').reduce((s,p)=>s+p.mon,0);
   const tr=pf.filter(p=>p.met==='transferencia').reduce((s,p)=>s+p.mon,0);
   const tg=Gs.filter(g=>g.fec&&g.fec>=gDesde&&g.fec<=gHasta).reduce((s,g)=>s+g.mon,0);
   const ganNetaFin=int-tg;
-  const capP=Ops.filter(o=>!esVenta(o)&&esOpActiva(o)).reduce((s,o)=>s+o.mon,0);
+  const capP=Ops.filter(o=>!esVenta(o)&&esOpActiva(o)).reduce((s,o)=>s+(o.tip==='cuota_abierta'&&o.costo>0?o.costo:o.mon),0);
   const porCob=Ops.filter(o=>esOpActiva(o)).reduce((s,o)=>s+saldoOp(o),0);
 
   $('finContent').innerHTML=`
@@ -6208,7 +6221,7 @@ function rFin(){
     const ps=Ps.filter(p=>p.fec&&p.fec.startsWith(m));
     const cob=ps.reduce((s,p)=>s+p.mon,0);
     const prest=Ops.filter(o=>!esVenta(o)&&(o.fa||'').startsWith(m)).reduce((s,o)=>s+o.mon,0);
-    const gan=ps.reduce((acc,p)=>{const op=gO(p.oid);if(!op||esVenta(op))return acc;const v=cvOp(op),pr=op.mon/op.cuo;return acc+Math.max(0,Math.min(p.mon,v)-pr);},0);
+    const gan=ps.reduce((acc,p)=>{const op=gO(p.oid);if(!op)return acc;const v=cvOp(op),pr=op.mon/op.cuo;if(tieneGananciaTipoVenta(op)){const g=(precioEfectivoOp(op)-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*g;}if(esVenta(op))return acc;return acc+Math.max(0,Math.min(p.mon,v)-pr);},0);
     const lbl=MC[parseInt(m.split('-')[1])-1].substring(0,3);
     return{label:lbl,cobrado:cob,prestado:prest,ganancia:gan};
   });
@@ -9277,7 +9290,7 @@ function habilitarMilesLive(id){
     el.setSelectionRange(pos,pos);
   });
 }
-['op_mon','op_mon_cf','op_cuo_fixed_cf','op_mon_d','op_mon_im','op_cuota_im','op_costo','op_precio','op_cuo_fixed','p_mon','g_mon','c_limite','ep_mon','eoc_mon','eoc_cf','sim_mon','sim_cuota_val','sim_cc_capital','cobPagoMon','cobEditMon'].forEach(habilitarMilesLive);
+['op_mon','op_mon_cf','op_cuo_fixed_cf','op_mon_d','op_mon_im','op_cuota_im','op_costo','op_precio','op_cuo_fixed','p_mon','g_mon','c_limite','ep_mon','eoc_mon','eoc_cf','sim_mon','sim_cuota_val','sim_cc_capital','cobPagoMon','cobEditMon','op_costo_sa'].forEach(habilitarMilesLive);
 
 
 
