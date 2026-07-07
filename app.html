@@ -931,7 +931,6 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <div class="ig"><label class="il" id="lbl_moneda">Moneda</label><select class="inp sel" id="cfg_m"><option value="$">$ (Peso)</option><option value="U$S">U$S</option><option value="R$">R$</option><option value="A$">A$ (AUD)</option></select></div>
     <div class="ig"><label class="il">Idioma / Language</label><select class="inp sel" id="cfg_lang" onchange="aplicarIdioma(this.value)"><option value="es">Español</option><option value="en">English</option></select></div>
     <div class="ig"><label class="il" id="lbl_dias_alerta">Días de alerta anticipada</label><input class="inp" id="cfg_d" type="number" min="1" max="30"></div>
-    <div class="ig"><label class="il" id="lbl_dias_gracia">⏰ Días de gracia antes de marcar mora</label><input class="inp" id="cfg_gracia" type="number" min="0" max="60" placeholder="2"><div style="font-size:9px;color:var(--tx2);margin-top:2px">Cuántos días después del vencimiento se espera antes de considerar el pago atrasado/en mora.</div></div>
     <div class="ig"><label class="il" id="lbl_redondeo">🔢 Redondeo de cobros</label><select class="inp sel" id="cfg_red"><option value="0">Sin redondeo</option><option value="50">Redondear a $50</option><option value="100">Redondear a $100</option><option value="500">Redondear a $500</option><option value="1000">Redondear a $1000</option></select></div>
     <div class="ig"><label class="il" id="lbl_msg_wa">Mensaje recordatorio WhatsApp</label><textarea class="inp" id="cfg_w" rows="3"></textarea><div style="font-size:9px;color:var(--tx2);margin-top:2px">Variables: {nombre} {cuota} {fecha}</div></div>
     <div class="ig"><label class="il" id="lbl_msg_mora">Mensaje morosos</label><textarea class="inp" id="cfg_mm" rows="3"></textarea><div style="font-size:9px;color:var(--tx2);margin-top:2px">Variables: {nombre} {dias} {cuota} {deuda}</div></div>
@@ -1091,14 +1090,11 @@ body.light .mo{background:rgba(0,0,0,.5)}
     <div id="opCamposP">
       <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc" placeholder="Ej: Crédito personal..."></div>
       <div class="ig"><label class="il" id="op_mon_label">Monto prestado *</label><input class="inp" id="op_mon" type="number" placeholder="Capital que le prestás al cliente" oninput="(function(){const v=parseFloat(document.getElementById('op_mon').value);const h=document.getElementById('op_mon_hint');if(v&&v!==Math.round(v)){h.textContent='⚠️ Se guardará como $'+Math.round(v).toLocaleString(LOCALE());h.style.color='var(--yw)';}else{h.textContent='';}actualizarPreview();})()"><div id="op_mon_hint" style="font-size:10px;min-height:13px;margin-top:3px"></div></div>
-      <div class="ig"><label class="il">Tipo de crédito</label><div id="op_tip_wrap" style="position:relative" onclick="if($('op_tip').disabled)explicarTipoBloqueado()"><select class="inp sel" id="op_tip" onchange="toggleTipoInteres()">
+      <div class="ig"><label class="il">Tipo de crédito</label><select class="inp sel" id="op_tip" onchange="toggleTipoInteres()">
         <option value="cuota">🔒 Cuota pactada</option>
         <option value="diario_abierto">📅 Diario (fecha abierta)</option>
         <option value="interes_mensual">💰 Solo interés mensual</option>
-        <option value="saldo_abierto">🗓️ Saldo abierto (pagos libres)</option>
-      </select><div id="op_tip_lock_overlay" style="display:none;position:absolute;inset:0;cursor:pointer"></div></div>
-      <div id="op_tip_lock_msg" style="display:none;font-size:9px;color:var(--tx2);margin-top:4px" onclick="explicarTipoBloqueado()">🔒 No se puede cambiar en un crédito ya cargado. <span style="color:var(--ac2);text-decoration:underline">¿Por qué?</span></div>
-      </div>
+      </select></div>
       <!-- Explicación del tipo seleccionado -->
       <div id="tipExplainer" style="border-radius:10px;padding:11px 13px;margin-bottom:8px;font-size:11px;line-height:1.6;display:none"></div>
 
@@ -1123,21 +1119,16 @@ body.light .mo{background:rgba(0,0,0,.5)}
       <div id="intCuotaBlock" style="display:none">
         <div class="ig">
           <label class="il">Monto prestado *</label>
-          <input class="inp" id="op_mon_cf" type="number" placeholder="Ej: 500000" oninput="calcCuotaDesdePct()">
-        </div>
-        <div class="ig">
-          <label class="il">% de interés (calculadora, opcional)</label>
-          <input class="inp" id="op_pct_cf" type="number" placeholder="Ej: 28" oninput="calcCuotaDesdePct()">
-          <div style="font-size:9px;color:var(--tx2);margin-top:3px">Si lo completás, calcula solo el valor de cuota (capital/cuotas + % sobre el monto prestado en cada cuota). Podés borrarlo y cargar la cuota a mano si preferís.</div>
-        </div>
-        <div class="ig">
-          <label class="il">Cantidad de cuotas *</label>
-          <input class="inp" id="op_cuo_cf" type="number" placeholder="Ej: 12" oninput="calcCuotaDesdePct()">
+          <input class="inp" id="op_mon_cf" type="number" placeholder="Ej: 500000" oninput="syncCuotaFijaDirecta()">
         </div>
         <div class="ig">
           <label class="il">Valor de cuota *</label>
           <input class="inp" id="op_cuo_fixed_cf" type="number" placeholder="Ej: 635000" oninput="syncCuotaFijaDirecta()">
           <div id="op_cf_hint" style="font-size:10px;color:var(--ac2);margin-top:3px;min-height:14px"></div>
+        </div>
+        <div class="ig">
+          <label class="il">Cantidad de cuotas *</label>
+          <input class="inp" id="op_cuo_cf" type="number" placeholder="Ej: 12" oninput="syncCuotaFijaDirecta()">
         </div>
       </div>
 
@@ -1165,14 +1156,6 @@ body.light .mo{background:rgba(0,0,0,.5)}
         </div>
         <button type="button" id="btnToggleCuotaIM" onclick="toggleCuotaFijaIM()" style="font-size:11px;background:transparent;border:1px dashed var(--border);color:var(--tx2);border-radius:8px;padding:6px 12px;cursor:pointer;width:100%;margin-bottom:8px">Ingresar cuota pactada en $ en vez de %</button>
         <div class="ig" style="margin-top:4px"><label class="il">Cantidad de cuotas (opcional)</label><input class="inp" id="op_cuo_im" type="number" placeholder="Ej: 12 — dejar vacío si es indefinido" oninput="actualizarPreview()"><div style="font-size:9px;color:var(--tx2);margin-top:3px">Si ponés cuotas, la app avisará cuando se termine el plazo</div></div>
-      </div>
-
-      <!-- BLOQUE: saldo abierto (pagos libres, sin interés) -->
-      <div id="intSaldoAbiertoBlock" style="display:none">
-        <div class="ig"><label class="il">Descripción</label><input class="inp" id="op_desc_sa" placeholder="Ej: Saldo pendiente..."></div>
-        <div class="ig"><label class="il">Monto total adeudado *</label><input class="inp" id="op_mon_sa" type="number" placeholder="Ej: 100000" oninput="actualizarPreview()"></div>
-        <div class="ig"><label class="il">Capital prestado (opcional)</label><input class="inp" id="op_costo_sa" type="number" placeholder="Ej: 80000" oninput="actualizarPreview()"><div style="font-size:9px;color:var(--tx2);margin-top:3px">Si lo completás, la app calcula tu ganancia (monto total − capital prestado) a medida que va cobrando. Dejalo vacío si no lo necesitás.</div></div>
-        <div class="ig"><label class="il">Próximo pago estimado *</label><input class="inp" id="op_fv_sa" type="date"><div style="font-size:9px;color:var(--tx2);margin-top:3px">El cliente va pagando montos y fechas libres. Vos vas actualizando esta fecha manualmente (con el botón 📅) cada vez que acuerden el próximo pago.</div></div>
       </div>
 
       <!-- Preview dinámico unificado -->
@@ -1512,7 +1495,7 @@ function requierePlan(feat, planMin='pro'){
 }
 function requierePro(feat){return requierePlan(feat,'pro');}
 let SB = null, currentUser = null;
-let CFG = {nombre:'',moneda:'$',alertaDias:3,diasGracia:2,redondeo:0,telPropio:'',lang:'es',msgWa:'Hola {nombre}, recordatorio: cuota de {cuota} vence {fecha}. ¡Gracias!',msgMora:'Hola {nombre}, tenés {dias} días de atraso. Tu cuota es de {cuota}. Por favor regularizá. ¡Gracias!',compTel:true,compHistorial:true,compMora:true,compSaldo:true,compMetodo:true,compFooter:true};
+let CFG = {nombre:'',moneda:'$',alertaDias:3,redondeo:0,telPropio:'',lang:'es',msgWa:'Hola {nombre}, recordatorio: cuota de {cuota} vence {fecha}. ¡Gracias!',msgMora:'Hola {nombre}, tenés {dias} días de atraso. Tu cuota es de {cuota}. Por favor regularizá. ¡Gracias!',compTel:true,compHistorial:true,compMora:true,compSaldo:true,compMetodo:true,compFooter:true};
 const LOCALE=()=>CFG.lang==='en'?'en-AU':'es-AR';
 let Cs=[], Ops=[], Ps=[], Gs=[], EVs=[];
 let flt='activos', cajP='todo', finP='semana';
@@ -1834,10 +1817,6 @@ const pagoDeOp=oid=>Ps.filter(p=>p.oid===oid);
 function aCol(n){const col=['#6c63ff','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#8b5cf6'];let h=0;for(let c of n)h=(h+c.charCodeAt(0))%col.length;return col[h]}
 const ini=n=>n.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
 const esVenta=op=>op.tipo==='venta';
-// Saldo abierto con "capital prestado" cargado se calcula la ganancia igual que una venta
-// (precio de venta = monto total adeudado, costo = capital prestado).
-const tieneGananciaTipoVenta=op=>esVenta(op)||(op.tip==='cuota_abierta'&&op.costo>0);
-const precioEfectivoOp=op=>esVenta(op)?op.precio:op.mon;
 function cvOp(op){
   if(esVenta(op))return Math.round(op.precio/op.cuo);
   // Si tiene cuota pactada guardada, usarla directamente
@@ -2046,7 +2025,7 @@ function rankCli(cid){
 }
 function intOp(op){
   const pagos=pagoDeOp(op.id).filter(p=>!p.par);
-  if(tieneGananciaTipoVenta(op)){const gan=(precioEfectivoOp(op)-op.costo)/op.cuo;return pagos.filter(p=>!(p.not||'').startsWith('🔄 INTERES')).reduce((s,p)=>s+Math.min(p.mon/cvOp(op),1)*gan,0)}
+  if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return pagos.filter(p=>!(p.not||'').startsWith('🔄 INTERES')).reduce((s,p)=>s+Math.min(p.mon/cvOp(op),1)*gan,0)}
   const soloInt=pagos.filter(p=>(p.not||'').startsWith('🔄 INTERES')).reduce((s,p)=>s+p.mon,0);
   const v=cvOp(op),pr=op.mon/op.cuo;
   const ganPorCuota=v-pr; // interés embebido por cuota
@@ -2530,16 +2509,6 @@ function actualizarPreviewVenta(){
     prevEl.style.display='none';
   }
 }
-function explicarTipoBloqueado(){
-  toast('🔒 El tipo de crédito no se puede cambiar una vez cargado, para evitar que el saldo, la mora y el progreso queden mal calculados. Si necesitás otra estructura: marcá este crédito como saldado (✅) y cargá uno nuevo con el tipo que necesites.','error');
-}
-function bloquearTipoCredito(bloquear){
-  const sel=$('op_tip');if(!sel)return;
-  sel.disabled=!!bloquear;
-  if($('op_tip_lock_overlay'))$('op_tip_lock_overlay').style.display=bloquear?'block':'none';
-  if($('op_tip_lock_msg'))$('op_tip_lock_msg').style.display=bloquear?'block':'none';
-  sel.style.opacity=bloquear?'.55':'1';
-}
 function toggleTipoInteres(forzar){
   // No aplicar esta lógica si el tipo de operación es venta
   if($('op_tipo')&&$('op_tipo').value==='venta')return;
@@ -2547,27 +2516,24 @@ function toggleTipoInteres(forzar){
   const esDiario  = tip==='diario_abierto';
   const esMensual = tip==='interes_mensual';
   const esCuota   = tip==='cuota';
-  const esSaldoAbierto = tip==='saldo_abierto';
   const show=(el,v)=>{if(el)el.style.display=v?'':'none';};
-  show($('intNormalBlock'), !esDiario&&!esMensual&&!esCuota&&!esSaldoAbierto);
+  show($('intNormalBlock'), !esDiario&&!esMensual&&!esCuota);
   show($('intCuotaBlock'),  esCuota);
   show($('intDiarioBlock'), esDiario);
   show($('intMensualBlock'),esMensual);
-  show($('intSaldoAbiertoBlock'),esSaldoAbierto);
-  show($('op_mon')?.closest('.ig'),   !esDiario&&!esMensual&&!esCuota&&!esSaldoAbierto);
-  show($('op_desc')?.closest('.ig'), !esDiario&&!esMensual&&!esSaldoAbierto);
-  show($('op_cuo')?.closest('.ig'),  !esDiario&&!esMensual&&!esCuota&&!esSaldoAbierto);
-  show($('op_frq')?.closest('.ig'),  !esDiario&&!esMensual&&!esSaldoAbierto);
-  show($('op_fv')?.closest('.ig'),   !esDiario&&!esSaldoAbierto);
-  show($('op_facr')?.closest('.ig'), !esDiario&&!esSaldoAbierto);
-  show($('op_mora')?.closest('.ig'), !esDiario&&!esMensual&&!esSaldoAbierto);
+  show($('op_mon')?.closest('.ig'),   !esDiario&&!esMensual&&!esCuota);
+  show($('op_desc')?.closest('.ig'), !esDiario&&!esMensual);
+  show($('op_cuo')?.closest('.ig'),  !esDiario&&!esMensual&&!esCuota);
+  show($('op_frq')?.closest('.ig'),  !esDiario&&!esMensual);
+  show($('op_fv')?.closest('.ig'),   !esDiario);
+  show($('op_facr')?.closest('.ig'), !esDiario);
+  show($('op_mora')?.closest('.ig'), !esDiario&&!esMensual);
   if(esCuota){
     const mc=$('op_mora_check');
     if(mc){mc.checked=false;toggleMoraField();}
   }
   if(esDiario&&$('op_facr_d'))$('op_facr_d').value=hoy();
   if(esMensual)syncIntMensual();
-  if(esSaldoAbierto&&$('op_fv_sa')&&!$('op_fv_sa').value)$('op_fv_sa').value=hoy();
   actualizarTipExplainer();
   actualizarPreview();
 }
@@ -2947,12 +2913,6 @@ const TIP_INFO={
     titulo:'Solo interés mensual (capital abierto)',
     desc:'El cliente paga solo el interés cada mes. El capital no se reduce. Cuando quiera cancelar, devuelve el capital completo. Ideal para préstamos indefinidos.',
     ejemplo:'$650.000 al 30.2% → paga $196.300/mes; devuelve $650.000 al cancelar'
-  },
-  saldo_abierto:{
-    icon:'🗓️',color:'rgba(34,197,94,.1)',border:'rgba(34,197,94,.3)',
-    titulo:'Saldo abierto (pagos libres)',
-    desc:'Sin interés y sin cuotas fijas. El cliente debe un total y va pagando montos y fechas libres. Vos anotás manualmente el próximo pago estimado cada vez (botón 📅), y el saldo se va achicando con cada pago.',
-    ejemplo:'Debe $100.000 → paga $20.000 el día 2, $2.000 el día 15, $20.000 el mes siguiente... hasta saldar'
   }
 };
 function actualizarTipExplainer(){
@@ -2977,20 +2937,6 @@ function actualizarPreview(){
   const mon_=(CFG.moneda||'$');
   const pr=$('opPreview');
   if(!pr)return;
-  if(tip==='saldo_abierto'){
-    const monSA=parseFloat($('op_mon_sa')?.value)||0;
-    if(!monSA){pr.style.display='none';return;}
-    const costoSA=parseFloat($('op_costo_sa')?.value)||0;
-    const ganSA=costoSA>0?monSA-costoSA:null;
-    pr.style.display='block';
-    pr.innerHTML=`<div style="font-size:10px;font-weight:700;color:var(--ac2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📊 Saldo abierto</div>
-<div style="display:grid;grid-template-columns:${ganSA!==null?'1fr 1fr':'1fr'};gap:8px">
-<div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Total adeudado</div><div style="font-weight:800;font-size:14px">${(CFG.moneda||'$')}${Math.round(monSA).toLocaleString(LOCALE())}</div></div>
-${ganSA!==null?`<div style="background:rgba(34,197,94,.12);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--tx2)">Tu ganancia</div><div style="font-weight:800;font-size:14px;color:var(--gr)">${(CFG.moneda||'$')}${Math.round(ganSA).toLocaleString(LOCALE())}</div></div>`:''}
-</div>
-<div style="margin-top:8px;font-size:10px;color:var(--tx2);line-height:1.6">Sin interés. Registrá pagos libres (💵 Pago) y actualizá el próximo pago estimado (📅) cada vez que acuerden con el cliente.${ganSA!==null?' La ganancia se va contabilizando a medida que el cliente paga.':''}</div>`;
-    return;
-  }
   let html='';
   if(tip==='interes_mensual'){
     const cuota=cuotaFijaIM>0?cuotaFijaIM:(mon&&int_?Math.round(mon*int_/100):0);
@@ -3067,16 +3013,6 @@ function syncInteresOp(){
     else{const pc=cuotas>0?(v/cuotas).toFixed(2):v;hint.textContent=`→ ${pc}% por cuota (${v}% ÷ ${cuotas} cuotas)`;}
   }
   actualizarPreview();
-}
-function calcCuotaDesdePct(){
-  const mon=parseFloat($('op_mon_cf')?.value)||0;
-  const cuo=parseInt($('op_cuo_cf')?.value)||0;
-  const pct=parseFloat($('op_pct_cf')?.value)||0;
-  if(mon>0&&cuo>0&&pct>0){
-    const cuota=Math.round(mon/cuo+mon*(pct/100));
-    if($('op_cuo_fixed_cf'))$('op_cuo_fixed_cf').value=cuota;
-  }
-  syncCuotaFijaDirecta();
 }
 function syncCuotaFijaDirecta(){
   const mon=parseFloat($('op_mon_cf')?.value)||0;
@@ -3455,7 +3391,7 @@ function showModal(id){
     // Resetear estilos del swipe-down por si quedaron del cierre anterior
     const _mpi=document.querySelector('#mPerfil .modal')||document.querySelector('#mPerfil > div');
     if(_mpi){_mpi.style.transform='';_mpi.style.opacity='';_mpi.style.transition='';}
-    $('cfg_n').value=CFG.nombre||'';$('cfg_m').value=CFG.moneda||'$';$('cfg_d').value=CFG.alertaDias||3;if($('cfg_gracia'))$('cfg_gracia').value=(CFG.diasGracia!=null?CFG.diasGracia:2);$('cfg_w').value=CFG.msgWa||'';$('cfg_mm').value=CFG.msgMora||'';if($('cfg_red'))$('cfg_red').value=CFG.redondeo||0;if($('cfg_lang'))$('cfg_lang').value=CFG.lang||'es';
+    $('cfg_n').value=CFG.nombre||'';$('cfg_m').value=CFG.moneda||'$';$('cfg_d').value=CFG.alertaDias||3;$('cfg_w').value=CFG.msgWa||'';$('cfg_mm').value=CFG.msgMora||'';if($('cfg_red'))$('cfg_red').value=CFG.redondeo||0;if($('cfg_lang'))$('cfg_lang').value=CFG.lang||'es';
     if($('cfg_comp_tel'))$('cfg_comp_tel').checked=CFG.compTel!==false;if($('cfg_comp_mora'))$('cfg_comp_mora').checked=CFG.compMora!==false;if($('cfg_comp_historial'))$('cfg_comp_historial').checked=CFG.compHistorial!==false;if($('cfg_comp_saldo'))$('cfg_comp_saldo').checked=CFG.compSaldo!==false;if($('cfg_comp_metodo'))$('cfg_comp_metodo').checked=CFG.compMetodo!==false;if($('cfg_comp_footer'))$('cfg_comp_footer').checked=CFG.compFooter!==false;
     if($('cfg_aviso_resumen'))$('cfg_aviso_resumen').checked=!!(CFG.avisoResumen);
     if($('cfg_aviso_hora'))$('cfg_aviso_hora').value=CFG.avisoResumenHora||'20:00';
@@ -3468,15 +3404,7 @@ function showModal(id){
     if(pc){pc.innerHTML=_logoComprobanteUrl?`<img src="${_logoComprobanteUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:6px">`:'<span style="font-size:20px">📄</span>';}
   }
 }
-function closeModal(id){
-  document.getElementById(id).classList.remove('open');
-  // Sincronizar el historial: si el estado actual corresponde a este modal, consumirlo
-  // para que el botón/gesto "atrás" no termine mandando a inicio por una entrada obsoleta.
-  const st=history.state;
-  if(st&&st.modal===id){
-    history.replaceState({page:_lastPage},'',window.location.pathname+'#'+_lastPage);
-  }
-}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
 document.querySelectorAll('.mo').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
 function toggleFab(){
   const isOpen=$('fabm').classList.contains('open');
@@ -3646,14 +3574,9 @@ function autoFechaOp(){
 function abrirOp(cidFijo=null,oid=null){
   $('opMT').textContent=oid?'✏️ Editar operación':'➕ Nueva operación';$('op_id').value=oid||'';$('op_cidFijo').value=cidFijo||'';
   $('op_cliGrp').style.display=cidFijo?'none':'block';if(!cidFijo)poblarSelClis();
-  bloquearTipoCredito(!!oid);
   if(oid){
     const op=gO(oid);if(!op)return;
-    // Créditos viejos (de antes del rediseño) que tienen 0% interés y un "valor por cuota" fijo
-    // cargado son, en la práctica, créditos de "Cuota pactada" — aunque internamente quedaron
-    // guardados con tip='simple'/'compuesto'. Los tratamos como Cuota pactada al editar.
-    const esCuotaEfectiva = op.tip==='cuota' || (op.tip!=='interes_mensual' && op.tip!=='cuota_abierta' && (parseFloat(op.int)||0)===0 && parseFloat(op.cuota_fija)>0);
-    $('op_tipo').value=op.tipo;toggleOpTipo();$('op_cuo').value=op.cuo;if(esCuotaEfectiva&&$('op_cuo_cf')){if($('op_pct_cf'))$('op_pct_cf').value='';$('op_cuo_cf').value=op.cuo;if($('op_cuo_fixed_cf'))$('op_cuo_fixed_cf').value=op.cuota_fija||'';if($('op_mon_cf'))$('op_mon_cf').value=op.mon||'';$('op_tip').value='cuota';toggleTipoInteres('cuota');}$('op_frq').value=op.frq;$('op_fv').value=op.fv;$('op_not').value=op.not||'';$('op_moneda').value=op.moneda||CFG.moneda||'$';$('op_facr').value=op.facr||'';
+    $('op_tipo').value=op.tipo;toggleOpTipo();$('op_cuo').value=op.cuo;if(op.tip==='cuota'&&$('op_cuo_cf')){$('op_cuo_cf').value=op.cuo;if($('op_cuo_fixed_cf'))$('op_cuo_fixed_cf').value=op.cuota_fija||'';if($('op_mon_cf'))$('op_mon_cf').value=op.mon||'';}$('op_frq').value=op.frq;$('op_fv').value=op.fv;$('op_not').value=op.not||'';$('op_moneda').value=op.moneda||CFG.moneda||'$';$('op_facr').value=op.facr||'';
     if(op.tipo==='venta'){$('op_prod').value=op.prod||'';$('op_costo').value=op.costo||0;$('op_precio').value=op.precio||0}
     else{
       $('op_desc').value=op.desc||'';
@@ -3674,12 +3597,10 @@ function abrirOp(cidFijo=null,oid=null){
         const moraDB = data ? parseFloat(data.mora) : parseFloat(op.mora);
         const intDB  = data ? parseFloat(data.int_)  : parseFloat(op.int);
         $('op_int').value = isNaN(intDB) ? 0 : intDB;
-        if(!esCuotaEfectiva){
-          if(moraDB===0||isNaN(moraDB)){
-            $('op_mora_check').checked=false;$('op_mora').value='0';$('op_mora').disabled=true;$('op_mora').style.opacity='.4';
-          } else {
-            $('op_mora_check').checked=true;$('op_mora').value=moraDB;$('op_mora').disabled=false;$('op_mora').style.opacity='1';
-          }
+        if(moraDB===0||isNaN(moraDB)){
+          $('op_mora_check').checked=false;$('op_mora').value='0';$('op_mora').disabled=true;$('op_mora').style.opacity='.4';
+        } else {
+          $('op_mora_check').checked=true;$('op_mora').value=moraDB;$('op_mora').disabled=false;$('op_mora').style.opacity='1';
         }
         // Actualizar array local con valores reales
         op.int=isNaN(intDB)?0:intDB;
@@ -3693,30 +3614,12 @@ function abrirOp(cidFijo=null,oid=null){
         if($('op_int_im'))$('op_int_im').value=parseFloat(op.int_)||0;
         if($('op_cuota_im'))$('op_cuota_im').value='';
         syncIntMensual();
-      } else if(op.tip==='cuota_abierta'){
-        $('op_tip').value='saldo_abierto';toggleTipoInteres('saldo_abierto');
-        if($('op_desc_sa'))$('op_desc_sa').value=op.desc||'';
-        if($('op_mon_sa'))$('op_mon_sa').value=Math.round(op.mon);
-        if($('op_costo_sa'))$('op_costo_sa').value=op.costo>0?Math.round(op.costo):'';
-        if($('op_fv_sa'))$('op_fv_sa').value=op.fv||hoy();
-        actualizarPreview();
-      } else if(esCuotaEfectiva){
-        // ya quedó cargado más arriba como Cuota pactada — solo refrescar el resumen
-        actualizarPreview();
       } else {
-        const tipVal=op.tip||'simple';
-        if($('op_tip')&&!$('op_tip').querySelector(`option[value="${tipVal}"]`)){
-          const opt=document.createElement('option');
-          opt.value=tipVal;
-          opt.textContent=tipVal==='compuesto'?'📈 Interés compuesto (clásico)':'📊 Interés simple (clásico)';
-          $('op_tip').appendChild(opt);
-        }
-        $('op_tip').value=tipVal;toggleTipoInteres(tipVal);syncInteresOp();
+        $('op_tip').value=op.tip||'simple';syncInteresOp();
       }
     }
   } else {
-    ['op_desc','op_mon','op_int','op_cuo','op_cuo_fixed','op_cuo_cf','op_not','op_prod','op_costo','op_precio','op_desc_sa','op_mon_sa','op_pct_cf','op_cuo_fixed_cf','op_mon_cf','op_costo_sa'].forEach(f=>{const el=document.getElementById(f);if(el){el.value='';el.dataset.autofilled='';el.style.borderColor='';}});
-    if($('op_fv_sa'))$('op_fv_sa').value='';
+    ['op_desc','op_mon','op_int','op_cuo','op_cuo_fixed','op_cuo_cf','op_not','op_prod','op_costo','op_precio'].forEach(f=>{const el=document.getElementById(f);if(el){el.value='';el.dataset.autofilled='';el.style.borderColor='';}});
     $('op_mora').value='0';$('op_mora').disabled=true;$('op_mora').style.opacity='.4';
     if($('op_mora_check'))$('op_mora_check').checked=false;
     $('op_fv').value=hoy();$('op_frq').value='quincenal';$('op_tipo').value='prestamo';$('op_moneda').value=CFG.moneda||'$';if($('op_facr'))$('op_facr').value=hoy();autoFechaOp();
@@ -3759,13 +3662,6 @@ async function guardarOp(){
     // si ingresaron cuotas usar ese número, si no 999 = abierto
     const cuoIM=parseInt($('op_cuo_im')?.value)||999;
     Object.assign(d,{mon:monIM,int_:intIMfinal,mora:0,tip:'interes_mensual',desc_:descIM,prod:'',costo:0,precio:0,cuo:cuoIM,pag:0,frq:'mensual',fv:fvIM,facr:$('op_facr')?.value||null,cuota_fija:cuotaIM});
-  } else if(tipInt==='saldo_abierto'){
-    const monSA=parseFloat($('op_mon_sa')?.value)||0;
-    const fvSA=$('op_fv_sa')?.value||hoy();
-    if(!monSA){toast('Ingresá el monto total adeudado','error');_guardando=false;return;}
-    const descSA=($('op_desc_sa')?.value||'Saldo abierto').trim();
-    const costoSA=parseFloat($('op_costo_sa')?.value)||0;
-    Object.assign(d,{mon:monSA,int_:0,mora:0,tip:'cuota_abierta',desc_:descSA,prod:'',costo:costoSA,precio:0,cuo:1,pag:0,frq:'mensual',fv:fvSA,facr:null,cuota_fija:0});
   } else if(tipInt==='cuota'){
     const cuotaCF=parseFloat($('op_cuo_fixed_cf')?.value)||0;
     const cuoCF=parseInt($('op_cuo_cf')?.value)||parseInt($('op_cuo')?.value)||0;
@@ -4394,38 +4290,6 @@ async function sincPagOp(oid){
   if(nuevoPag>=op.cuo){setTimeout(()=>{lanzarConfetti();toast('🎉 ¡Crédito saldado! Felicitaciones','success');},250);}
 }
 
-// Aplica un sobrante (lo que quedó de un pago después de completar la cuota actual)
-// a las cuotas siguientes: completa todas las que el sobrante alcance a cubrir entero,
-// y si queda un resto menor a una cuota completa, lo deja como parcial en la próxima.
-async function aplicarSobranteAutomatico(oid,sobranteInicial,met,fec){
-  let sobrante=Math.round(sobranteInicial);
-  let op=gO(oid);
-  const mensajes=[];
-  while(sobrante>0&&op&&esOpActiva(op)){
-    const cuotaVal=cvOp(op);
-    if(cuotaVal<=0)break;
-    if(sobrante>=Math.round(cuotaVal)-0.5){
-      const numCuota=op.pag+1;
-      const dFull={oid,mon:cuotaVal,met,fec,not_:'Sobrante de pago anterior',par:false,flt:0};
-      const rFull=await dbIns('pagos',dFull);
-      Ps.push({...rFull,not:rFull.not_||''});
-      await sincPagOp(oid);
-      op=gO(oid);
-      sobrante=Math.round(sobrante-cuotaVal);
-      mensajes.push(`cuota ${numCuota} saldada con el sobrante`);
-    } else {
-      const numCuota=op.pag+1;
-      const flt=Math.round(cuotaVal-sobrante);
-      const dPar={oid,mon:sobrante,met,fec,not_:'Sobrante de pago anterior',par:true,flt};
-      const rPar=await dbIns('pagos',dPar);
-      Ps.push({...rPar,not:rPar.not_||''});
-      mensajes.push(`${fmt(sobrante)} a favor en cuota ${numCuota} (falta ${fmt(flt)})`);
-      sobrante=0;
-    }
-  }
-  if(sobrante>0)mensajes.push(`crédito saldado — sobran ${fmt(sobrante)} sin aplicar`);
-  return mensajes;
-}
 async function guardarPago(){
   if(_guardando){return;}_guardando=true;
   const fid=parseInt($('p_fixOp').value),oid=fid||parseInt($('p_op').value),mon=parseFloat($('p_mon').value);
@@ -4494,22 +4358,33 @@ async function guardarPago(){
         if(pPrev){pPrev.par=false;pPrev.flt=0;await dbUpd('pagos',parPrevId,{par:false,flt:0})}
         const pagAntes=op.pag;
         await sincPagOp(oid);
-        // ── Sobrante: aplicarlo a las cuotas siguientes, completando todas las que alcance ──
+        // ── Sobrante: si pagó más de lo que faltaba, generar parcial para la cuota siguiente ──
         const sobrante=Math.round(mon-base);
-        if(sobrante>0){
-          const msgs=await aplicarSobranteAutomatico(oid,sobrante,d.met,fec);
-          _sobranteMsg=`✅ Cuota ${pagAntes+1} saldada`+(msgs.length?' · '+msgs.join(' · '):'');
+        const cuotaSig=cvOp(op);
+        if(sobrante>0&&sobrante<cuotaSig&&esOpActiva(op)){
+          const fltSig=cuotaSig-sobrante;
+          const dSob={oid,mon:sobrante,met:d.met,fec,not_:'Sobrante de pago anterior',par:true,flt:fltSig};
+          const rSob=await dbIns('pagos',dSob);
+          Ps.push({...rSob,not:rSob.not_||''});
+          _sobranteMsg=`✅ Cuota ${pagAntes+1} saldada · ${fmt(sobrante)} a favor en cuota ${op.pag+1} (falta ${fmt(fltSig)})`;
+        } else if(sobrante>=cuotaSig&&esOpActiva(op)){
+          _sobranteMsg=`✅ Cuota ${pagAntes+1} saldada · sobrante ${fmt(sobrante)}, registrá cuota ${op.pag+1}`;
         }
       }
     } else if(!par){
       const pagAntes2=op.pag;
       await sincPagOp(oid);
-      // ── Sobrante: aplicarlo a las cuotas siguientes, completando todas las que alcance ──
+      // ── Sobrante: si pagó más de la cuota entera, generar parcial para la siguiente ──
       const cuotaVal=cvOp(op);
       const sobrante=Math.round(mon-cuotaVal);
-      if(sobrante>0){
-        const msgs=await aplicarSobranteAutomatico(oid,sobrante,d.met,fec);
-        _sobranteMsg=`✅ Cuota ${pagAntes2+1} saldada`+(msgs.length?' · '+msgs.join(' · '):'');
+      if(sobrante>0&&sobrante<cuotaVal&&esOpActiva(op)){
+        const fltSig=cuotaVal-sobrante;
+        const dSob={oid,mon:sobrante,met:d.met,fec,not_:'Sobrante de pago anterior',par:true,flt:fltSig};
+        const rSob=await dbIns('pagos',dSob);
+        Ps.push({...rSob,not:rSob.not_||''});
+        _sobranteMsg=`✅ Cuota ${pagAntes2+1} saldada · ${fmt(sobrante)} a favor en cuota ${op.pag+1} (falta ${fmt(fltSig)})`;
+      } else if(sobrante>=cuotaVal&&esOpActiva(op)){
+        _sobranteMsg=`✅ Cuota ${pagAntes2+1} saldada · sobrante ${fmt(sobrante)}, registrá cuota ${op.pag+1}`;
       }
     }
     closeModal('mpago');$('p_fixOp').value='';$('p_fixPar').value='';$('p_opGrp').style.display='block';
@@ -4823,7 +4698,7 @@ async function guardarCamFecha(){const oid=parseInt($('cf_oid').value),fv=$('cf_
 
 // ══ CONFIG ══
 async function guardarCfg(){
-  CFG.nombre=$('cfg_n').value||'';CFG.moneda=$('cfg_m').value;CFG.alertaDias=parseInt($('cfg_d').value)||3;if($('cfg_gracia'))CFG.diasGracia=Math.max(0,parseInt($('cfg_gracia').value));if(isNaN(CFG.diasGracia))CFG.diasGracia=2;CFG.redondeo=parseInt($('cfg_red').value)||0;CFG.lang=$('cfg_lang').value||'es';CFG.msgWa=$('cfg_w').value||CFG.msgWa;CFG.msgMora=$('cfg_mm').value||CFG.msgMora;aplicarIdioma(CFG.lang);if($('cfg_comp_tel'))CFG.compTel=$('cfg_comp_tel').checked;if($('cfg_comp_mora'))CFG.compMora=$('cfg_comp_mora').checked;if($('cfg_comp_historial'))CFG.compHistorial=$('cfg_comp_historial').checked;if($('cfg_comp_saldo'))CFG.compSaldo=$('cfg_comp_saldo').checked;if($('cfg_comp_metodo'))CFG.compMetodo=$('cfg_comp_metodo').checked;if($('cfg_comp_footer'))CFG.compFooter=$('cfg_comp_footer').checked;
+  CFG.nombre=$('cfg_n').value||'';CFG.moneda=$('cfg_m').value;CFG.alertaDias=parseInt($('cfg_d').value)||3;CFG.redondeo=parseInt($('cfg_red').value)||0;CFG.lang=$('cfg_lang').value||'es';CFG.msgWa=$('cfg_w').value||CFG.msgWa;CFG.msgMora=$('cfg_mm').value||CFG.msgMora;aplicarIdioma(CFG.lang);if($('cfg_comp_tel'))CFG.compTel=$('cfg_comp_tel').checked;if($('cfg_comp_mora'))CFG.compMora=$('cfg_comp_mora').checked;if($('cfg_comp_historial'))CFG.compHistorial=$('cfg_comp_historial').checked;if($('cfg_comp_saldo'))CFG.compSaldo=$('cfg_comp_saldo').checked;if($('cfg_comp_metodo'))CFG.compMetodo=$('cfg_comp_metodo').checked;if($('cfg_comp_footer'))CFG.compFooter=$('cfg_comp_footer').checked;
   // Aviso resumen
   if($('cfg_aviso_resumen')){
     CFG.avisoResumen=$('cfg_aviso_resumen').checked;
@@ -4850,31 +4725,27 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
     const pp=Ps.find(p=>p.oid===op.id&&p.par&&p.flt>0);
     const mTag=op.moneda&&op.moneda!==(CFG.moneda||'$')?`<span style="font-size:8px;background:rgba(6,182,212,.15);color:var(--cy);padding:1px 5px;border-radius:4px;margin-left:4px">${op.moneda}</span>`:'';
     const esIntMens=op.tip==='interes_mensual';
-    const esSaldoAb=op.tip==='cuota_abierta';
     const _proxFv=proxFechaOp(op);const _proxFvStr=_proxFv&&!isNaN(_proxFv.getTime())?_proxFv.toISOString().split('T')[0]:op.fv;
-    const pctSA=esSaldoAb&&op.mon>0?Math.round(Math.max(0,Math.min(1,(op.mon-saldoOp(op))/op.mon))*100):pct;
-    const metaLabel=esIntMens?`Capital: ${fmtOp(op.mon,op)} · Interés: ${fmtOp(cuota,op)}/mes · vence ${fD(op.fv)}`:esSaldoAb?`Próximo pago estimado: ${fD(_proxFvStr)}`:`${op.pag}/${op.cuo} · ${op.frq} · vence ${fD(_proxFvStr)}${op.facr?` · acreditado ${fD(op.facr)}`:''}`;
+    const metaLabel=esIntMens?`Capital: ${fmtOp(op.mon,op)} · Interés: ${fmtOp(cuota,op)}/mes · vence ${fD(op.fv)}`:`${op.pag}/${op.cuo} · ${op.frq} · vence ${fD(_proxFvStr)}${op.facr?` · acreditado ${fD(op.facr)}`:''}`;
     return`<div class="op-card ${sv?'vc':'pc'}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-        <div><div class="op-tag ${sv?'v':'p'}">${sv?'🛒 VENTA':esIntMens?'💰 INTERÉS MENSUAL':esSaldoAb?'🗓️ SALDO ABIERTO':'💳 CRÉDITO'}${mTag}</div><div class="op-name">${lbl}</div>
+        <div><div class="op-tag ${sv?'v':'p'}">${sv?'🛒 VENTA':esIntMens?'💰 INTERÉS MENSUAL':'💳 CRÉDITO'}${mTag}</div><div class="op-name">${lbl}</div>
         <div class="op-meta">${metaLabel}</div>
         ${pp?`<span class="pb" style="margin-top:3px;display:inline-block">Falta ${fmtOp(pp.flt,op)}</span>`:''}</div>
         <div style="text-align:right"><div class="op-saldo" style="color:${col}">${fmtOp(sm,op)}</div>
-        ${esSaldoAb?'':`<div style="font-size:9px;color:var(--tx2)">cuota: ${fmtOp(cuota,op)}</div>`}
-        ${!sv&&!esSaldoAb?`<div style="font-size:9px;color:var(--tx2)">prestado: ${fmtOp(op.mon,op)}</div>`:''}
-        ${esSaldoAb?`<div style="font-size:9px;color:var(--tx2)">total: ${fmtOp(op.mon,op)}</div>`:''}
+        <div style="font-size:9px;color:var(--tx2)">cuota: ${fmtOp(cuota,op)}</div>
+        ${!sv?`<div style="font-size:9px;color:var(--tx2)">prestado: ${fmtOp(op.mon,op)}</div>`:''}
         <div style="margin-top:2px">${bmap[s]||''}</div></div>
       </div>
-      <div class="op-pt"><div class="op-pf" style="width:${esSaldoAb?pctSA:pct}%;background:${col}"></div></div>
+      <div class="op-pt"><div class="op-pf" style="width:${pct}%;background:${col}"></div></div>
       ${sv?`<div style="font-size:9px;color:var(--tx2);margin-top:4px">Precio: ${fmtOp(op.precio,op)} · Costo: ${fmtOp(op.costo,op)} · Gan: <span style="color:var(--gr)">${fmtOp(op.precio-op.costo,op)}</span></div>`:''}
-      ${esSaldoAb&&op.costo>0?`<div style="font-size:9px;color:var(--tx2);margin-top:4px">Capital prestado: ${fmtOp(op.costo,op)} · Gan. proyectada: <span style="color:var(--gr)">${fmtOp(op.mon-op.costo,op)}</span></div>`:''}
       <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
         ${op.tipo==='diario_abierto'?`<button class="btn bp bsm" style="background:var(--gr)" onclick="cancelarDiarioAbierto(${op.id})">💰 Cancelar</button>`:op.tip==='interes_mensual'?`<button class="btn bp bsm" onclick="abrirPagoParaOp(${op.id})">💵 Interés</button><button class="btn bp bsm" style="background:var(--gr);margin-left:0" onclick="cancelarCapitalMensual(${op.id})">⚙️ Capital</button>`:`<button class="btn bp bsm" onclick="abrirPagoParaOp(${op.id})">💵 Pago</button>`}
         ${pp?`<button class="btn byw bsm" onclick="completarPar(${op.id})">⚠ Parcial</button>`:''}
         <button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️</button>
-        <button class="btn bs bsm" title="${esSaldoAb?'Actualizar próximo pago estimado':'Cambiar fecha'}" onclick="abrirCamFecha(${op.id})">📅</button>
-        ${esSaldoAb?'':`<button class="btn bs bsm" title="Fechas por cuota" onclick="abrirFechasCuotas(${op.id})">📆 Cuotas</button>`}
-        ${(op.tip!=='interes_mensual'&&op.tipo!=='diario_abierto'&&!esSaldoAb)?`<button class="btn bs bsm" title="Montos por cuota" onclick="abrirMontosCuotas(${op.id})">💰 Montos</button>`:''}
+        <button class="btn bs bsm" onclick="abrirCamFecha(${op.id})">📅</button>
+        <button class="btn bs bsm" title="Fechas por cuota" onclick="abrirFechasCuotas(${op.id})">📆 Cuotas</button>
+        ${(op.tip!=='interes_mensual'&&op.tipo!=='diario_abierto')?`<button class="btn bs bsm" title="Montos por cuota" onclick="abrirMontosCuotas(${op.id})">💰 Montos</button>`:''}
         <button class="btn bp bsm" style="background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.5);color:var(--gr)" onclick="marcarCreditoCancelado(${op.id})">✅ Marcar saldado</button>
         ${c.tel?`<a href="${waLinkOp(op)}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm">💬 WA</button></a>`:''}
         <button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfComprobanteOp(${op.id})">🧾 PDF</button>
@@ -5089,11 +4960,9 @@ function rInicio(){
     prestLabel='Prestado (año)';
   } else {
     const lu=new Date(h);lu.setDate(h.getDate()-((h.getDay()+6)%7));lu.setHours(0,0,0,0);
-    const primerDiaMes=new Date(h.getFullYear(),h.getMonth(),1);primerDiaMes.setHours(0,0,0,0);
-    const inicioSemana=lu<primerDiaMes?primerDiaMes:lu;
     const do2=new Date(lu);do2.setDate(lu.getDate()+6);do2.setHours(23,59,59,999);
-    desde=inicioSemana;hasta=do2;
-    labelTxt=fD(inicioSemana.toISOString().split('T')[0])+'–'+fD(do2.toISOString().split('T')[0]);
+    desde=lu;hasta=do2;
+    labelTxt=fD(lu.toISOString().split('T')[0])+'–'+fD(do2.toISOString().split('T')[0]);
     prestLabel='Prestado';
   }
   desdeStr=desde.toISOString().split('T')[0];
@@ -5106,10 +4975,10 @@ function rInicio(){
     const op=gO(p.oid);if(!op)return acc;
     if(op.tip==='interes_mensual'||(p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}
     const v=cvOp(op),pr=op.mon/op.cuo;
-    if(tieneGananciaTipoVenta(op)){const gan=(precioEfectivoOp(op)-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*gan;}
+    if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*gan;}
     return acc+Math.max(0,Math.min(p.mon,v)-pr);
   },0);
-  const prestSem=Ops.filter(o=>!esVenta(o)&&o.facr&&o.facr>=desdeStr&&o.facr<=hastaStr).reduce((s,o)=>s+(o.tip==='cuota_abierta'&&o.costo>0?o.costo:o.mon),0);
+  const prestSem=Ops.filter(o=>!esVenta(o)&&o.facr&&o.facr>=desdeStr&&o.facr<=hastaStr).reduce((s,o)=>s+o.mon,0);
   const disponSem=cobSem-prestSem;
   $('cajSemTot').textContent=ocul?'••••':fmt(Math.round(ganSem));
   $('cajSemSub').textContent=`${ps.length} pago${ps.length!==1?'s':''}`;
@@ -6202,36 +6071,22 @@ function verDia(ds){
 function setFinP(p,el){finP=p;document.querySelectorAll('#finTabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');rFin()}
 function rFin(){
   if(finP==='proyeccion'){rFinProy();return}
-  const h=new Date();let pf=[],label='',gDesde=null,gHasta=null;
+  const h=new Date();let pf=[],label='';
   if(finP==='semana'){
     const lu=new Date(h);lu.setDate(h.getDate()-((h.getDay()+6)%7));lu.setHours(0,0,0,0);
-    const primerDiaMes=new Date(h.getFullYear(),h.getMonth(),1);primerDiaMes.setHours(0,0,0,0);
-    const inicioSemana=lu<primerDiaMes?primerDiaMes:lu;
     const do2=new Date(lu);do2.setDate(lu.getDate()+6);do2.setHours(23,59,59,999);
-    pf=Ps.filter(p=>{const d=new Date(p.fec+'T00:00:00');return d>=inicioSemana&&d<=do2});label='Esta semana';
-    gDesde=inicioSemana.toISOString().split('T')[0];gHasta=do2.toISOString().split('T')[0];
+    pf=Ps.filter(p=>{const d=new Date(p.fec+'T00:00:00');return d>=lu&&d<=do2});label='Esta semana';
   } else if(finP==='mes'){
     pf=Ps.filter(p=>p.fec&&p.fec.startsWith(h.toISOString().substring(0,7)));label='Este mes';
-    gDesde=h.toISOString().substring(0,7)+'-01';gHasta=h.toISOString().substring(0,7)+'-31';
   } else {
     pf=Ps.filter(p=>p.fec&&p.fec.startsWith(h.getFullYear().toString()));label='Este año';
-    gDesde=h.getFullYear()+'-01-01';gHasta=h.getFullYear()+'-12-31';
   }
   const tc=pf.reduce((s,p)=>s+p.mon,0);
-  // Ganancia real por pago: acotada al monto efectivamente pagado (no a la cuota completa),
-  // igual que en el resumen de Inicio — evita inflar el número con pagos parciales.
-  const int=pf.reduce((acc,p)=>{
-    const op=gO(p.oid);if(!op)return acc;
-    if(op.tip==='interes_mensual'||(p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}
-    const v=cvOp(op),pr=op.mon/op.cuo;
-    if(tieneGananciaTipoVenta(op)){const gan=(precioEfectivoOp(op)-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*gan;}
-    return acc+Math.max(0,Math.min(p.mon,v)-pr);
-  },0);
+  const int=pf.reduce((acc,p)=>{const op=gO(p.oid);return op&&!esVenta(op)?acc+Math.max(0,cvOp(op)-op.mon/op.cuo):acc},0);
   const ef=pf.filter(p=>p.met==='efectivo').reduce((s,p)=>s+p.mon,0);
   const tr=pf.filter(p=>p.met==='transferencia').reduce((s,p)=>s+p.mon,0);
-  const tg=Gs.filter(g=>g.fec&&g.fec>=gDesde&&g.fec<=gHasta).reduce((s,g)=>s+g.mon,0);
-  const ganNetaFin=int-tg;
-  const capP=Ops.filter(o=>!esVenta(o)&&esOpActiva(o)).reduce((s,o)=>s+(o.tip==='cuota_abierta'&&o.costo>0?o.costo:o.mon),0);
+  const tg=Gs.reduce((s,g)=>s+g.mon,0);
+  const capP=Ops.filter(o=>!esVenta(o)&&esOpActiva(o)).reduce((s,o)=>s+o.mon,0);
   const porCob=Ops.filter(o=>esOpActiva(o)).reduce((s,o)=>s+saldoOp(o),0);
 
   $('finContent').innerHTML=`
@@ -6241,7 +6096,7 @@ function rFin(){
     </div>
     <div class="sg">
       <div class="sc yw"><div class="sl">Intereses</div><div class="sv yw" style="font-size:14px">${fmt(int)}</div></div>
-      <div class="sc ${ganNetaFin>=0?'bl':'rd'}"><div class="sl">Ganancia neta</div><div class="sv ${ganNetaFin>=0?'bl':'rd'}" style="font-size:14px">${fmt(ganNetaFin)}</div></div>
+      <div class="sc ${tc-tg>=0?'bl':'rd'}"><div class="sl">Ganancia neta</div><div class="sv ${tc-tg>=0?'bl':'rd'}" style="font-size:14px">${fmt(tc-tg)}</div></div>
       <div class="sc gr"><div class="sl">💵 Efectivo</div><div class="sv gr" style="font-size:14px">${fmt(ef)}</div></div>
       <div class="sc bl"><div class="sl">📲 Transf.</div><div class="sv bl" style="font-size:14px">${fmt(tr)}</div></div>
       <div class="sc bl"><div class="sl">Total prestado</div><div class="sv bl" style="font-size:14px">${fmt(capP)}</div></div>
@@ -6255,7 +6110,7 @@ function rFin(){
     const ps=Ps.filter(p=>p.fec&&p.fec.startsWith(m));
     const cob=ps.reduce((s,p)=>s+p.mon,0);
     const prest=Ops.filter(o=>!esVenta(o)&&(o.fa||'').startsWith(m)).reduce((s,o)=>s+o.mon,0);
-    const gan=ps.reduce((acc,p)=>{const op=gO(p.oid);if(!op)return acc;const v=cvOp(op),pr=op.mon/op.cuo;if(tieneGananciaTipoVenta(op)){const g=(precioEfectivoOp(op)-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*g;}if(esVenta(op))return acc;return acc+Math.max(0,Math.min(p.mon,v)-pr);},0);
+    const gan=ps.reduce((acc,p)=>{const op=gO(p.oid);if(!op||esVenta(op))return acc;const v=cvOp(op),pr=op.mon/op.cuo;return acc+Math.max(0,Math.min(p.mon,v)-pr);},0);
     const lbl=MC[parseInt(m.split('-')[1])-1].substring(0,3);
     return{label:lbl,cobrado:cob,prestado:prest,ganancia:gan};
   });
@@ -6571,10 +6426,11 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
   const cuota=cvOp(op);
   const pagosOrden=pagoDeOp(oid).filter(p=>!(p.not||'').startsWith('🔄 INTERES')).sort((a,b)=>a.fec.localeCompare(b.fec));
   let _cIdx=0,_acum=0;
+  const _fechaFinCuota={};
   for(const _p of pagosOrden){
     if(_acum===0)_cIdx++;
     _acum+=_p.mon;
-    if(_acum>=cvOpN(op,_cIdx)*0.99)_acum=0;
+    if(_acum>=cvOpN(op,_cIdx)*0.99){_fechaFinCuota[_cIdx]=_p.fec;_acum=0;}
   }
   const numCuota=_cIdx;
   const diasMora=(()=>{
@@ -6583,6 +6439,19 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
     const fp=new Date(fec+'T00:00:00');
     return Math.max(0,Math.floor((fp-due)/86400000)-diasGracia());
   })();
+  // Si esta cuota completa TODO el crédito, sumar los días de mora de todas las cuotas
+  const esUltimaCuotaDelCredito=numCuota>=op.cuo&&(parseInt(op.pag)||0)>=op.cuo;
+  const diasMoraTotalCredito=esUltimaCuotaDelCredito?(()=>{
+    let tot=0;
+    for(let n=1;n<=op.cuo;n++){
+      const due=fechaDeCuota(op,n);
+      const fFin=_fechaFinCuota[n];
+      if(!due||isNaN(due.getTime())||!fFin)continue;
+      const fp=new Date(fFin+'T00:00:00');
+      tot+=Math.max(0,Math.floor((fp-due)/86400000)-diasGracia());
+    }
+    return tot;
+  })():0;
 
   // ── Logo: fetch blob para evitar CORS/tainted-canvas ──
   const logoUrl=_logoComprobanteUrl||null;
@@ -6676,11 +6545,19 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
     doc.text(`⚠  Cuota ${numCuota} abonada con ${diasMora} día${diasMora!==1?'s':''} de atraso`,105,y+9,{align:'center'});
     y+=18;
   }
+  if(esUltimaCuotaDelCredito&&diasMoraTotalCredito>0&&CFG.compMora!==false){
+    doc.setFillColor(255,237,213);doc.setDrawColor(234,88,12);
+    doc.roundedRect(14,y,182,14,3,3,'FD');
+    doc.setTextColor(154,52,18);doc.setFontSize(9);doc.setFont('helvetica','bold');
+    doc.text(`🏁  Crédito cancelado · ${diasMoraTotalCredito} día${diasMoraTotalCredito!==1?'s':''} de mora en total`,105,y+9,{align:'center'});
+    y+=18;
+  }
 
   // Detalle de cuota actual
+  const facrMostrar=op.facr||op.fa||null;
   const altoDet=par?44:36;
   doc.setFillColor(245,245,255);doc.setDrawColor(200,200,220);
-  doc.roundedRect(14,y,182,altoDet+(op.facr?10:0),3,3,'FD');
+  doc.roundedRect(14,y,182,altoDet+(facrMostrar?10:0),3,3,'FD');
   doc.setTextColor(80,80,120);doc.setFontSize(8);doc.setFont('helvetica','bold');
   doc.text('DETALLE DE CUOTA',20,y+8);
   doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);doc.setFontSize(10);
@@ -6692,17 +6569,17 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
     doc.setFontSize(9);doc.setTextColor(100,100,120);
     doc.text(`Cuotas restantes: ${restantes} de ${op.cuo}`,115,y+18);
   }
-  if(op.facr){
+  if(facrMostrar){
     doc.setTextColor(80,80,120);doc.setFontSize(8);doc.setFont('helvetica','bold');
     doc.text('Fecha acreditación:',115,y+27);
     doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);doc.setFontSize(9);
-    doc.text(fd(op.facr),163,y+27);
+    doc.text(fd(facrMostrar),163,y+27);
   }
   if(par){
     doc.setTextColor(200,100,0);doc.setFontSize(9);doc.setFont('helvetica','bold');
-    doc.text('⚠ Pago parcial — Falta de esta cuota: '+fm(flt),20,y+altoDet-8+(op.facr?10:0));
+    doc.text('⚠ Pago parcial — Falta de esta cuota: '+fm(flt),20,y+altoDet-8+(facrMostrar?10:0));
   }
-  y+=altoDet+(op.facr?10:0)+8;
+  y+=altoDet+(facrMostrar?10:0)+8;
 
   // Historial de todos los pagos del crédito con días de atraso por cuota
   const todosLosPagos=pagoDeOp(oid).sort((a,b)=>(a.fec||'').localeCompare(b.fec||''));
@@ -9251,85 +9128,7 @@ function animCount(el,targetText,dur=700){
 
 init();
 
-// ══ FORMATO DE MILES EN VIVO (para campos de montos) ══
-// Da formato "1.000.000" mientras se escribe, sin romper el resto del código:
-// se sobreescribe .value en la instancia del input para que parseFloat/parseInt
-// sigan funcionando normal (reciben el número "limpio", sin puntos).
-// Solo números enteros (los montos de esta app no usan centavos) — así se evita
-// cualquier ambigüedad con separadores decimales.
-function _agruparMiles(digitos,neg){
-  digitos=digitos.replace(/^0+(?=\d)/,'');
-  if(digitos==='')return neg?'-0':'0';
-  digitos=digitos.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-  return (neg?'-':'')+digitos;
-}
-// Usada mientras se está TIPEANDO: el string ya puede traer puntos de miles
-// puestos por nosotros mismos (ej "1.720") — acá NUNCA se interpretan como decimales,
-// solo se dejan los dígitos.
-function _formatMilesStr(input){
-  let s=String(input==null?'':input).trim();
-  if(s==='')return '';
-  const neg=s.startsWith('-');
-  s=s.replace(/[^\d]/g,'');
-  return _agruparMiles(s,neg);
-}
-// Usada cuando el VALOR se asigna por código (ej desde una operación guardada),
-// ahí sí puede venir un número JS con punto decimal real (ej 1500.5) y hay que redondear.
-function _formatMilesDesdeValor(input){
-  let s=String(input==null?'':input).trim();
-  if(s==='')return '';
-  const neg=s.startsWith('-');
-  if(/^-?\d+\.\d+$/.test(s)){
-    s=String(Math.round(Math.abs(parseFloat(s))));
-  } else {
-    s=s.replace(/[^\d]/g,'');
-  }
-  return _agruparMiles(s,neg);
-}
-function habilitarMilesLive(id){
-  const el=document.getElementById(id);
-  if(!el||el._milesLive)return;
-  el._milesLive=true;
-  el.type='text';
-  el.setAttribute('inputmode','numeric');
-  const nativeDesc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
-  Object.defineProperty(el,'value',{
-    get(){
-      const disp=nativeDesc.get.call(el);
-      if(disp==='')return '';
-      return disp.replace(/\./g,'');
-    },
-    set(v){
-      nativeDesc.set.call(el,_formatMilesDesdeValor(v));
-    },
-    configurable:true
-  });
-  // Bloquear cualquier caracter que no sea un dígito (nada de coma/punto decimal)
-  el.addEventListener('beforeinput',function(e){
-    if(e.data==null)return; // borrados, etc. — dejar pasar
-    if(e.data.length>1)return; // pegado de texto largo — se limpia igual en 'input'
-    if(!/^\d$/.test(e.data)){e.preventDefault();}
-  });
-  el.addEventListener('input',function(){
-    const selStart=el.selectionStart;
-    const before=nativeDesc.get.call(el);
-    const digitsBeforeCursor=before.slice(0,selStart).replace(/[^\d]/g,'').length;
-    const formatted=_formatMilesStr(before);
-    nativeDesc.set.call(el,formatted);
-    let count=0,pos=formatted.length;
-    for(let i=0;i<formatted.length;i++){
-      if(/\d/.test(formatted[i]))count++;
-      if(count===digitsBeforeCursor){pos=i+1;break;}
-    }
-    el.setSelectionRange(pos,pos);
-  });
-}
-['op_mon','op_mon_cf','op_cuo_fixed_cf','op_mon_d','op_mon_im','op_cuota_im','op_costo','op_precio','op_cuo_fixed','p_mon','g_mon','c_limite','ep_mon','eoc_mon','eoc_cf','sim_mon','sim_cuota_val','sim_cc_capital','cobPagoMon','cobEditMon','op_costo_sa'].forEach(habilitarMilesLive);
-
-
-
-
-
+// Verificar acceso cada 60 segundos
 setInterval(async()=>{
   if(!currentUser||!SB)return;
   if(_IS_ADMIN)return;
