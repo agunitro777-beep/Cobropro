@@ -8559,8 +8559,8 @@ function rRep(){
   if(rowsEl)rowsEl.innerHTML=`<div class="rc"><div class="rcl">Total cobrado</div><div class="rcv" style="color:var(--gr)">${fmt(totP)}</div></div><div class="rc"><div class="rcl">Capital activo</div><div class="rcv" style="color:var(--ac2)">${fmt(cap)}</div></div><div class="rc"><div class="rcl">Por cobrar</div><div class="rcv" style="color:var(--cy)">${fmt(porCob)}</div></div><div class="rc"><div class="rcl">Intereses cobrados</div><div class="rcv" style="color:var(--yw)">${fmt(totInt)}</div></div><div class="rc"><div class="rcl">Ganancia neta</div><div class="rcv" style="color:${ganNeta>=0?'var(--gr)':'var(--rd)'}">${fmt(ganNeta)}</div></div>`;
   const circ=170,off=circ-(mor/100)*circ;$('mRing').style.strokeDashoffset=off;$('mPct').textContent=mor+'%';
   $('mAnal').innerHTML=mor===0?'✅ Todos al día.':mor<20?'⚡ Baja.':mor<50?'⚠️ Moderada.':'🔴 Alta. Acción urgente.';
-  // Sólo clientes con al menos 1 pago real (no proyecciones)
-  const conPagos=[...Cs].filter(c=>opsDeCli(c.id).some(o=>pagoDeOp(o.id).some(p=>!p.par&&!(p.not||'').startsWith('🔄 INTERES'))));
+  // Clientes con al menos 1 pago real registrado (parcial o completo — ambos ya generan ganancia)
+  const conPagos=[...Cs].filter(c=>opsDeCli(c.id).some(o=>pagoDeOp(o.id).length>0));
   const topClis=conPagos.sort((a,b)=>{
     const intA=opsDeCli(a.id).reduce((s,o)=>s+intOp(o),0);
     const intB=opsDeCli(b.id).reduce((s,o)=>s+intOp(o),0);
