@@ -2982,12 +2982,12 @@ body.light .mo{background:rgba(0,0,0,.5)}
       <div style="font-size:9px;color:var(--tx2);margin-top:2px" id="cajSemSub">0 pagos</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-      <div style="background:rgba(0,0,0,.15);border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:9px;color:var(--tx2);margin-bottom:3px" id="cajSemPrestLabel">Prestado</div>
+      <div onclick="abrirDetallePrestCob('prest')" style="background:rgba(0,0,0,.15);border-radius:10px;padding:10px;text-align:center;cursor:pointer">
+        <div style="font-size:9px;color:var(--tx2);margin-bottom:3px" id="cajSemPrestLabel">Prestado 🔍</div>
         <div style="font-size:15px;font-weight:700;color:var(--ac2)" id="cajSemPrest">$0</div>
       </div>
-      <div style="background:rgba(0,0,0,.15);border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:9px;color:var(--tx2);margin-bottom:3px">Cobrado</div>
+      <div onclick="abrirDetallePrestCob('cob')" style="background:rgba(0,0,0,.15);border-radius:10px;padding:10px;text-align:center;cursor:pointer">
+        <div style="font-size:9px;color:var(--tx2);margin-bottom:3px">Cobrado 🔍</div>
         <div style="font-size:15px;font-weight:700;color:var(--gr)" id="cajSemEf">$0</div>
       </div>
     </div>
@@ -7268,6 +7268,7 @@ function abrirDetalleGanancia(){
   });
   const filas=Object.entries(porCliente).filter(([,v])=>v.gan>0.5).sort((a,b)=>b[1].gan-a[1].gan);
   const totalGan=filas.reduce((s,[,v])=>s+v.gan,0);
+  $('dgTitulo').textContent='📈 Ganancia por cliente';
   $('semLabel')&&($('dgPeriodo').textContent=$('semLabel').textContent);
   $('dgList').innerHTML=filas.length?filas.map(([nom,v])=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
@@ -7278,6 +7279,51 @@ function abrirDetalleGanancia(){
       <div style="font-size:14px;font-weight:800;color:var(--yw)">${ocul?'••••':fmt(Math.round(v.gan))}</div>
     </div>`).join(''):'<div style="font-size:12px;color:var(--tx2);text-align:center;padding:16px 0">Sin ganancia registrada en este período.</div>';
   $('dgTotal').textContent=ocul?'••••':fmt(Math.round(totalGan));
+  showModal('mDetalleGanancia');
+}
+function abrirDetallePrestCob(tipo){
+  const h=new Date();
+  let desde,hasta;
+  if(_periodoInicio==='mes'){
+    desde=new Date(h.getFullYear(),h.getMonth(),1);desde.setHours(0,0,0,0);
+    hasta=new Date(h.getFullYear(),h.getMonth()+1,0);hasta.setHours(23,59,59,999);
+  } else if(_periodoInicio==='anio'){
+    desde=new Date(h.getFullYear(),0,1);desde.setHours(0,0,0,0);
+    hasta=new Date(h.getFullYear(),11,31);hasta.setHours(23,59,59,999);
+  } else {
+    const lu=new Date(h);lu.setDate(h.getDate()-((h.getDay()+6)%7));lu.setHours(0,0,0,0);
+    const do2=new Date(lu);do2.setDate(lu.getDate()+6);do2.setHours(23,59,59,999);
+    desde=lu;hasta=do2;
+  }
+  const desdeStr=desde.toISOString().split('T')[0],hastaStr=hasta.toISOString().split('T')[0];
+  const porCliente={};
+  if(tipo==='prest'){
+    Ops.filter(o=>!esVenta(o)&&o.facr&&o.facr>=desdeStr&&o.facr<=hastaStr).forEach(o=>{
+      const c=gC(o.cid);const nom=c?c.nom:'Cliente eliminado';
+      if(!porCliente[nom])porCliente[nom]={val:0,pagos:0};
+      porCliente[nom].val+=o.mon;porCliente[nom].pagos++;
+    });
+  } else {
+    Ps.filter(p=>{const d=new Date(p.fec+'T00:00:00');return d>=desde&&d<=hasta}).forEach(p=>{
+      const op=gO(p.oid);if(!op)return;
+      const c=gC(op.cid);const nom=c?c.nom:'Cliente eliminado';
+      if(!porCliente[nom])porCliente[nom]={val:0,pagos:0};
+      porCliente[nom].val+=p.mon;porCliente[nom].pagos++;
+    });
+  }
+  const filas=Object.entries(porCliente).filter(([,v])=>v.val>0.5).sort((a,b)=>b[1].val-a[1].val);
+  const totalVal=filas.reduce((s,[,v])=>s+v.val,0);
+  $('dgTitulo').textContent=tipo==='prest'?'🏦 Prestado por cliente':'💰 Cobrado por cliente';
+  $('semLabel')&&($('dgPeriodo').textContent=$('semLabel').textContent);
+  $('dgList').innerHTML=filas.length?filas.map(([nom,v])=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:13px;font-weight:600">${ocul?'••••':nom}</div>
+        <div style="font-size:10px;color:var(--tx2)">${v.pagos} ${tipo==='prest'?(v.pagos!==1?'créditos':'crédito'):(v.pagos!==1?'pagos':'pago')}</div>
+      </div>
+      <div style="font-size:14px;font-weight:800;color:${tipo==='prest'?'var(--ac2)':'var(--gr)'}">${ocul?'••••':fmt(Math.round(v.val))}</div>
+    </div>`).join(''):`<div style="font-size:12px;color:var(--tx2);text-align:center;padding:16px 0">Sin ${tipo==='prest'?'préstamos':'cobros'} registrados en este período.</div>`;
+  $('dgTotal').textContent=ocul?'••••':fmt(Math.round(totalVal));
   showModal('mDetalleGanancia');
 }
 function rInicio(){
@@ -13012,7 +13058,7 @@ function checkPrimerTour(){
 <div class="mo" id="mDetalleGanancia">
   <div class="modal">
     <div class="mh"></div>
-    <div class="mt">📈 Ganancia por cliente</div>
+    <div class="mt" id="dgTitulo">📈 Ganancia por cliente</div>
     <div style="font-size:10px;color:var(--tx2);margin-bottom:10px" id="dgPeriodo"></div>
     <div style="max-height:340px;overflow-y:auto" id="dgList"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:2px solid var(--border)">
