@@ -2024,20 +2024,12 @@ function rankCli(cid){
   return{lb:'Irregular',ic:'⚠️',cl:'rank-moroso'};
 }
 function intOp(op){
-  const pagos=pagoDeOp(op.id).filter(p=>!p.par);
+  const pagos=pagoDeOp(op.id);
   if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return pagos.filter(p=>!(p.not||'').startsWith('🔄 INTERES')).reduce((s,p)=>s+Math.min(p.mon/cvOp(op),1)*gan,0)}
   const soloInt=pagos.filter(p=>(p.not||'').startsWith('🔄 INTERES')).reduce((s,p)=>s+p.mon,0);
   const v=cvOp(op),pr=op.mon/op.cuo;
-  const ganPorCuota=v-pr; // interés embebido por cuota
-  const intCuotas=pagos.filter(p=>!(p.not||'').startsWith('🔄 INTERES')).reduce((s,p)=>{
-    if(ganPorCuota>0&&op.cuota_fija>0){
-      // Si pagó la cuota completa: ganancia = cuota_fija - capital_por_cuota
-      // Si pagó solo el interés (p.mon < cuota_fija): ganancia = p.mon
-      if(p.mon<=ganPorCuota+1)return s+p.mon; // pagó solo interés
-      return s+Math.max(0,Math.min(p.mon,v)-pr); // pagó cuota completa
-    }
-    return s+Math.max(0,Math.min(p.mon,v)-pr);
-  },0);
+  const tasaGan=v>0?Math.max(0,v-pr)/v:0; // % de cada peso cobrado que es ganancia (interés embebido)
+  const intCuotas=pagos.filter(p=>!(p.not||'').startsWith('🔄 INTERES')).reduce((s,p)=>s+Math.min(p.mon,v)*tasaGan,0);
   return soloInt+intCuotas;
 }
 const saldoTotalCli=cid=>opsDeCli(cid).filter(o=>esOpActiva(o)).reduce((s,o)=>s+saldoMOp(o),0);
@@ -4976,7 +4968,7 @@ function rInicio(){
     if(op.tip==='interes_mensual'||(p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}
     const v=cvOp(op),pr=op.mon/op.cuo;
     if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*gan;}
-    return acc+Math.max(0,Math.min(p.mon,v)-pr);
+    return acc+Math.min(p.mon,v)*(v>0?Math.max(0,v-pr)/v:0);
   },0);
   const prestSem=Ops.filter(o=>!esVenta(o)&&o.facr&&o.facr>=desdeStr&&o.facr<=hastaStr).reduce((s,o)=>s+o.mon,0);
   const disponSem=cobSem-prestSem;
@@ -4990,7 +4982,7 @@ function rInicio(){
   const opsAct=Ops.filter(o=>esOpActiva(o)),capP=Ops.filter(o=>!esVenta(o)&&esOpActiva(o)).reduce((s,o)=>s+o.mon,0),porCob=opsAct.reduce((s,o)=>s+saldoMOp(o),0);
   const mes=new Date().toISOString().substring(0,7),pMes=Ps.filter(p=>p.fec&&p.fec.startsWith(mes)),cob=pMes.reduce((s,p)=>s+p.mon,0);
   const opsMora=Ops.filter(o=>stOp(o)==='atrasado'),pend=opsMora.reduce((s,o)=>s+moraOp(o),0);
-  const intM=pMes.reduce((acc,p)=>{const op=gO(p.oid);if(!op)return acc;if(op.tip==='interes_mensual'||(p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}const v=cvOp(op),pr=op.mon/op.cuo;if(esVenta(op)){const g=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*g;}return acc+Math.max(0,Math.min(p.mon,v)-pr);},0);
+  const intM=pMes.reduce((acc,p)=>{const op=gO(p.oid);if(!op)return acc;if(op.tip==='interes_mensual'||(p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}const v=cvOp(op),pr=op.mon/op.cuo;if(esVenta(op)){const g=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*g;}return acc+Math.min(p.mon,v)*(v>0?Math.max(0,v-pr)/v:0);},0);
   const ganV=Ops.filter(o=>esVenta(o)).reduce((s,o)=>s+intOp(o),0);
   $('stCap').textContent=ocul?'••••':fmt(capP);$('stAct').textContent=`${opsAct.filter(o=>!esVenta(o)).length} créditos`;
   $('stPorCob').textContent=ocul?'••••':fmt(porCob);$('stCob').textContent=ocul?'••••':fmt(cob);$('stPag').textContent=`${pMes.length} pagos`;
@@ -6037,7 +6029,7 @@ function rCal(){
       colorMonto='var(--ac2)';
     } else if(calMetrica==='ganancia'){
       if(esPasado){
-        montoDia=Ps.filter(p=>p.fec===ds).reduce((acc,p)=>{const op=gO(p.oid);if(!op||esVenta(op))return acc;const v=cvOp(op),pr=op.mon/op.cuo;return acc+Math.max(0,Math.min(p.mon,v)-pr)},0);
+        montoDia=Ps.filter(p=>p.fec===ds).reduce((acc,p)=>{const op=gO(p.oid);if(!op||esVenta(op))return acc;const v=cvOp(op),pr=op.mon/op.cuo;return acc+Math.min(p.mon,v)*(v>0?Math.max(0,v-pr)/v:0)},0);
       } else {
         montoDia=(cobM[ds]||[]).reduce((acc,op)=>{if(esVenta(op))return acc;const v=cvOp(op),pr=op.mon/op.cuo;return acc+Math.max(0,v-pr)},0);
       }
@@ -6110,7 +6102,7 @@ function rFin(){
     const ps=Ps.filter(p=>p.fec&&p.fec.startsWith(m));
     const cob=ps.reduce((s,p)=>s+p.mon,0);
     const prest=Ops.filter(o=>!esVenta(o)&&(o.fa||'').startsWith(m)).reduce((s,o)=>s+o.mon,0);
-    const gan=ps.reduce((acc,p)=>{const op=gO(p.oid);if(!op||esVenta(op))return acc;const v=cvOp(op),pr=op.mon/op.cuo;return acc+Math.max(0,Math.min(p.mon,v)-pr);},0);
+    const gan=ps.reduce((acc,p)=>{const op=gO(p.oid);if(!op||esVenta(op))return acc;const v=cvOp(op),pr=op.mon/op.cuo;return acc+Math.min(p.mon,v)*(v>0?Math.max(0,v-pr)/v:0);},0);
     const lbl=MC[parseInt(m.split('-')[1])-1].substring(0,3);
     return{label:lbl,cobrado:cob,prestado:prest,ganancia:gan};
   });
@@ -8856,7 +8848,7 @@ function _getRepPeriodo(){
     if((p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}
     const v=cvOp(op),pr=op.mon/op.cuo;
     if(esVenta(op)){const g=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*g;}
-    return acc+Math.max(0,Math.min(p.mon,v)-pr);
+    return acc+Math.min(p.mon,v)*(v>0?Math.max(0,v-pr)/v:0);
   },0);
   const ganancia=gananciaInt-totalGastos;
   return {pLabel,pLabelFile,desdeStr,hastaStr,pagos,gastos,ops,totalCobrado,totalGastos,totalPrestado,totalVentas,ganancia,gananciaInt,esAnual,meses,desde};
@@ -8945,7 +8937,7 @@ function exportarReportePDF(){
         const opsMes=Ops.filter(o=>(o.fa||o.fv||'').startsWith(mStr)&&!esVenta(o));
         const cob=psMes.reduce((s,p)=>s+p.mon,0);
         const prest=opsMes.reduce((s,o)=>s+o.mon,0);
-        const gan=psMes.reduce((acc,p)=>{const op=gO(p.oid);if(!op||esVenta(op))return acc;const v=cvOp(op),pr=op.mon/op.cuo;return acc+Math.max(0,Math.min(p.mon,v)-pr);},0);
+        const gan=psMes.reduce((acc,p)=>{const op=gO(p.oid);if(!op||esVenta(op))return acc;const v=cvOp(op),pr=op.mon/op.cuo;return acc+Math.min(p.mon,v)*(v>0?Math.max(0,v-pr)/v:0);},0);
         return[nm,fm(cob),fm(prest),fm(gan)];
       });
       doc.autoTable({
