@@ -2976,22 +2976,22 @@ body.light .mo{background:rgba(0,0,0,.5)}
       </div>
       <div id="semLabel" style="font-size:9px;color:var(--tx2)"></div>
     </div>
-    <div onclick="abrirDetalleGanancia()" style="text-align:center;margin-bottom:12px;cursor:pointer" title="Ver desglose por cliente">
+    <div onclick="abrirDetalleGanancia()" style="text-align:center;margin-bottom:12px;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none" title="Ver desglose por cliente">
       <div style="font-size:10px;color:var(--tx2);margin-bottom:2px">Ganancia 🔍</div>
       <div class="cajaTot" id="cajSemTot" style="font-size:32px">$0</div>
       <div style="font-size:9px;color:var(--tx2);margin-top:2px" id="cajSemSub">0 pagos</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-      <div onclick="abrirDetallePrestCob('prest')" style="background:rgba(0,0,0,.15);border-radius:10px;padding:10px;text-align:center;cursor:pointer">
+      <div onclick="abrirDetallePrestCob('prest')" style="background:rgba(0,0,0,.15);border-radius:10px;padding:10px;text-align:center;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none">
         <div style="font-size:9px;color:var(--tx2);margin-bottom:3px" id="cajSemPrestLabel">Prestado 🔍</div>
         <div style="font-size:15px;font-weight:700;color:var(--ac2)" id="cajSemPrest">$0</div>
       </div>
-      <div onclick="abrirDetallePrestCob('cob')" style="background:rgba(0,0,0,.15);border-radius:10px;padding:10px;text-align:center;cursor:pointer">
+      <div onclick="abrirDetallePrestCob('cob')" style="background:rgba(0,0,0,.15);border-radius:10px;padding:10px;text-align:center;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none">
         <div style="font-size:9px;color:var(--tx2);margin-bottom:3px">Cobrado 🔍</div>
         <div style="font-size:15px;font-weight:700;color:var(--gr)" id="cajSemEf">$0</div>
       </div>
     </div>
-    <div id="semDisponWrap" style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center">
+    <div id="semDisponWrap" style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none">
       <div style="font-size:10px;color:var(--tx2)">💰 Disponible</div>
       <div style="font-size:16px;font-weight:800;color:var(--gr)" id="cajSemDisp">$0</div>
     </div>
@@ -7351,7 +7351,7 @@ function rInicio(){
   desdeStr=desde.toISOString().split('T')[0];
   hastaStr=hasta.toISOString().split('T')[0];
   $('semLabel').textContent=labelTxt;
-  const lbl=$('cajSemPrestLabel');if(lbl)lbl.textContent=prestLabel;
+  const lbl=$('cajSemPrestLabel');if(lbl)lbl.textContent=prestLabel+' 🔍';
   const ps=Ps.filter(p=>{const d=new Date(p.fec+'T00:00:00');return d>=desde&&d<=hasta});
   const cobSem=ps.reduce((s,p)=>s+p.mon,0);
   const ganSem=ps.reduce((acc,p)=>acc+_gananciaDePago(p),0);
