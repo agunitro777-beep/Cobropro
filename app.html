@@ -2976,8 +2976,8 @@ body.light .mo{background:rgba(0,0,0,.5)}
       </div>
       <div id="semLabel" style="font-size:9px;color:var(--tx2)"></div>
     </div>
-    <div style="text-align:center;margin-bottom:12px">
-      <div style="font-size:10px;color:var(--tx2);margin-bottom:2px">Ganancia</div>
+    <div onclick="abrirDetalleGanancia()" style="text-align:center;margin-bottom:12px;cursor:pointer" title="Ver desglose por cliente">
+      <div style="font-size:10px;color:var(--tx2);margin-bottom:2px">Ganancia 🔍</div>
       <div class="cajaTot" id="cajSemTot" style="font-size:32px">$0</div>
       <div style="font-size:9px;color:var(--tx2);margin-top:2px" id="cajSemSub">0 pagos</div>
     </div>
@@ -7235,6 +7235,51 @@ function setPeriodoInicio(p){
   });
   rInicio();
 }
+function _gananciaDePago(p){
+  const op=gO(p.oid);if(!op)return 0;
+  if(op.tip==='interes_mensual'||(p.not_||p.not||'').startsWith('🔄 INTERES'))return p.mon;
+  const v=cvOp(op),pr=op.mon/op.cuo;
+  if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return Math.min(p.mon/v,1)*gan;}
+  return Math.min(p.mon,v)*(v>0?Math.max(0,v-pr)/v:0);
+}
+function abrirDetalleGanancia(){
+  const h=new Date();
+  let desde,hasta;
+  if(_periodoInicio==='mes'){
+    desde=new Date(h.getFullYear(),h.getMonth(),1);desde.setHours(0,0,0,0);
+    hasta=new Date(h.getFullYear(),h.getMonth()+1,0);hasta.setHours(23,59,59,999);
+  } else if(_periodoInicio==='anio'){
+    desde=new Date(h.getFullYear(),0,1);desde.setHours(0,0,0,0);
+    hasta=new Date(h.getFullYear(),11,31);hasta.setHours(23,59,59,999);
+  } else {
+    const lu=new Date(h);lu.setDate(h.getDate()-((h.getDay()+6)%7));lu.setHours(0,0,0,0);
+    const do2=new Date(lu);do2.setDate(lu.getDate()+6);do2.setHours(23,59,59,999);
+    desde=lu;hasta=do2;
+  }
+  const ps=Ps.filter(p=>{const d=new Date(p.fec+'T00:00:00');return d>=desde&&d<=hasta});
+  const porCliente={};
+  ps.forEach(p=>{
+    const op=gO(p.oid);if(!op)return;
+    const c=gC(op.cid);const nom=c?c.nom:'Cliente eliminado';
+    const gan=_gananciaDePago(p);
+    if(!porCliente[nom])porCliente[nom]={gan:0,pagos:0};
+    porCliente[nom].gan+=gan;
+    porCliente[nom].pagos++;
+  });
+  const filas=Object.entries(porCliente).filter(([,v])=>v.gan>0.5).sort((a,b)=>b[1].gan-a[1].gan);
+  const totalGan=filas.reduce((s,[,v])=>s+v.gan,0);
+  $('semLabel')&&($('dgPeriodo').textContent=$('semLabel').textContent);
+  $('dgList').innerHTML=filas.length?filas.map(([nom,v])=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:13px;font-weight:600">${ocul?'••••':nom}</div>
+        <div style="font-size:10px;color:var(--tx2)">${v.pagos} pago${v.pagos!==1?'s':''}</div>
+      </div>
+      <div style="font-size:14px;font-weight:800;color:var(--yw)">${ocul?'••••':fmt(Math.round(v.gan))}</div>
+    </div>`).join(''):'<div style="font-size:12px;color:var(--tx2);text-align:center;padding:16px 0">Sin ganancia registrada en este período.</div>';
+  $('dgTotal').textContent=ocul?'••••':fmt(Math.round(totalGan));
+  showModal('mDetalleGanancia');
+}
 function rInicio(){
   _actualizarLogoMarca();
   const h=new Date();
@@ -7263,13 +7308,7 @@ function rInicio(){
   const lbl=$('cajSemPrestLabel');if(lbl)lbl.textContent=prestLabel;
   const ps=Ps.filter(p=>{const d=new Date(p.fec+'T00:00:00');return d>=desde&&d<=hasta});
   const cobSem=ps.reduce((s,p)=>s+p.mon,0);
-  const ganSem=ps.reduce((acc,p)=>{
-    const op=gO(p.oid);if(!op)return acc;
-    if(op.tip==='interes_mensual'||(p.not_||p.not||'').startsWith('🔄 INTERES')){return acc+p.mon;}
-    const v=cvOp(op),pr=op.mon/op.cuo;
-    if(esVenta(op)){const gan=(op.precio-op.costo)/op.cuo;return acc+Math.min(p.mon/v,1)*gan;}
-    return acc+Math.min(p.mon,v)*(v>0?Math.max(0,v-pr)/v:0);
-  },0);
+  const ganSem=ps.reduce((acc,p)=>acc+_gananciaDePago(p),0);
   const prestSem=Ops.filter(o=>!esVenta(o)&&o.facr&&o.facr>=desdeStr&&o.facr<=hastaStr).reduce((s,o)=>s+o.mon,0);
   const disponSem=cobSem-prestSem;
   $('cajSemTot').textContent=ocul?'••••':fmt(Math.round(ganSem));
@@ -12967,6 +13006,20 @@ function checkPrimerTour(){
     <div id="mc_list"></div>
     <button class="btn bp" id="mcSaveBtn" onclick="guardarMontosCuotas()" style="margin-top:6px">💾 Guardar montos</button>
     <button class="btn bs" style="margin-top:7px" onclick="closeModal('mMontosCuotas')">Cancelar</button>
+  </div>
+</div>
+
+<div class="mo" id="mDetalleGanancia">
+  <div class="modal">
+    <div class="mh"></div>
+    <div class="mt">📈 Ganancia por cliente</div>
+    <div style="font-size:10px;color:var(--tx2);margin-bottom:10px" id="dgPeriodo"></div>
+    <div style="max-height:340px;overflow-y:auto" id="dgList"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:2px solid var(--border)">
+      <div style="font-size:12px;font-weight:700">Total</div>
+      <div style="font-size:16px;font-weight:800;color:var(--gr)" id="dgTotal">$0</div>
+    </div>
+    <button class="btn bs" style="margin-top:12px" onclick="closeModal('mDetalleGanancia')">Cerrar</button>
   </div>
 </div>
 
