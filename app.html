@@ -6537,11 +6537,18 @@ async function _buildComprobante(oid,monPag,fec,par,flt){
     doc.text(`⚠  Cuota ${numCuota} abonada con ${diasMora} día${diasMora!==1?'s':''} de atraso`,105,y+9,{align:'center'});
     y+=18;
   }
-  if(esUltimaCuotaDelCredito&&diasMoraTotalCredito>0&&CFG.compMora!==false){
-    doc.setFillColor(255,237,213);doc.setDrawColor(234,88,12);
-    doc.roundedRect(14,y,182,14,3,3,'FD');
-    doc.setTextColor(154,52,18);doc.setFontSize(9);doc.setFont('helvetica','bold');
-    doc.text(`🏁  Crédito cancelado · ${diasMoraTotalCredito} día${diasMoraTotalCredito!==1?'s':''} de mora en total`,105,y+9,{align:'center'});
+  if(esUltimaCuotaDelCredito){
+    if(diasMoraTotalCredito>0&&CFG.compMora!==false){
+      doc.setFillColor(255,237,213);doc.setDrawColor(234,88,12);
+      doc.roundedRect(14,y,182,14,3,3,'FD');
+      doc.setTextColor(154,52,18);doc.setFontSize(9);doc.setFont('helvetica','bold');
+      doc.text(`🏁  CRÉDITO CANCELADO · ${diasMoraTotalCredito} día${diasMoraTotalCredito!==1?'s':''} de mora en total`,105,y+9,{align:'center'});
+    } else {
+      doc.setFillColor(220,252,231);doc.setDrawColor(34,197,94);
+      doc.roundedRect(14,y,182,14,3,3,'FD');
+      doc.setTextColor(21,128,61);doc.setFontSize(9);doc.setFont('helvetica','bold');
+      doc.text('✅  CRÉDITO CANCELADO — Sin días de mora',105,y+9,{align:'center'});
+    }
     y+=18;
   }
 
