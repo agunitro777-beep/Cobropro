@@ -2320,7 +2320,8 @@ var qrcode = function() {
 </script>
 <style>
 :root{--bg:#0a0a0f;--bg2:#12121a;--bg3:#1a1a26;--card:#16161f;--card2:#1e1e2e;--border:#2a2a3e;--ac:#6c63ff;--ac2:#a78bfa;--gr:#22c55e;--rd:#ef4444;--yw:#f59e0b;--cy:#06b6d4;--tx:#e8e8f0;--tx2:#8888aa;--ra:16px;--rs:10px}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 html{font-size:16px}body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}
 .fsize-active{border-color:var(--ac)!important;background:rgba(108,99,255,.15)!important;color:var(--ac2)!important}
 #authScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;position:fixed;inset:0;z-index:200;background:var(--bg)}
