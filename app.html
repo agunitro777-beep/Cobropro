@@ -6048,7 +6048,7 @@ async function guardarOp(){
       const mver=document.getElementById('mver');
       if(mver&&mver.classList.contains('open'))verCli(cid);
       // Compartir automáticamente el PDF con el detalle del crédito por WA
-      if(c&&c.tel&&!esVenta(opNueva)){
+      if(c&&!esVenta(opNueva)){
         setTimeout(()=>pdfCreditoNuevoWA(opNueva,c),400);
       }
     }
