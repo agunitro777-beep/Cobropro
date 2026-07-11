@@ -5912,7 +5912,11 @@ function abrirOp(cidFijo=null,oid=null){
       }
     }
   } else {
-    ['op_desc','op_mon','op_int','op_cuo','op_cuo_fixed','op_cuo_cf','op_not','op_prod','op_costo','op_precio'].forEach(f=>{const el=document.getElementById(f);if(el){el.value='';el.dataset.autofilled='';el.style.borderColor='';}});
+    ['op_desc','op_mon','op_int','op_cuo','op_cuo_fixed','op_cuo_cf','op_not','op_prod','op_costo','op_precio',
+     'op_mon_cf','op_cuo_fixed_cf', // cuota fija
+     'op_mon_im','op_int_im','op_cuota_im','op_desc_im','op_cuo_im', // interés mensual
+     'op_mon_d','op_int_d','op_desc_d' // diario abierto
+    ].forEach(f=>{const el=document.getElementById(f);if(el){el.value='';el.dataset.autofilled='';el.style.borderColor='';}});
     $('op_mora').value='0';$('op_mora').disabled=true;$('op_mora').style.opacity='.4';
     if($('op_mora_check'))$('op_mora_check').checked=false;
     $('op_fv').value=hoy();$('op_frq').value='quincenal';$('op_tipo').value='prestamo';$('op_moneda').value=CFG.moneda||'$';if($('op_facr'))$('op_facr').value=hoy();autoFechaOp();
