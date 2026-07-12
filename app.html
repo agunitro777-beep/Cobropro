@@ -4099,6 +4099,11 @@ async function saveCfgDB(){
 
 // ══ HELPERS ══
 const $=id=>document.getElementById(id);
+// Sanea texto ingresado por el usuario (nombres, notas, etc) antes de insertarlo en el HTML — previene XSS
+function esc(s){
+  if(s===null||s===undefined)return'';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 const fmt=n=>{if(ocul)return'••••';const mon=(CFG.moneda||'$');const abs=Math.abs(n);const decimals=abs>0&&Math.abs(n-Math.round(n))>0.005?2:0;return mon+n.toLocaleString(LOCALE(),{minimumFractionDigits:decimals,maximumFractionDigits:decimals})};
 const fmtOp=(n,op)=>{if(ocul)return'••••';const mon=op&&op.moneda?op.moneda:(CFG.moneda||'$');const abs=Math.abs(n);const decimals=abs>0&&Math.abs(n-Math.round(n))>0.005?2:0;return mon+n.toLocaleString(LOCALE(),{minimumFractionDigits:decimals,maximumFractionDigits:decimals})};
 const fD=d=>{if(!d)return'';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`};
@@ -4730,7 +4735,7 @@ let _srchT=null;
 function debSearch(){clearTimeout(_srchT);_srchT=setTimeout(rClis,220);}
 function setBtnLoading(id,loading){const b=$(id);if(!b)return;b.disabled=loading;if(loading){b.dataset.orig=b.textContent;b.textContent='⏳ Guardando...'}else{b.textContent=b.dataset.orig||b.textContent}}
 function poblarSelOps(){$('p_op').innerHTML=Ops.filter(o=>esOpActiva(o)).map(o=>{const c=gC(o.cid);return`<option value="${o.id}">${c?c.nom:'?'} — ${esVenta(o)?o.prod||'Venta':o.desc||'Crédito'} (${fmt(cvOp(o))})</option>`}).join('')}
-function poblarSelClis(){$('op_cli').innerHTML=Cs.map(c=>`<option value="${c.id}">${c.nom}</option>`).join('')}
+function poblarSelClis(){$('op_cli').innerHTML=Cs.map(c=>`<option value="${c.id}">${esc(c.nom)}</option>`).join('')}
 function updCuotaEsp(){
   const fid=parseInt($('p_fixOp').value),oid=fid||parseInt($('p_op').value);
   const op=gO(oid);
@@ -4886,7 +4891,7 @@ function cancelarDiarioAbierto(oid){
   const monLabel=(op.moneda||CFG.moneda||'$');
   modal.innerHTML=`<div style="background:var(--bg2);border-radius:16px;padding:20px;width:100%;max-width:380px">
     <div style="font-size:15px;font-weight:800;margin-bottom:4px">💰 Cancelar crédito diario</div>
-    <div style="font-size:11px;color:var(--tx2);margin-bottom:16px">${c.nom} · ${monLabel}${Math.round(mon).toLocaleString(LOCALE())} al ${intDia}% diario</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:16px">${esc(c.nom)} · ${monLabel}${Math.round(mon).toLocaleString(LOCALE())} al ${intDia}% diario</div>
     <div class="ig" style="margin-bottom:12px">
       <label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:5px">Días transcurridos desde el inicio</label>
       <input id="dDias" class="inp" type="number" min="1" value="${diasBase}" oninput="(()=>{const d=parseInt(this.value)||0;const tot=${mon}*(1+${intDia}/100*d);document.getElementById('dTotal').textContent='${monLabel}'+Math.round(tot).toLocaleString(LOCALE());document.getElementById('dGan').textContent='Interés: ${monLabel}'+Math.round(tot-${mon}).toLocaleString(LOCALE())+'  ('+d+' días × ${intDia}%)';})()">
@@ -4924,7 +4929,7 @@ function cancelarCapitalMensual(oid){
   modal.style.cssText='position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
   modal.innerHTML=`<div style="background:var(--bg2);border-radius:16px;padding:20px;width:100%;max-width:380px;margin:auto">
     <div style="font-size:15px;font-weight:800;margin-bottom:4px">⚙️ Modificar capital</div>
-    <div style="font-size:11px;color:var(--tx2);margin-bottom:14px">${c.nom} · Capital actual: <strong style="color:var(--tx)">${monLabel}${Math.round(op.mon).toLocaleString(LOCALE())}</strong> · Cuota: <strong style="color:var(--ac2)">${monLabel}${cuotaInt.toLocaleString(LOCALE())}/mes</strong></div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:14px">${esc(c.nom)} · Capital actual: <strong style="color:var(--tx)">${monLabel}${Math.round(op.mon).toLocaleString(LOCALE())}</strong> · Cuota: <strong style="color:var(--ac2)">${monLabel}${cuotaInt.toLocaleString(LOCALE())}/mes</strong></div>
 
     <!-- Opciones -->
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
@@ -7112,12 +7117,12 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
       }catch(e){console.error('historial error',e);return '';}})()}
     </div>`;
   }).join('');
-  const opsCompHTML=opsComp.length?`<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">✅ Terminados (${opsComp.length})</div><button class="btn bs bsm" style="border-color:rgba(34,197,94,.4);color:var(--gr);font-size:10px" onclick="pdfHistorialTodosTerminados(${cid})">🧾 Historial</button></div>${opsComp.map(op=>{const sv=esVenta(op);const lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito');const tot=sv?op.precio:op.mon;const pagosOp=pagoDeOp(op.id);const totCobrado=pagosOp.reduce((s,p)=>s+p.mon,0);return`<div class="op-card" style="opacity:.7;border-left:3px solid var(--gr)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="op-tag" style="color:var(--gr)">${sv?'🛒':'💳'} ${sv?'VENTA':'CRÉDITO'}</div><div style="font-size:13px;font-weight:700">${lbl}</div><div style="font-size:9px;color:var(--tx2)">${op.pag}/${op.cuo} cuotas · ${op.frq}</div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:var(--gr)">${fmt(tot)}</div><span class="sb done">✅ ${op.pag}/${op.cuo} pagadas</span></div></div><div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap"><button class="btn bs bsm" onclick="resumenOpTerminado(${op.id})">📋 Resumen</button><button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️ Editar</button><button class="btn bp bsm" style="background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.5);color:var(--yw)" onclick="abrirEditOpCanc(${op.id})">⚙️ Corregir</button><button class="btn bp bsm" style="background:rgba(108,99,255,.15);border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="confirmarReabrirOpCanc(${op.id})">🔄 Reabrir</button><button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfCreditoNuevoWA(gO(${op.id}),gC(${cid}))">📲 PDF</button><button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button></div></div>`}).join('')}</div>`:'';
-  const notasHTML=c.not?`<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--tx2)"><span style="font-weight:600;color:var(--tx)">📝 Notas:</span> ${c.not}</div>`:'';
+  const opsCompHTML=opsComp.length?`<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">✅ Terminados (${opsComp.length})</div><button class="btn bs bsm" style="border-color:rgba(34,197,94,.4);color:var(--gr);font-size:10px" onclick="pdfHistorialTodosTerminados(${cid})">🧾 Historial</button></div>${opsComp.map(op=>{const sv=esVenta(op);const lbl=esc(sv?(op.prod||'Venta'):(op.desc||'Crédito'));const tot=sv?op.precio:op.mon;const pagosOp=pagoDeOp(op.id);const totCobrado=pagosOp.reduce((s,p)=>s+p.mon,0);return`<div class="op-card" style="opacity:.7;border-left:3px solid var(--gr)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="op-tag" style="color:var(--gr)">${sv?'🛒':'💳'} ${sv?'VENTA':'CRÉDITO'}</div><div style="font-size:13px;font-weight:700">${lbl}</div><div style="font-size:9px;color:var(--tx2)">${op.pag}/${op.cuo} cuotas · ${op.frq}</div></div><div style="text-align:right"><div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;color:var(--gr)">${fmt(tot)}</div><span class="sb done">✅ ${op.pag}/${op.cuo} pagadas</span></div></div><div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap"><button class="btn bs bsm" onclick="resumenOpTerminado(${op.id})">📋 Resumen</button><button class="btn bs bsm" onclick="closeModal('mver');abrirOp(${cid},${op.id})">✏️ Editar</button><button class="btn bp bsm" style="background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.5);color:var(--yw)" onclick="abrirEditOpCanc(${op.id})">⚙️ Corregir</button><button class="btn bp bsm" style="background:rgba(108,99,255,.15);border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="confirmarReabrirOpCanc(${op.id})">🔄 Reabrir</button><button class="btn bs bsm" style="border-color:rgba(108,99,255,.4);color:var(--ac2)" onclick="pdfCreditoNuevoWA(gO(${op.id}),gC(${cid}))">📲 PDF</button><button class="btn brd bsm" onclick="elimOp(${op.id})">🗑️ Borrar</button></div></div>`}).join('')}</div>`:'';
+  const notasHTML=c.not?`<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--tx2)"><span style="font-weight:600;color:var(--tx)">📝 Notas:</span> ${esc(c.not)}</div>`:'';
   $('verContent').innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
       <div class="av" style="width:72px;height:72px;font-size:22px;flex-shrink:0;background:${aCol(c.nom)}22;color:${aCol(c.nom)};border:3px solid ${aCol(c.nom)}66;overflow:hidden;padding:${c.foto?'0':''};cursor:${c.foto?'pointer':'default'}" ${c.foto?`onclick="window.open('${c.foto}','_blank')" title="Ver foto completa"`:""} >${c.foto?`<img src="${c.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:ini(c.nom)}</div>
-      <div style="flex:1"><div style="font-family:Syne,sans-serif;font-size:17px;font-weight:800">${c.nom}</div>
+      <div style="flex:1"><div style="font-family:Syne,sans-serif;font-size:17px;font-weight:800">${esc(c.nom)}</div>
       <div style="font-size:11px;color:var(--tx2)">${c.tel||'Sin teléfono'} ${c.cumple?'· 🎂 '+fD(c.cumple):''}</div>
       <span class="${r.cl}">${r.ic} ${r.lb}</span></div>
     </div>
@@ -7158,11 +7163,11 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
     ${c.lat?`<div style="background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div>
         <div style="font-size:9px;color:var(--tx2);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">📍 Ubicación guardada</div>
-        ${c.dir?`<div style="font-size:11px;font-weight:600;color:var(--tx);margin-bottom:3px">${c.dir}</div>`:''}
+        ${c.dir?`<div style="font-size:11px;font-weight:600;color:var(--tx);margin-bottom:3px">${esc(c.dir)}</div>`:''}
         <div style="font-size:10px;color:var(--gr);font-family:monospace">${parseFloat(c.lat).toFixed(5)}, ${parseFloat(c.lng).toFixed(5)}</div>
       </div>
       <button class="btn bgr bsm" style="flex-shrink:0" onclick="abrirMapsCliente('${c.lat}','${c.lng}','${(c.nom||'').replace(/'/g,"\\'")}')">🗺️ Ver en Maps</button>
-    </div>`:c.dir?`<div style="background:var(--bg3);border-radius:8px;padding:8px 11px;margin-bottom:12px;font-size:11px;color:var(--tx2)">📍 ${c.dir}</div>`:''}
+    </div>`:c.dir?`<div style="background:var(--bg3);border-radius:8px;padding:8px 11px;margin-bottom:12px;font-size:11px;color:var(--tx2)">📍 ${esc(c.dir)}</div>`:''}
     <div style="font-family:Syne,sans-serif;font-size:12px;font-weight:700;margin-bottom:8px;color:var(--tx2);text-transform:uppercase">⚡ Activos (${opsAct.length})</div>
     ${opsAct.length?opsHTML:'<div style="font-size:10px;color:var(--tx2);padding:8px 0">Sin operaciones activas</div>'}
     ${opsCompHTML}
@@ -7179,14 +7184,14 @@ function verCli(cid){_mverCid=cid;sessionStorage.setItem('_mverCid',cid);
         const dias=Math.floor((new Date(p.fec+'T00:00:00')-due)/86400000);
         if(dias>0){
           const moraC=Math.round(cvOp(op)*parseFloat(op.mora||0)/100*dias);
-          const lbl=esVenta(op)?op.prod||'Venta':op.desc||'Crédito';
+          const lbl=esc(esVenta(op)?op.prod||'Venta':op.desc||'Crédito');
           items.push({fec:p.fec,lbl,dias,mora:moraC,cuota:idx+1});
         }
       });
       // Mora activa (no pagada aún)
       const moraAct=moraOp(op);
       if(moraAct>0){
-        const lbl=esVenta(op)?op.prod||'Venta':op.desc||'Crédito';
+        const lbl=esc(esVenta(op)?op.prod||'Venta':op.desc||'Crédito');
         items.push({fec:'activa',lbl,dias:diasAtrOp(op),mora:moraAct,cuota:'activa'});
       }
     });
@@ -7404,7 +7409,7 @@ function rInicio(){
   if(ven.length){$('vCard').style.display='';$('vList').innerHTML=ven.map(o=>{const c=gC(o.cid);return`<div class="ai warning"><span class="ad warning"></span><div class="at"><strong>${ocul?'••••':c?c.nom:'?'}</strong><div class="asub">${o.fv===mn?'Mañana':'Hoy'}: ${fmt(cvOp(o))}</div></div>${c&&c.tel?`<a href="${waLinkOp(o)}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm" style="padding:3px 7px">💬</button></a>`:''}</div>`}).join('')}
   else $('vCard').style.display='none';
   const hoyMD=hoy().substring(5),cumples=Cs.filter(c=>c.cumple&&c.cumple.substring(5)===hoyMD);
-  if(cumples.length){$('cumpleCard').style.display='';$('cumpleList').innerHTML=cumples.map(c=>`<div class="ai success"><span class="ad success"></span><div class="at"><strong>${c.nom}</strong><div class="asub">🎂 ¡Hoy cumple años!</div></div>${c.tel?`<a href="https://wa.me/54${c.tel}?text=${encodeURIComponent('¡Feliz cumpleaños '+c.nom+'! 🎂🎉')}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm" style="padding:3px 7px">💬</button></a>`:''}</div>`).join('')}
+  if(cumples.length){$('cumpleCard').style.display='';$('cumpleList').innerHTML=cumples.map(c=>`<div class="ai success"><span class="ad success"></span><div class="at"><strong>${esc(c.nom)}</strong><div class="asub">🎂 ¡Hoy cumple años!</div></div>${c.tel?`<a href="https://wa.me/54${c.tel}?text=${encodeURIComponent('¡Feliz cumpleaños '+c.nom+'! 🎂🎉')}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm" style="padding:3px 7px">💬</button></a>`:''}</div>`).join('')}
   else $('cumpleCard').style.display='none';
 }
 function rAlertas(){
@@ -7425,7 +7430,7 @@ function rAlertas(){
   });
   Ps.filter(p=>p.par&&p.flt>0).forEach(p=>{
     const op=gO(p.oid);const c=op?gC(op.cid):null;
-    if(op&&c){const aid=`par_${p.id}`;if(!dismissed.includes(aid))al.push({id:aid,t:'info',tx:`${c.nom} — pago parcial`,sub:`Falta: ${fmt(p.flt)}`,op,c});}
+    if(op&&c){const aid=`par_${p.id}`;if(!dismissed.includes(aid))al.push({id:aid,t:'info',tx:`${esc(c.nom)} — pago parcial`,sub:`Falta: ${fmt(p.flt)}`,op,c});}
   });
   const b=$('nb');if(b){b.style.display=al.length?'inline-block':'none';b.textContent=al.length;}
   const aS=$('alertasSection');
@@ -7580,7 +7585,7 @@ async function rCobradores(){
           const col=st==='atrasado'?'var(--rd)':st==='porVencer'?'var(--yw)':st==='completo'?'var(--tx2)':'var(--gr)';
           return`<div onclick="if(_selMode){toggleSelCli(${c.id});}else{verCli(${c.id});}" oncontextmenu="event.preventDefault();if(!_selMode)entrarSelMode(${c.id});" style="background:var(--bg3);border:1px solid ${col}44;border-radius:7px;padding:4px 9px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;${_selMode&&_selSet.has(c.id)?'outline:2px solid var(--ac);background:rgba(108,99,255,.08)':''}">
             <span style="width:6px;height:6px;border-radius:50%;background:${col};flex-shrink:0;display:inline-block"></span>
-            ${c.nom}
+            ${esc(c.nom)}
           </div>`;
         }).join('')}
       </div>`:''}
@@ -7599,7 +7604,7 @@ async function rCobradores(){
         </div>
       </div>
       <div style="padding:8px 10px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:5px">
-        ${sinAsignar.map(c=>`<div onclick="if(_selMode){toggleSelCli(${c.id});}else{verCli(${c.id});}" oncontextmenu="event.preventDefault();if(!_selMode)entrarSelMode(${c.id});" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:4px 9px;font-size:11px;cursor:pointer;${_selMode&&_selSet.has(c.id)?'outline:2px solid var(--ac);background:rgba(108,99,255,.08)':''}">${c.nom}</div>`).join('')}
+        ${sinAsignar.map(c=>`<div onclick="if(_selMode){toggleSelCli(${c.id});}else{verCli(${c.id});}" oncontextmenu="event.preventDefault();if(!_selMode)entrarSelMode(${c.id});" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:4px 9px;font-size:11px;cursor:pointer;${_selMode&&_selSet.has(c.id)?'outline:2px solid var(--ac);background:rgba(108,99,255,.08)':''}">${esc(c.nom)}</div>`).join('')}
       </div>
     </div>`;
   }
@@ -7761,7 +7766,7 @@ function rClis(){
               <span class="${r.cl}" style="font-size:10px">${r.ic}</span>
             </div>
             <div style="font-size:10px;color:var(--tx2)">${nP?`${nP} crédito${nP>1?'s':''}`:''} ${nV?`${nV} venta${nV>1?'s':''}`:''} ${!opsAct.length?'sin activos':''}</div>
-            ${c.dir?`<div style="font-size:9px;color:var(--tx2);margin-top:2px">📍 ${c.dir}</div>`:''}
+            ${c.dir?`<div style="font-size:9px;color:var(--tx2);margin-top:2px">📍 ${esc(c.dir)}</div>`:''}
             ${(()=>{
               if(!opsAct.length) return '';
               const prxFec=proxFechaOp(opsAct[0]);
@@ -7997,13 +8002,13 @@ function rCaja(){
 
 function verOpDetalle(oid){
   const op=gO(oid);if(!op)return;
-  const c=gC(op.cid),sv=esVenta(op),lbl=sv?(op.prod||'Venta'):(op.desc||'Crédito'),s=stOp(op);
+  const c=gC(op.cid),sv=esVenta(op),lbl=esc(sv?(op.prod||'Venta'):(op.desc||'Crédito')),s=stOp(op);
   const ps=pagoDeOp(oid),totCob=ps.reduce((s,p)=>s+p.mon,0),saldo=saldoOp(op),cuota=cvOp(op);
   const pct=Math.round((op.pag/op.cuo)*100);
   const col={completado:'var(--gr)',atrasado:'var(--rd)',porVencer:'var(--yw)',aldía:'var(--ac2)'}[s]||'var(--tx)';
   $('opDetalleContent').innerHTML=`
     <div class="mt">${sv?'🛒':'💳'} ${lbl}</div>
-    <div style="font-size:11px;color:var(--tx2);margin-bottom:12px">Cliente: <strong style="color:var(--tx)">${c?c.nom:'?'}</strong></div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:12px">Cliente: <strong style="color:var(--tx)">${c?esc(c.nom):'?'}</strong></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
       <div class="mc"><div class="ml">Monto</div><div class="mv">${fmt(sv?op.precio:op.mon)}</div></div>
       <div class="mc"><div class="ml">Cuota</div><div class="mv">${fmt(cuota)}</div></div>
@@ -8449,7 +8454,7 @@ function verDia(ds){
   const co=[];Ops.filter(o=>esOpActiva(o)).forEach(o=>{const f=fechasOp(o);if(f.includes(ds)){const c=gC(o.cid);co.push({o,c})}});
   const pd=Ps.filter(p=>p.fec===ds),ev=EVs.filter(e=>e.fec===ds),cuB=Cs.filter(c=>c.cumple&&c.cumple.substring(5)===ds.substring(5));
   $('calDet').style.display='';$('calDetT').textContent=`📅 ${fD(ds)}`;
-  $('calDetList').innerHTML=`${cuB.length?`<div style="font-size:9px;color:var(--gr);margin-bottom:4px;font-weight:600">🎂 CUMPLEAÑOS</div>${cuB.map(c=>`<div class="pi"><div style="font-size:11px;font-weight:600">${c.nom}</div>${c.tel?`<a href="https://wa.me/54${c.tel}?text=${encodeURIComponent('¡Feliz cumpleaños '+c.nom+'! 🎂')}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm">💬 Saludar</button></a>`:''}</div>`).join('')}`:''}${ev.length?`<div style="font-size:9px;color:var(--yw);margin:${cuB.length?'8px':0} 0 4px;font-weight:600">📌 EVENTOS</div>${ev.map(e=>`<div class="pi"><div><div style="font-size:11px;font-weight:600">${e.tit}</div><div class="pd">${e.desc||''}</div></div><button class="btn brd bsm" style="padding:3px 5px" onclick="elimEvento(${e.id})">🗑️</button></div>`).join('')}`:''}${co.length?`<div style="font-size:9px;color:var(--ac2);margin:${ev.length||cuB.length?'8px':0} 0 4px;font-weight:600">💰 CUOTAS</div>${co.map(x=>`<div class="pi"><div><div style="font-size:11px;font-weight:600">${x.c?x.c.nom:'?'} — ${esVenta(x.o)?x.o.prod||'Venta':x.o.desc||'Crédito'}</div><div class="pd">${x.o.frq}</div></div><div style="display:flex;align-items:center;gap:4px"><div class="pm">${fmt(cvOp(x.o))}</div>${x.c&&x.c.tel?`<a href="${waLinkOp(x.o)}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm" style="padding:3px 5px">💬</button></a>`:''}</div></div>`).join('')}`:''}${pd.length?`<div style="font-size:9px;color:var(--gr);margin:${co.length?'8px':0} 0 4px;font-weight:600">✅ PAGOS</div>${pd.map(p=>{const op=gO(p.oid);const c=op?gC(op.cid):null;return`<div class="pi"><div><div style="font-size:11px;font-weight:600">${c?c.nom:'?'}</div><div class="pd">${p.not||''}</div></div><div class="pm">${fmt(p.mon)}</div></div>`}).join('')}`:''}${!co.length&&!pd.length&&!ev.length&&!cuB.length?'<div style="font-size:10px;color:var(--tx2)">Sin actividad</div>':''}`;
+  $('calDetList').innerHTML=`${cuB.length?`<div style="font-size:9px;color:var(--gr);margin-bottom:4px;font-weight:600">🎂 CUMPLEAÑOS</div>${cuB.map(c=>`<div class="pi"><div style="font-size:11px;font-weight:600">${esc(c.nom)}</div>${c.tel?`<a href="https://wa.me/54${c.tel}?text=${encodeURIComponent('¡Feliz cumpleaños '+c.nom+'! 🎂')}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm">💬 Saludar</button></a>`:''}</div>`).join('')}`:''}${ev.length?`<div style="font-size:9px;color:var(--yw);margin:${cuB.length?'8px':0} 0 4px;font-weight:600">📌 EVENTOS</div>${ev.map(e=>`<div class="pi"><div><div style="font-size:11px;font-weight:600">${esc(e.tit)}</div><div class="pd">${esc(e.desc||'')}</div></div><button class="btn brd bsm" style="padding:3px 5px" onclick="elimEvento(${e.id})">🗑️</button></div>`).join('')}`:''}${co.length?`<div style="font-size:9px;color:var(--ac2);margin:${ev.length||cuB.length?'8px':0} 0 4px;font-weight:600">💰 CUOTAS</div>${co.map(x=>`<div class="pi"><div><div style="font-size:11px;font-weight:600">${x.c?esc(x.c.nom):'?'} — ${esVenta(x.o)?esc(x.o.prod||'Venta'):esc(x.o.desc||'Crédito')}</div><div class="pd">${x.o.frq}</div></div><div style="display:flex;align-items:center;gap:4px"><div class="pm">${fmt(cvOp(x.o))}</div>${x.c&&x.c.tel?`<a href="${waLinkOp(x.o)}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm" style="padding:3px 5px">💬</button></a>`:''}</div></div>`).join('')}`:''}${pd.length?`<div style="font-size:9px;color:var(--gr);margin:${co.length?'8px':0} 0 4px;font-weight:600">✅ PAGOS</div>${pd.map(p=>{const op=gO(p.oid);const c=op?gC(op.cid):null;return`<div class="pi"><div><div style="font-size:11px;font-weight:600">${c?esc(c.nom):'?'}</div><div class="pd">${esc(p.not||'')}</div></div><div class="pm">${fmt(p.mon)}</div></div>`}).join('')}`:''}${!co.length&&!pd.length&&!ev.length&&!cuB.length?'<div style="font-size:10px;color:var(--tx2)">Sin actividad</div>':''}`;
 }
 function setFinP(p,el){finP=p;document.querySelectorAll('#finTabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');rFin()}
 function rFin(){
@@ -8587,7 +8592,7 @@ function rFinProy(){
 }
 function rNotif(){
   const al=[];Ops.filter(o=>esOpActiva(o)).forEach(o=>{const s=stOp(o),c=gC(o.cid),lbl=esVenta(o)?o.prod||'Venta':o.desc||'Crédito';if(s==='atrasado'){const d=diasAtrOp(o);al.push({t:'danger',tx:`${c?c.nom:'?'} · ${lbl}`,sub:`${d}d atraso · ${fmt(saldoMOp(o))}`,o,c})}else if(s==='porVencer'){const v=new Date(o.fv+'T00:00:00'),h=new Date();h.setHours(0,0,0,0);const d=Math.ceil((v-h)/86400000);al.push({t:'warning',tx:`${c?c.nom:'?'} · ${lbl}`,sub:`Vence en ${d}d · ${fmt(cvOp(o))}`,o,c})}});
-  Ps.filter(p=>p.par&&p.flt>0).forEach(p=>{const op=gO(p.oid);const c=op?gC(op.cid):null;if(op&&c)al.push({t:'info',tx:`${c.nom} — pago parcial`,sub:`Falta: ${fmt(p.flt)}`,o:op,c})});
+  Ps.filter(p=>p.par&&p.flt>0).forEach(p=>{const op=gO(p.oid);const c=op?gC(op.cid):null;if(op&&c)al.push({t:'info',tx:`${esc(c.nom)} — pago parcial`,sub:`Falta: ${fmt(p.flt)}`,o:op,c})});
   if($('notifContent'))$('notifContent').innerHTML=al.length===0?'<div class="card" style="text-align:center;padding:16px;color:var(--tx2);font-size:12px">✅ Sin alertas</div>':al.map(a=>`<div class="ai ${a.t}" style="cursor:pointer" onclick="verCli(${a.c?a.c.id:0})"><span class="ad ${a.t}"></span><div class="at"><strong>${a.tx}</strong><div class="asub">${a.sub}</div></div>${a.c&&a.c.tel&&a.o?`<a href="${waLinkOp(a.o)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"><button class="btn bgr bsm" style="padding:3px 5px">💬</button></a>`:''}</div>`).join('');
   const mn=man();const prxMan=[];Ops.filter(o=>esOpActiva(o)).forEach(o=>{const f=fechasOp(o);if(f.includes(mn)){const c=gC(o.cid);prxMan.push({o,c})}});
   if($('recList'))$('recList').innerHTML=prxMan.length===0?'<div style="font-size:10px;color:var(--tx2)">No hay vencimientos mañana</div>':prxMan.map(x=>`<div class="pi"><div><div style="font-size:11px;font-weight:600">${x.c?x.c.nom:'?'} · ${esVenta(x.o)?x.o.prod||'Venta':x.o.desc||'Crédito'}</div><div class="pd">Mañana: ${fmt(cvOp(x.o))}</div></div>${x.c&&x.c.tel?`<a href="${waLinkOp(x.o)}" target="_blank" rel="noopener noreferrer"><button class="btn bgr bsm">Enviar 💬</button></a>`:'<span style="font-size:10px;color:var(--tx2)">Sin tel.</span>'}</div>`).join('');
@@ -8622,7 +8627,7 @@ function rRep(){
     const tot=opsDeCli(c.id).reduce((s,o)=>s+intOp(o),0);
     const cuotasCobradas=Ps.filter(p=>opsDeCli(c.id).some(o=>o.id===p.oid)&&!p.par&&!(p.not||'').startsWith('🔄 INTERES')).length;
     const r=rankCli(c.id);
-    return`<div class="pi"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px">${['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</span><div><div style="font-size:11px;font-weight:600">${c.nom} <span class="${r.cl}">${r.ic}</span></div><div style="font-size:9px;color:var(--tx2)">${cuotasCobradas} cuota${cuotasCobradas!==1?'s':''} cobrada${cuotasCobradas!==1?'s':''}</div></div></div><div style="text-align:right"><div class="pm" style="color:var(--yw)">${fmt(tot)}</div><div style="font-size:9px;color:var(--tx2)">interés cobrado</div></div></div>`;
+    return`<div class="pi"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px">${['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</span><div><div style="font-size:11px;font-weight:600">${esc(c.nom)} <span class="${r.cl}">${r.ic}</span></div><div style="font-size:9px;color:var(--tx2)">${cuotasCobradas} cuota${cuotasCobradas!==1?'s':''} cobrada${cuotasCobradas!==1?'s':''}</div></div></div><div style="text-align:right"><div class="pm" style="color:var(--yw)">${fmt(tot)}</div><div style="font-size:9px;color:var(--tx2)">interés cobrado</div></div></div>`;
   }).join('')||'<div style="font-size:10px;color:var(--tx2)">Sin pagos registrados</div>';
   const roi=cap>0?((totInt/cap)*100).toFixed(1):0;
   $('iaAnal').innerHTML=`📊 <b>Resumen:</b> ${Cs.length} clientes · ${Ops.length} operaciones · Capital: <b>${fmt(cap)}</b>${totInt>0?` · ROI ≈ ${roi}%`:''}<br>Por cobrar: <b>${fmt(porCob)}</b><br>${opsMora.length>0?`⚠️ ${opsMora.length} en mora.<br>`:'✅ Sin mora.<br>'}${totG>0?`💸 Gastos: ${fmt(totG)} · Neta: ${fmt(ganNeta)}<br>`:''}${ganV>0?`🛒 Gan.ventas: ${fmt(ganV)}<br>`:''}💡 ${mor>30?'Priorizar cobros.':'Negocio saludable.'}`;
@@ -10188,7 +10193,7 @@ function agendaRenderLista(items, done, key){
     const {c,op,cid,oid}=it, doneKey=`${cid}_${oid}`, isDone=!!done[doneKey];
     const zonas=JSON.parse(localStorage.getItem('cobropro_zonas')||'{}'), zona=zonas[cid]||'';
     const col={atrasado:'var(--rd)',porVencer:'var(--yw)',aldía:'var(--gr)',completo:'var(--tx2)'}[stOp(op)]||'var(--tx2)';
-    const lbl=esVenta(op)?op.prod||'Venta':op.desc||'Crédito';
+    const lbl=esc(esVenta(op)?op.prod||'Venta':op.desc||'Crédito');
     const ultimoPago=Ps.filter(p=>p.oid===oid).sort((a,b)=>new Date(b.fec)-new Date(a.fec))[0];
     return `<div class="agenda-item${isDone?' done':''}" id="agi-${cid}-${oid}" draggable="true"
       ondragstart="agendaDragStart(event,'${cid}_${oid}')"
@@ -10203,7 +10208,7 @@ function agendaRenderLista(items, done, key){
         <div class="agenda-drag-handle">⠿</div>
         <div class="agenda-item-body">
           <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:1px">
-            <div class="agenda-item-name" style="color:${isDone?'var(--tx2)':'var(--tx)'}">${c.nom}</div>
+            <div class="agenda-item-name" style="color:${isDone?'var(--tx2)':'var(--tx)'}">${esc(c.nom)}</div>
             ${zona?`<span class="agenda-zona-chip">📍 ${zona}</span>`:''}
           </div>
           <div class="agenda-item-meta"><span style="color:${col};font-weight:600">${lbl}</span> · <span style="color:${col};font-weight:700">${fmt(cvOp(op))}</span>${stOp(op)==='atrasado'?' · ⚠️ Mora':''}</div>
@@ -10285,9 +10290,9 @@ function agendaRenderZonas(items, done, key){
             <div class="agenda-item-body" style="padding:9px 6px 9px 0">
               <div style="display:flex;justify-content:space-between;align-items:flex-start">
                 <div>
-                  <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:${isDone?'var(--tx2)':'var(--tx)'}">${c.nom}</div>
-                  <div style="font-size:9px;color:${col}">${esVenta(op)?op.prod||'Venta':op.desc||'Crédito'} · ${fmt(cvOp(op))}${stOp(op)==='atrasado'?' ⚠️':''}</div>
-                  ${c.dir?`<div style="font-size:9px;color:var(--tx2);margin-top:1px">📍 ${c.dir}</div>`:''}
+                  <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:${isDone?'var(--tx2)':'var(--tx)'}">${esc(c.nom)}</div>
+                  <div style="font-size:9px;color:${col}">${lbl} · ${fmt(cvOp(op))}${stOp(op)==='atrasado'?' ⚠️':''}</div>
+                  ${c.dir?`<div style="font-size:9px;color:var(--tx2);margin-top:1px">📍 ${esc(c.dir)}</div>`:''}
                   ${isDone&&ultimoPago?`<div style="font-size:9px;color:var(--gr);margin-top:2px">✅ ${fmt(ultimoPago.mon)}</div>`:''}
                 </div>
                 <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px">
@@ -10590,8 +10595,8 @@ ${'─'.repeat(28)}
   mo.style.zIndex = '300';
   mo.innerHTML = `<div class="modal">
     <div class="mh"></div>
-    <div class="mt">🧾 Comprobante · ${c.nom}</div>
-    <div class="comprobante-preview">${comprobante}</div>
+    <div class="mt">🧾 Comprobante · ${esc(c.nom)}</div>
+    <div class="comprobante-preview">${esc(comprobante)}</div>
     <div style="display:flex;gap:8px;margin-bottom:10px">
       ${c.tel?`<button class="btn" style="flex:1;background:rgba(37,211,102,.15);color:#25d366;border:1px solid rgba(37,211,102,.3)" onclick="agendaEnviarWA(${cid},${oid},${parcial},this)">💬 Enviar por WA</button>`:''}
     </div>
@@ -12304,7 +12309,7 @@ function cobAbrirConfig(){
       el.innerHTML=_cobradorClis.map(c=>{
         const zona=cobGetZona(c.id);
         return`<div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg3);border-radius:10px">
-          <div style="flex:1;font-size:12px;font-weight:600">${c.nom}</div>
+          <div style="flex:1;font-size:12px;font-weight:600">${esc(c.nom)}</div>
           <input style="width:120px;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:5px 8px;color:var(--tx);font-size:11px" placeholder="Zona..." value="${zona}" onchange="cobSetZona(${c.id},this.value);rCobradorClis()">
         </div>`;
       }).join('');
@@ -12417,9 +12422,9 @@ function rCobradorHist(){
         const c=_cobradorClis.find(x=>x.id===op.cid)||{nom:'Cliente'};
         return`<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
           <div>
-            <div style="font-size:12px;font-weight:700">${c.nom}</div>
-            <div style="font-size:10px;color:var(--tx2);margin-top:2px">${op.desc||'Crédito'} · ${p.met==='transferencia'?'📲 Transf.':'💵 Efectivo'}${p.par?' · ⏳ Parcial':''}</div>
-            ${p.not_?`<div style="font-size:10px;color:var(--tx2);margin-top:2px;font-style:italic">"${p.not_}"</div>`:''}
+            <div style="font-size:12px;font-weight:700">${esc(c.nom)}</div>
+            <div style="font-size:10px;color:var(--tx2);margin-top:2px">${esc(op.desc||'Crédito')} · ${p.met==='transferencia'?'📲 Transf.':'💵 Efectivo'}${p.par?' · ⏳ Parcial':''}</div>
+            ${p.not_?`<div style="font-size:10px;color:var(--tx2);margin-top:2px;font-style:italic">"${esc(p.not_)}"</div>`:''}
           </div>
           <div style="font-size:14px;font-weight:800;color:${p.par?'var(--yw)':'var(--gr)'}">${mon}${(p.mon||0).toLocaleString(LOCALE())}</div>
         </div>`;
@@ -12439,7 +12444,7 @@ function _cobCliCard(c){
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
       <div style="flex:1">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <div style="font-size:14px;font-weight:700;color:var(--tx)">${c.nom}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--tx)">${esc(c.nom)}</div>
           ${zona?`<span style="font-size:9px;background:rgba(6,182,212,.15);color:var(--cy);padding:2px 7px;border-radius:20px;font-weight:600">📍 ${zona}</span>`:''}
         </div>
         ${c.tel?`<div style="font-size:11px;color:var(--tx2);margin-top:2px">📞 ${c.tel}</div>`:''}
@@ -12526,7 +12531,7 @@ function rCobradorRuta(){
     return`<div style="background:var(--card);border:1px solid ${diasAtr>0?'rgba(239,68,68,.3)':yaHoy?'rgba(34,197,94,.3)':'var(--border)'};border-radius:14px;padding:13px;margin-bottom:8px;opacity:${yaHoy?.7:1}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
         <div>
-          <div style="font-size:13px;font-weight:700">${yaHoy?'✅ ':diasAtr>0?'🔴 ':''}<span style="color:var(--tx)">${c.nom}</span></div>
+          <div style="font-size:13px;font-weight:700">${yaHoy?'✅ ':diasAtr>0?'🔴 ':''}<span style="color:var(--tx)">${esc(c.nom)}</span></div>
           <div style="font-size:10px;color:var(--tx2);margin-top:2px">${o.desc||'Crédito'} · Cuota ${o.pag+1}/${o.cuo}</div>
           ${diasAtr>0?`<div style="font-size:10px;color:var(--rd);font-weight:600;margin-top:2px">⚠️ ${diasAtr}d de atraso</div>`:''}
         </div>
@@ -12693,7 +12698,7 @@ async function guardarPagoCobrador(){
 function _mostrarToastComprobante(pago,op,c){
   const t=document.createElement('div');
   t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid rgba(37,211,102,.4);border-radius:14px;padding:12px 16px;z-index:900;box-shadow:0 6px 24px rgba(0,0,0,.4);width:min(320px,90vw);animation:fi .3s ease';
-  t.innerHTML=`<div style="font-size:12px;font-weight:700;margin-bottom:8px">¿Enviar comprobante a ${c.nom}?</div>
+  t.innerHTML=`<div style="font-size:12px;font-weight:700;margin-bottom:8px">¿Enviar comprobante a ${esc(c.nom)}?</div>
     <div style="display:flex;gap:8px">
       <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--tx2);border-radius:8px;padding:9px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">No</button>
       <button onclick="enviarComprobanteCobrador(arguments[0]);this.closest('div[style*=fixed]').remove()" style="flex:2;background:#25d366;border:none;color:#fff;border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent" id="btnCompToast">📲 Enviar</button>
@@ -12886,7 +12891,7 @@ async function asignarClientesCobrador(equipoId,nombreCob){
     <div style="font-size:11px;color:var(--tx2);margin-bottom:14px">Seleccioná los clientes que puede cobrar</div>
     ${Cs.map(c=>`<label style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;cursor:pointer">
       <input type="checkbox" data-cid="${c.id}" ${c.cobrador_id===cobradorUserId?'checked':''} style="accent-color:var(--ac);width:16px;height:16px;flex-shrink:0">
-      <div><div style="font-size:13px;font-weight:600">${c.nom}</div>${c.tel?`<div style="font-size:10px;color:var(--tx2)">${c.tel}</div>`:''}</div>
+      <div><div style="font-size:13px;font-weight:600">${esc(c.nom)}</div>${c.tel?`<div style="font-size:10px;color:var(--tx2)">${c.tel}</div>`:''}</div>
     </label>`).join('')}
     <div style="display:flex;gap:8px;margin-top:14px;position:sticky;bottom:0;background:var(--bg2);padding-top:10px">
       <button onclick="this.closest('[style*=fixed]').remove()" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--tx);border-radius:10px;padding:11px;font-size:13px;cursor:pointer">Cancelar</button>
